@@ -1,3 +1,5 @@
+# VTA論文の実験設定をまとめた設定ファイル
+
 import torch
 from pathlib import Path
 
@@ -10,6 +12,9 @@ class Config:
         self.work_dir = Path("./experiments5_test")
         self.work_dir.mkdir(parents=True, exist_ok=True)
         
+        # シード設定
+        self.seed = 111
+        
         # --- ★データセット生成モード設定★ ---
         # "fixed": 最初に大量に生成し、それを使い回す (過学習の確認用 / メモリ大)
         # "infinite": エポックごとに少量生成し、常に新しいデータを使う (過学習回避 / メモリ小)
@@ -18,7 +23,7 @@ class Config:
         # 1回の生成で作るデータ数
         # infiniteモードなら 2000 程度 (メモリ節約)
         # fixedモードなら 20000~50000 程度 (過学習しないよう多めに確保が必要)
-        self.epoch_data_size = 2000 if self.data_mode == "infinite" else 45_000
+        self.epoch_data_size = 2_000 if self.data_mode == "infinite" else 45_000
 
         # --- データサイズ関連 ---
         self.batch_size = 64
@@ -34,6 +39,7 @@ class Config:
         # --- ★実験設定のプリセット切り替え★ ---
         # "bouncing_balls" または "3d_maze" (想定)
         self.env_type = "bouncing_balls"
+        self.env_type = "3d_maze"
 
         if self.env_type == "bouncing_balls":
             self.loss_type = "bce"    # くっきり生成
@@ -44,7 +50,9 @@ class Config:
             # 3D Maze等の場合
             self.loss_type = "mse"    # ガウス分布
             self.obs_std = 1.0        # 標準偏差
-            self.obs_bit = 5          # ★ビット深度を5bitに削減
+            self.obs_bit = 5          # ビット深度を5bitに削減
+            self.dt = 1.0             # ダミー
+            self.action_size = 3      # アクションサイズを3に設定
 
         # --- 最適化関連 ---
         self.learn_rate = 5e-4     # 学習率
@@ -53,9 +61,9 @@ class Config:
 
         # --- 部分系列の事前分布に関する制約 ---
         self.seg_num = 5          # 1系列あたりの部分系列の最大数
-        self.seg_len = 10         # 部分系列の最大長
+        self.seg_len = 8         # 部分系列の最大長
 
         # --- Gumbel-Softmax関連 ---
         self.max_beta = 1.0       # Gumbel-Softmaxの温度パラメータの最大値
         self.min_beta = 0.1       # Gumbel-Softmaxの温度パラメータの最小値
-        self.beta_anneal = 20    # 温度を最大値から最小値にアニーリングする際の減衰率
+        self.beta_anneal = 100    # 温度を最大値から最小値にアニーリングする際の減衰率

@@ -1,3 +1,7 @@
+'''
+Bouncing Balls環境用の学習スクリプト
+'''
+
 import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
@@ -15,7 +19,6 @@ import matplotlib.pyplot as plt
 
 # 自作モジュールのインポート
 from config import Config
-from bouncing_balls import generate_vta_dataset
 from model import VTA
 from utils import visualize_results, preprocess
 
@@ -26,6 +29,17 @@ def main():
     args = Config()
     print(f"Device: {args.device}")
     print(f"Loss Type: {args.loss_type}")
+    
+    # シード固定
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
+    torch.backends.cudnn.deterministic = True
+    
+    if args.env_type == "3d_maze":
+        from maze_env import generate_vta_dataset
+    else:
+        from bouncing_balls import generate_vta_dataset
     
     # ログディレクトリのクリーンアップと作成
     log_dir = args.work_dir / args.exp_name / "logs"
@@ -64,12 +78,12 @@ def main():
     # 3. 学習データの運用戦略 (チャンク分割)
     # ----------------------------------------------------
     # メモリ枯渇を防ぐため、全学習期間を N分割 し、その都度データを生成する
-    NUM_CHUNKS = 4  # 4回作り直す (学習の1/4ごとにリフレッシュ)
+    NUM_CHUNKS = 1  # 4回作り直す (学習の1/4ごとにリフレッシュ)
     REFRESH_STEPS = args.max_iters // NUM_CHUNKS
     
     # 1回あたりのデータ生成量 (50,000の1/4 = 12,500系列ならメモリ16GBでも余裕)
     # configのepoch_data_sizeに関わらず、ここで安全な値を指定します
-    CHUNK_DATA_SIZE = 12_500 
+    CHUNK_DATA_SIZE =  args.epoch_data_size // NUM_CHUNKS
     
     print(f"Training Strategy: Refresh data every {REFRESH_STEPS} steps.")
     print(f"Chunk Size: {CHUNK_DATA_SIZE} sequences.")

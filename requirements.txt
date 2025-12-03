@@ -4,4 +4,3 @@ opencv-python
 torch
 tensorboard
 tqdm
-jupyter

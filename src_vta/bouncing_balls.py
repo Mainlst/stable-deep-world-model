@@ -1,3 +1,6 @@
+# VTA論文に基づくBouncing Balls環境(現在上手く動作していない模様…)
+
+
 import numpy as np
 import cv2
 import torch

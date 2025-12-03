@@ -1,3 +1,7 @@
+'''
+VTAの主要なモデルコンポーネントを実装したファイル(修正前)
+'''
+
 import numpy as np
 import torch
 import torch.nn as nn
