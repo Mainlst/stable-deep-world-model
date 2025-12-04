@@ -113,23 +113,25 @@ def visualize_results(model, loader, config, seq_idx=0, return_fig=False):
     # バッチを取得
     batch = next(iter(loader))
     
-    # ★変更点: obsだけでなくactもデータセットから取り出す
-    # Datasetは (obs, act) を返すと想定
+    # データセットの構造に応じて obs / act / hits を振り分ける
     obs = batch[0].to(config.device)
-    
+    true_hits = torch.zeros(obs.size(1))
+
     if len(batch) > 1:
-        act = batch[1].to(config.device)
+        candidate = batch[1]
+        # 行動が (B, T, A) で提供されている場合のみ act として使う
+        if candidate.dim() == 3 and candidate.size(-1) == config.action_size and config.action_size > 0:
+            act = candidate.to(config.device)
+        else:
+            # Bouncing Balls のように (B, T) の衝突ラベルが2番目に来る場合はこちら
+            true_hits = candidate[seq_idx].cpu()
+            act = torch.zeros(obs.size(0), obs.size(1), config.action_size).to(config.device)
     else:
-        # 行動データがない場合はゼロ埋め（Bouncing Balls等の互換性維持）
         act = torch.zeros(obs.size(0), obs.size(1), config.action_size).to(config.device)
 
-    # 真の境界データが存在する場合（データセットの実装による）
-    # maze_env.pyでは境界ラベルは返していないので、なければ可視化しない処理を入れる
+    # 真の境界データが第3要素以降にある場合にも対応
     if len(batch) > 2:
-        true_hits = batch[2][seq_idx].cpu() 
-    else:
-        # ダミーの境界データ (全て0)
-        true_hits = torch.zeros(obs.size(1))
+        true_hits = batch[2][seq_idx].cpu()
 
     # 前処理
     obs = preprocess(obs, config.obs_bit)
