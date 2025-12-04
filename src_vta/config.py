@@ -39,7 +39,6 @@ class Config:
         # --- ★実験設定のプリセット切り替え★ ---
         # "bouncing_balls" または "3d_maze" (想定)
         self.env_type = "bouncing_balls"
-        self.env_type = "3d_maze"
 
         if self.env_type == "bouncing_balls":
             self.loss_type = "bce"    # くっきり生成
