@@ -18,9 +18,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # 自作モジュールのインポート
-from config import Config
-from model import VTA
-from utils import visualize_results, preprocess
+from src_vta.config import Config
+from src_vta.models import VTA
+from src_vta.utils import visualize_results, preprocess
 
 def main():
     # ----------------------------------------------------
@@ -37,9 +37,9 @@ def main():
     torch.backends.cudnn.deterministic = True
     
     if args.env_type == "3d_maze":
-        from maze_env import generate_vta_dataset
+        from src_vta.data.maze_env import generate_vta_dataset
     else:
-        from bouncing_balls import generate_vta_dataset
+        from src_vta.data.bouncing_balls import generate_vta_dataset
     
     # ログディレクトリのクリーンアップと作成
     log_dir = args.work_dir / args.exp_name / "logs"

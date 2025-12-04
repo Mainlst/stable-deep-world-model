@@ -15,10 +15,9 @@ import sys
 import gc               # メモリ管理用
 
 # 自作モジュールのインポート
-# ※これらが同じディレクトリにあることを想定しています
-from config import Config
-from model import VTA
-from utils import preprocess, visualize_results
+from src_vta.config import Config
+from src_vta.models import VTA
+from src_vta.utils import preprocess, visualize_results
 
 # -----------------------------------------------------------------------------
 # Dataset Class (ユーザー提供のコード)

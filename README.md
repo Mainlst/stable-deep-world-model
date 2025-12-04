@@ -20,8 +20,9 @@ VTA (Variable Temporal Abstraction) を使った世界モデルの実験コー�
 ```
 .
 ├── requirements.txt        # 主要依存ライブラリ
-├── train.sh                # Bouncing Balls 学習用ショートカット
-├── visualize.sh            # 可視化サンプルコマンド
+├── scripts/                # 実行用シェルスクリプト
+│   ├── train.sh            # Bouncing Balls 学習
+│   └── visualize.sh        # 可視化サンプルコマンド
 ├── main.py                 # 予備エントリポイント（現状未使用）
 ├── src/                    # 新実装用のプレースホルダ
 │   ├── env/__init__.py     # 仮のサンプルコード
@@ -29,33 +30,39 @@ VTA (Variable Temporal Abstraction) を使った世界モデルの実験コー�
 │   ├── train.py            # 予備（未実装）
 │   ├── utils/__init__.py   # 予備
 │   └── visualize/__init__.py
-└── src_vta/                # 現行の VTA 実装
+└── src_vta/                # 現行の VTA 実装パッケージ
     ├── config.py           # 実験設定（環境切替・学習ハイパーパラメータ）
-    ├── train.py            # Bouncing Balls 学習ループ
-    ├── train_maze.py       # 3D Maze 学習ループ（npz データ前提）
-    ├── visualize.py        # 学習済みモデルの可視化
-    ├── bouncing_balls.py   # Bouncing Balls 環境とデータ生成
-    ├── maze_env.py         # 3D Maze 環境定義
-    ├── make_dataset.py     # 3D Maze 用 Dataset の旧実装（現在は未使用）
-    ├── generate_npz.py     # 3D Maze エピソードの npz 生成スクリプト
-    ├── model.py            # VTA 本体
     ├── model2.py           # 代替モデル案
     ├── utils.py            # 前処理・可視化・ログ周り
-    └── __init__.py
+    ├── models/             # モデル実装
+    │   ├── components.py   # Encoder/Decoder など下位ブロック
+    │   ├── rssm.py         # 階層RSSM本体
+    │   ├── vta.py          # 上位ラッパー
+    │   └── __init__.py
+    ├── data/               # データ生成・環境
+    │   ├── bouncing_balls.py
+    │   ├── maze_env.py
+    │   ├── generate_npz.py
+    │   ├── make_dataset.py
+    │   └── __init__.py
+    └── scripts/            # 実行用Pythonスクリプト
+        ├── train_balls.py  # Bouncing Balls 学習ループ
+        ├── train_maze.py   # 3D Maze 学習ループ
+        └── visualize.py    # 学習済みモデルの可視化
 ```
 
 ## 使い方
 - 学習（Bouncing Balls）  
-  `python src_vta/train.py --exp_name vta_bouncing_balls`  
-  `train.sh` でも同じコマンドを実行できます。
+  `python -m src_vta.scripts.train_balls --exp_name vta_bouncing_balls`  
+  または `bash scripts/train.sh`
 
 - 学習（3D Maze）  
-  `python src_vta/train_maze.py`  
-  `3d_maze_default/train` / `test` 配下に `.npz` データが必要です。無ければ `src_vta/generate_npz.py` で生成してください。
+  `python -m src_vta.scripts.train_maze`  
+  `3d_maze_default/train` / `test` 配下に `.npz` データが必要です。無ければ `python -m src_vta.data.generate_npz` で生成してください。
 
 - 可視化  
-  `python src_vta/visualize.py <ckpt_path> --idx 0 --num_samples 10`  
-  `visualize.sh` にはサンプルパスを並べています。
+  `python -m src_vta.scripts.visualize <ckpt_path> --idx 0 --num_samples 10`  
+  `bash scripts/visualize.sh` にはサンプルパスを並べています。
 
 ## ログ・成果物
 - `src_vta/config.py` の `work_dir` 配下に `exp_name` 単位でログとチェックポイントを保存します。
