@@ -2,20 +2,22 @@
 3D_Maze環境用の学習スクリプト
 '''
 
-import torch
-import torch.nn as nn
-from torch.utils.tensorboard import SummaryWriter
-from torch.utils.data import DataLoader
-import numpy as np
-from pathlib import Path
+import argparse
 import glob
-import cv2
-from tqdm import tqdm
 import sys
 import gc               # メモリ管理用
+from pathlib import Path
+
+import cv2
+import numpy as np
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 # 自作モジュールのインポート
-from src_vta.config import Config
+from src_vta.config import load_config
 from src_vta.models import VTA
 from src_vta.utils import preprocess, visualize_results
 
@@ -141,8 +143,11 @@ def log(mode, results, writer, step):
 # Main Training Loop
 # -----------------------------------------------------------------------------
 def main():
-    # 1. 設定読み込み
-    args = Config()
+    parser = argparse.ArgumentParser(description="Train VTA on 3D Maze dataset")
+    parser.add_argument("--config", type=str, default=None, help="Path to JSON config file")
+    parser.add_argument("--exp_name", type=str, default=None, help="Override experiment name")
+    cli_args = parser.parse_args()
+    args = load_config(cli_args.config, exp_name=cli_args.exp_name)
     
     # Maze用の強制設定 (Configクラスで設定済みなら不要だが念のため)
     args.env_type = "3d_maze"
@@ -167,8 +172,24 @@ def main():
     train_dataset = MazeDataset(full_seq_len, partition="train")
     test_dataset = MazeDataset(full_seq_len, partition="test")
     
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        drop_last=True,
+        pin_memory=True,
+        num_workers=4,
+        persistent_workers=True,
+    )
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
+        drop_last=True,
+        pin_memory=True,
+        num_workers=4,
+        persistent_workers=True,
+    )
 
     # 3. モデル構築
     model = VTA(

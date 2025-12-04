@@ -2,31 +2,37 @@
 Bouncing Balls環境用の学習スクリプト
 '''
 
+import argparse
+import gc               # メモリ管理用
+from pathlib import Path
+
+import matplotlib       # バックエンド設定用
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-import numpy as np
-from pathlib import Path
-import gc               # メモリ管理用
-import matplotlib       # バックエンド設定用
-import shutil           # ファイル操作用
 
 # GUIのない環境でのクラッシュを防ぐ設定
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
 # 自作モジュールのインポート
-from src_vta.config import Config
+from src_vta.config import load_config
 from src_vta.models import VTA
-from src_vta.utils import visualize_results, preprocess
+from src_vta.utils import preprocess, visualize_results
 
 def main():
+    parser = argparse.ArgumentParser(description="Train VTA on Bouncing Balls")
+    parser.add_argument("--config", type=str, default=None, help="Path to JSON config file")
+    parser.add_argument("--exp_name", type=str, default=None, help="Override experiment name")
+    args = parser.parse_args()
+
     # ----------------------------------------------------
     # 1. 設定と準備
     # ----------------------------------------------------
-    args = Config()
+    args = load_config(args.config, exp_name=args.exp_name)
     print(f"Device: {args.device}")
     print(f"Loss Type: {args.loss_type}")
     
@@ -35,6 +41,7 @@ def main():
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
     torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
     
     if args.env_type == "3d_maze":
         from src_vta.data.maze_env import generate_vta_dataset
@@ -62,7 +69,14 @@ def main():
     # ----------------------------------------------------
     print("Generating FIXED test data (500 seqs)...")
     test_data_raw = generate_vta_dataset(500, seq_len=SEQ_LEN_GEN, size=32, dt=args.dt)
-    test_loader = DataLoader(test_data_raw, batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(
+        test_data_raw,
+        batch_size=args.batch_size,
+        shuffle=False,
+        pin_memory=True,
+        num_workers=4,
+        drop_last=False,
+    )
     
     # テスト用バッチの確保（可視化用）
     pre_test_full_data_list = next(iter(test_loader))[0].to(args.device)
@@ -91,7 +105,15 @@ def main():
     # 最初のデータチャンクを生成
     print("Generating Initial Data Chunk...")
     current_data = generate_vta_dataset(CHUNK_DATA_SIZE, seq_len=SEQ_LEN_GEN, size=32, dt=args.dt)
-    train_loader = DataLoader(current_data, batch_size=args.batch_size, shuffle=True, drop_last=True)
+    train_loader = DataLoader(
+        current_data,
+        batch_size=args.batch_size,
+        shuffle=True,
+        drop_last=True,
+        pin_memory=True,
+        num_workers=4,
+        persistent_workers=True,
+    )
     train_iter = iter(train_loader) # 無限ループ用のイテレータ
 
     # ----------------------------------------------------

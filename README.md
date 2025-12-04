@@ -23,6 +23,8 @@ VTA (Variable Temporal Abstraction) を使った世界モデルの実験コー�
 ├── scripts/                # 実行用シェルスクリプト
 │   ├── train.sh            # Bouncing Balls 学習
 │   └── visualize.sh        # 可視化サンプルコマンド
+├── configs/                # 設定ファイル（JSON）
+│   └── bouncing_balls_3070.json
 ├── main.py                 # 予備エントリポイント（現状未使用）
 ├── src/                    # 新実装用のプレースホルダ
 │   ├── env/__init__.py     # 仮のサンプルコード
@@ -52,17 +54,25 @@ VTA (Variable Temporal Abstraction) を使った世界モデルの実験コー�
 ```
 
 ## 使い方
+- 設定ファイル（JSON）  
+  `configs/bouncing_balls_3070.json` にこの環境向けの推奨設定を用意しています。別環境では同ファイルをコピーして値を調整してください。
+
 - 学習（Bouncing Balls）  
-  `python -m src_vta.scripts.train_balls --exp_name vta_bouncing_balls`  
+  `python -m src_vta.scripts.train_balls --config configs/bouncing_balls_3070.json`  
   または `bash scripts/train.sh`
 
 - 学習（3D Maze）  
-  `python -m src_vta.scripts.train_maze`  
+  `python -m src_vta.scripts.train_maze --config <your_maze_config.json>`  
   `3d_maze_default/train` / `test` 配下に `.npz` データが必要です。無ければ `python -m src_vta.data.generate_npz` で生成してください。
 
 - 可視化  
-  `python -m src_vta.scripts.visualize <ckpt_path> --idx 0 --num_samples 10`  
+  `python -m src_vta.scripts.visualize <ckpt_path> --config configs/bouncing_balls_3070.json --idx 0 --num_samples 10`  
   `bash scripts/visualize.sh` にはサンプルパスを並べています。
+
+## 設定ファイルについて
+- フォーマットは JSON。`configs/bouncing_balls_3070.json` をベースに環境に合わせて編集してください。
+- 未知のキーは無視され、`Config` クラスに存在するキーのみ上書きされます。
+- `*_dir` キーはパスとして扱われ自動作成されます。
 
 ## ログ・成果物
 - `src_vta/config.py` の `work_dir` 配下に `exp_name` 単位でログとチェックポイントを保存します。

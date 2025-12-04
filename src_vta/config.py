@@ -1,7 +1,9 @@
 # VTA論文の実験設定をまとめた設定ファイル
 
-import torch
+import json
 from pathlib import Path
+
+import torch
 
 class Config:
     def __init__(self):
@@ -66,3 +68,34 @@ class Config:
         self.max_beta = 1.0       # Gumbel-Softmaxの温度パラメータの最大値
         self.min_beta = 0.1       # Gumbel-Softmaxの温度パラメータの最小値
         self.beta_anneal = 100    # 温度を最大値から最小値にアニーリングする際の減衰率
+
+
+def load_config(config_path=None, **overrides):
+    """
+    Load settings from a JSON file and apply optional overrides.
+
+    Unknown keys are ignored to keep backward compatibility.
+    """
+    cfg = Config()
+
+    if config_path:
+        path = Path(config_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Config file not found: {config_path}")
+        with path.open() as f:
+            data = json.load(f)
+        for k, v in data.items():
+            if hasattr(cfg, k):
+                setattr(cfg, k, Path(v) if k.endswith("_dir") else v)
+
+    for k, v in overrides.items():
+        if v is None:
+            continue
+        if hasattr(cfg, k):
+            setattr(cfg, k, Path(v) if k.endswith("_dir") else v)
+
+    # Recreate work_dir if overridden to ensure exists
+    if not cfg.work_dir.exists():
+        cfg.work_dir.mkdir(parents=True, exist_ok=True)
+
+    return cfg

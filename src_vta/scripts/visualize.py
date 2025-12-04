@@ -12,7 +12,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # 既存のモジュール
-from src_vta.config import Config
+from src_vta.config import load_config
 from src_vta.models import VTA
 from src_vta.utils import visualize_results
 
@@ -27,12 +27,13 @@ def main():
     parser.add_argument('ckpt_path', type=str, help='読み込むチェックポイントファイルのパス (.pt)')
     parser.add_argument('--idx', type=int, default=0, help='可視化するバッチ内のインデックス (デフォルト: 0)')
     parser.add_argument('--num_samples', type=int, default=10, help='生成するテストデータの数')
+    parser.add_argument('--config', type=str, default=None, help='設定ファイル (JSON)')
     args = parser.parse_args()
 
     # -------------------------------------------------
     # 2. 設定の読み込みとデータセット関数のインポート
     # -------------------------------------------------
-    config = Config()
+    config = load_config(args.config)
     device = config.device
     print(f"Device: {device}")
     print(f"Environment: {config.env_type}") # 確認用
