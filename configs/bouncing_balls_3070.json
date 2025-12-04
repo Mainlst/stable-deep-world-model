@@ -10,5 +10,6 @@
   "seg_num": 5,
   "seg_len": 8,
   "dt": 2.0,
-  "data_mode": "fixed"
+  "data_mode": "fixed",
+  "use_amp": true
 }

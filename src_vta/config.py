@@ -59,6 +59,7 @@ class Config:
         self.learn_rate = 5e-4     # 学習率
         self.grad_clip = 10.0      # 勾配クリッピングの閾値
         self.max_iters = 100_000    # 最大学習イテレーション数
+        self.use_amp = True        # 自動混合精度を使用するか
 
         # --- 部分系列の事前分布に関する制約 ---
         self.seg_num = 5          # 1系列あたりの部分系列の最大数

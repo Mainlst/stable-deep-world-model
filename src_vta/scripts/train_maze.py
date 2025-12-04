@@ -203,6 +203,7 @@ def main():
     ).to(args.device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learn_rate, amsgrad=True)
+    scaler = torch.cuda.amp.GradScaler(enabled=args.use_amp and args.device.startswith("cuda"))
 
     # テスト用の固定バッチ（学習中の定点観測用）
     # Datasetの仕様に合わせて (frames, actions) を受け取る
@@ -248,22 +249,25 @@ def main():
             # 順伝播
             model.train()
             optimizer.zero_grad()
-            results = model(
-                train_obs_list,
-                train_act_list,
-                args.seq_size,
-                args.init_size,
-                obs_std=args.obs_std,
-                loss_type=args.loss_type
-            )
+            with torch.cuda.amp.autocast(enabled=args.use_amp and args.device.startswith("cuda")):
+                results = model(
+                    train_obs_list,
+                    train_act_list,
+                    args.seq_size,
+                    args.init_size,
+                    obs_std=args.obs_std,
+                    loss_type=args.loss_type
+                )
 
             # 逆伝播・パラメータ更新
             train_total_loss = results['train_loss']
-            train_total_loss.backward()
+            scaler.scale(train_total_loss).backward()
             
             if args.grad_clip > 0.0:
+                scaler.unscale_(optimizer)
                 nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
-            optimizer.step()
+            scaler.step(optimizer)
+            scaler.update()
 
             # プログレスバー更新
             if b_idx % 10 == 0:
@@ -277,14 +281,16 @@ def main():
             if b_idx % 500 == 0: # 頻度は適宜調整 (例: 100 or 500)
                 with torch.no_grad():
                     model.eval()
-                    val_results = model(
-                        pre_test_full_data_list,
-                        test_act_list,
-                        args.seq_size,
-                        args.init_size,
-                        obs_std=args.obs_std,
-                        loss_type=args.loss_type
-                    )
+                    autocast_enabled = args.use_amp and args.device.startswith("cuda")
+                    with torch.cuda.amp.autocast(enabled=autocast_enabled):
+                        val_results = model(
+                            pre_test_full_data_list,
+                            test_act_list,
+                            args.seq_size,
+                            args.init_size,
+                            obs_std=args.obs_std,
+                            loss_type=args.loss_type
+                        )
 
                     # ログ記録
                     val_loss = log("test", val_results, writer, b_idx)

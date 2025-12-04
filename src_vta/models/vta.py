@@ -52,7 +52,11 @@ class VTA(nn.Module):
 
         obs_target_list = obs_data_list[:, init_size:-init_size]
         if loss_type == "bce":
-            obs_cost = F.binary_cross_entropy(obs_rec_list, obs_target_list, reduction="none")
+            # BCEはautocast混合精度で不安定になるためFP32で計算
+            with torch.cuda.amp.autocast(enabled=False):
+                obs_cost = F.binary_cross_entropy(
+                    obs_rec_list.float(), obs_target_list.float(), reduction="none"
+                )
         else:
             obs_cost = -Normal(obs_rec_list, obs_std).log_prob(obs_target_list)
         obs_cost = obs_cost.sum(dim=[2, 3, 4])
