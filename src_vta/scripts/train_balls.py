@@ -135,7 +135,8 @@ def main():
     # model.state_model.post_boundary.network[-1].bias.data = torch.tensor([1.0, -1.0]).to(args.device)
     
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learn_rate, amsgrad=True)
-    scaler = torch.cuda.amp.GradScaler(enabled=args.use_amp and args.device.startswith("cuda"))
+    # 自動混合精度のスケーラー(機能しないためコメントアウト)
+    # scaler = torch.amp.GradScaler('cuda', enabled=args.use_amp and args.device.startswith("cuda"))
 
     # ----------------------------------------------------
     # 5. 学習ループ
@@ -176,7 +177,7 @@ def main():
 
         # (D) 更新ステップ -----------------------------
         optimizer.zero_grad()
-        with torch.cuda.amp.autocast(enabled=args.use_amp and args.device.startswith("cuda")):
+        '''with torch.amp.autocast('cuda', enabled=args.use_amp and args.device.startswith("cuda")):
             results = model(
                 train_obs_list,
                 train_act_list,
@@ -184,23 +185,33 @@ def main():
                 args.init_size,
                 args.obs_std,
                 loss_type=args.loss_type
-            )
+            )'''
+        results = model(
+            train_obs_list,
+            train_act_list,
+            args.seq_size,
+            args.init_size,
+            args.obs_std,
+            loss_type=args.loss_type
+        )
         
         # 境界KL項の重み付け (必要に応じて調整。現状は1.0)
-        kl_mask_loss = results['kl_mask'].mean()
+        # kl_mask_loss = results['kl_mask'].mean()
         # loss = results['train_loss'] # デフォルト
         
         # もし境界過多が直らない場合、ここを少し強める (例: + 5.0 * kl_mask_loss)
         # ただし、results['train_loss']には既に1.0倍が含まれているので注意
         loss = results['train_loss'] 
 
-        scaler.scale(loss).backward()
+        # scaler.scale(loss).backward()
+        loss.backward()
         
         if args.grad_clip > 0.0:
-            scaler.unscale_(optimizer)
+            # scaler.unscale_(optimizer)
             nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
-        scaler.step(optimizer)
-        scaler.update()
+        # scaler.step(optimizer)
+        optimizer.step()
+        # scaler.update()
 
         # (E) ログ記録 --------------------------------
         if b_idx % 10 == 0:
@@ -244,9 +255,9 @@ def main():
         # (H) 評価とベストモデル保存 --------------------
         if b_idx % 500 == 0: # 頻度はお好みで
             with torch.no_grad():
-                autocast_enabled = args.use_amp and args.device.startswith("cuda")
+                # autocast_enabled = args.use_amp and args.device.startswith("cuda")
                 model.eval()
-                with torch.cuda.amp.autocast(enabled=autocast_enabled):
+                '''with torch.amp.autocast('cuda', enabled=autocast_enabled):
                     val_results = model(
                         pre_test_full_data_list,
                         test_act_list,
@@ -254,7 +265,15 @@ def main():
                         args.init_size,
                         args.obs_std,
                         loss_type=args.loss_type
-                    )
+                    )'''
+                val_results = model(
+                    pre_test_full_data_list,
+                    test_act_list,
+                    args.seq_size,
+                    args.init_size,
+                    args.obs_std,
+                    loss_type=args.loss_type
+                )
                 val_loss = val_results['train_loss'].item()
                 writer.add_scalar("Test/Loss", val_loss, b_idx)
                 

@@ -130,8 +130,10 @@ def visualize_results(model, loader, config, seq_idx=0, return_fig=False):
         act = torch.zeros(obs.size(0), obs.size(1), config.action_size).to(config.device)
 
     # 真の境界データが第3要素以降にある場合にも対応
+    '''
     if len(batch) > 2:
         true_hits = batch[2][seq_idx].cpu()
+    '''
 
     # 前処理
     obs = preprocess(obs, config.obs_bit)
@@ -171,11 +173,10 @@ def visualize_results(model, loader, config, seq_idx=0, return_fig=False):
         ax.axis('off')
         
         # 真の境界があれば赤枠 (Maze環境ではデータセットに含まれない場合があるので注意)
-        if len(batch) > 2: 
-            is_hit = true_hits[config.init_size + t] > 0.5
-            if is_hit:
-                rect = patches.Rectangle((0, 0), 31, 31, linewidth=4, edgecolor='red', facecolor='none')
-                ax.add_patch(rect)
+        is_hit = true_hits[config.init_size + t] > 0.5
+        if is_hit:
+            rect = patches.Rectangle((0, 0), 31, 31, linewidth=4, edgecolor='red', facecolor='none')
+            ax.add_patch(rect)
             
         # ------------------------------------------------
         # 2行目: Rec (再構成画像 + 予測境界)

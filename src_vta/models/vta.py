@@ -51,18 +51,17 @@ class VTA(nn.Module):
         ] = self.state_model(obs_data_list, act_data_list, seq_size, init_size)
 
         obs_target_list = obs_data_list[:, init_size:-init_size]
-        # 再構成値/ターゲットが[0,1]を逸脱するとBCEがCUDA assertを出すため安全側にクリップしNaN除去
-        obs_rec_list = torch.nan_to_num(obs_rec_list, nan=0.5, posinf=1.0, neginf=0.0)
-        obs_target_list = torch.nan_to_num(obs_target_list, nan=0.5, posinf=1.0, neginf=0.0)
-        obs_rec_list = torch.clamp(obs_rec_list, 0.0, 1.0)
-        obs_target_list = torch.clamp(obs_target_list, 0.0, 1.0)
-
         if loss_type == "bce":
             # BCEはautocast混合精度で不安定になるためFP32で計算
-            with torch.cuda.amp.autocast(enabled=False):
+            '''
+            with torch.amp.autocast('cuda', enabled=False):
                 obs_cost = F.binary_cross_entropy(
                     obs_rec_list.float(), obs_target_list.float(), reduction="none"
                 )
+            '''
+            obs_cost = F.binary_cross_entropy(
+                obs_rec_list.float(), obs_target_list.float(), reduction="none"
+            )
         else:
             obs_cost = -Normal(obs_rec_list, obs_std).log_prob(obs_target_list)
         obs_cost = obs_cost.sum(dim=[2, 3, 4])
