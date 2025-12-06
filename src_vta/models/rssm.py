@@ -175,6 +175,7 @@ class HierarchicalRSSM(nn.Module):
         obs_rec_list = []
         prior_abs_state_list = []
         post_abs_state_list = []
+        post_abs_belief_list = [] # Belief保存用リスト
         prior_obs_state_list = []
         post_obs_state_list = []
         prior_boundary_log_alpha_list = []
@@ -195,6 +196,9 @@ class HierarchicalRSSM(nn.Module):
                     torch.cat([abs_state, act_data_list[:, t - 1]], dim=1),
                     abs_belief,
                 )
+                
+            post_abs_belief_list.append(abs_belief) # Belief保存
+            
             prior_abs_state = self.prior_abs_state(abs_belief)
             post_abs_state = self.post_abs_state(torch.cat([abs_post_fwd_list[t - 1], abs_post_bwd_list[t]], dim=1))
             abs_state = copy_data * abs_state + read_data * post_abs_state.rsample()
@@ -255,6 +259,7 @@ class HierarchicalRSSM(nn.Module):
             boundary_data_list,
             prior_boundary_list,
             post_boundary_list,
+            post_abs_belief_list,
         ]
 
     def jumpy_generation(self, init_data_list, full_action_cond, seq_size):
@@ -337,6 +342,102 @@ class HierarchicalRSSM(nn.Module):
         obs_rec_list = torch.stack(obs_rec_list, dim=1)
         boundary_data_list = torch.stack(boundary_data_list, dim=1)
         return obs_rec_list, boundary_data_list
+    
+    def imagine_abstract(self, start_abs_state, start_abs_belief, actor, horizon):
+        """
+        Actorの行動に基づき、抽象レベルでの未来を予測する。
+        m=1 (境界) のときはActorから行動を選択し、
+        m=0 (継続) のときは前回の行動を継続（直進）する。
+        境界(m)を予測するために、内部的にObsレベルの推論も行う。
+        """
+        device = start_abs_state.device
+        num_samples = start_abs_state.shape[0]
+        
+        # 抽象状態の初期化
+        abs_state = start_abs_state
+        abs_belief = start_abs_belief
+        
+        # Obsレベル変数の初期化
+        # 想像の開始点では観測レベルの状態を持っていないため、
+        # 現在の抽象状態から生成されたと仮定して初期化する (read_data=1 相当)
+        abs_feat_init = self.abs_feat(torch.cat([abs_belief, abs_state], dim=-1))
+        obs_belief = self.init_obs_belief(abs_feat_init)
+        obs_state = self.prior_obs_state(obs_belief).rsample()
+        
+        # 初期状態では「直前の境界検知によりリセットされた」とみなす
+        read_data = torch.ones(num_samples, 1).to(device)
+        copy_data = 1.0 - read_data
+        
+        # 行動の初期化（初回は必ずActorからサンプリングされるのでゼロでOK）
+        prev_action = torch.zeros(num_samples, self.act_size).to(device)
 
+        imag_feats = []
+        imag_actions = []
+        imag_states = []
+        imag_beliefs = []
+        
+        for t in range(horizon):
+            # 1. 現在の特徴量計算
+            current_feat = self.abs_feat(torch.cat([abs_belief, abs_state], dim=-1))
+            
+            # 2. 行動選択
+            # m=1 (read) の場合: Actorから新しい行動を選択
+            # m=0 (copy) の場合: 前回の行動を維持（直進）
+            action_dist = actor(current_feat)
+            new_action = action_dist.rsample()
+            
+            # t=0 は強制的に新しい行動とする (初期read_data=1により自動的に処理される)
+            action = read_data * new_action + copy_data * prev_action
+            
+            # 行動を更新
+            prev_action = action
+
+            # 3. 抽象状態 (Abs) の更新
+            # input: state + action
+            abs_input = torch.cat([abs_state, action], dim=-1)
+            
+            # m=1ならGRU更新、m=0ならBelief維持
+            abs_belief = read_data * self.update_abs_belief(abs_input, abs_belief) + \
+                         copy_data * abs_belief
+            
+            # State Sampling
+            prior_dist = self.prior_abs_state(abs_belief)
+            abs_state = read_data * prior_dist.rsample() + copy_data * abs_state
+            
+            # 4. 観測レベル (Obs) の更新 & 境界予測
+            # 次のステップの m を決めるために Obs feat が必要
+            
+            # 更新されたAbs Stateに基づいて特徴量再計算
+            abs_feat_next = self.abs_feat(torch.cat([abs_belief, abs_state], dim=-1))
+            
+            # Obs Belief Update
+            # m=1: init(abs_feat), m=0: update(obs_state, abs_feat)
+            obs_update_input = torch.cat([obs_state, abs_feat_next], dim=-1)
+            obs_belief = read_data * self.init_obs_belief(abs_feat_next) + \
+                         copy_data * self.update_obs_belief(obs_update_input, obs_belief)
+            
+            # Obs State Sampling
+            prior_obs_dist = self.prior_obs_state(obs_belief)
+            obs_state = prior_obs_dist.rsample()
+            
+            # Obs Feat & Boundary Prediction
+            obs_feat = self.obs_feat(torch.cat([obs_belief, obs_state], dim=-1))
+            prior_boundary_logits = self.prior_boundary(obs_feat)
+            
+            # 次のステップのための m をサンプリング
+            boundary_sample, _ = self.boundary_sampler(prior_boundary_logits)
+            read_data = boundary_sample[:, 0].unsqueeze(-1) # 0番目がREAD(1)
+            copy_data = boundary_sample[:, 1].unsqueeze(-1) # 1番目がCOPY(0)
+            
+            # 保存
+            imag_feats.append(current_feat)
+            imag_actions.append(action)
+            imag_states.append(abs_state)
+            imag_beliefs.append(abs_belief)
+
+        imag_feats = torch.stack(imag_feats, dim=1)
+        imag_actions = torch.stack(imag_actions, dim=1)
+        
+        return imag_feats, imag_actions
 
 __all__ = ["HierarchicalRSSM"]

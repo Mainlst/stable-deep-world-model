@@ -11,7 +11,7 @@ class Config:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
         # --- ディレクトリ設定 ---
-        self.work_dir = Path("./experiments5_test")
+        self.work_dir = Path("./src_vta/experimentsa6")
         self.work_dir.mkdir(parents=True, exist_ok=True)
         
         # シード設定
@@ -25,7 +25,7 @@ class Config:
         # 1回の生成で作るデータ数
         # infiniteモードなら 2000 程度 (メモリ節約)
         # fixedモードなら 20000~50000 程度 (過学習しないよう多めに確保が必要)
-        self.epoch_data_size = 2_000 if self.data_mode == "infinite" else 45_000
+        self.epoch_data_size = 2_000 if self.data_mode == "infinite" else 2_000
 
         # --- データサイズ関連 ---
         self.batch_size = 64
@@ -54,11 +54,12 @@ class Config:
             self.obs_bit = 5          # ビット深度を5bitに削減
             self.dt = 1.0             # ダミー
             self.action_size = 3      # アクションサイズを3に設定
+            self.action_type = "discrete" # ★追加: 迷路は通常、離散行動(前後左右など)
 
         # --- 最適化関連 ---
         self.learn_rate = 5e-4     # 学習率
         self.grad_clip = 10.0      # 勾配クリッピングの閾値
-        self.max_iters = 100_000    # 最大学習イテレーション数
+        self.max_iters = 10_000    # 最大学習イテレーション数
         self.use_amp = True        # 自動混合精度を使用するか
 
         # --- 部分系列の事前分布に関する制約 ---
@@ -69,6 +70,21 @@ class Config:
         self.max_beta = 1.0       # Gumbel-Softmaxの温度パラメータの最大値
         self.min_beta = 0.1       # Gumbel-Softmaxの温度パラメータの最小値
         self.beta_anneal = 100    # 温度を最大値から最小値にアニーリングする際の減衰率
+        
+        # --- Dreamer学習 (Imagination) 設定 ---
+        self.horizon = 15          # 想像する未来のステップ数 (H)
+        self.gamma = 0.99          # 割引率
+        self.return_lambda = 0.95  # λ-returnのλ
+
+        # --- 損失関数のスケーリング係数 ---
+        self.loss_scale_actor = 1.0
+        self.loss_scale_value = 0.5
+        self.loss_scale_reward = 1.0
+        
+        # --- エントロピー正則化 ---
+        self.actor_entropy_scale = 1e-4  # 行動の多様性を保つための正則化係数
+        
+        self.loss_scale_discount = 5.0  # 割引率予測の損失スケール
 
 
 def load_config(config_path=None, **overrides):

@@ -1,4 +1,5 @@
 """Top-level VTA model wrapper."""
+# rl version
 
 import torch
 import torch.nn as nn
@@ -48,6 +49,7 @@ class VTA(nn.Module):
             boundary_data_list,
             prior_boundary_list,
             post_boundary_list,
+            post_abs_belief_list, # post_abs_belief_list を受け取る
         ] = self.state_model(obs_data_list, act_data_list, seq_size, init_size)
 
         obs_target_list = obs_data_list[:, init_size:-init_size]
@@ -92,6 +94,8 @@ class VTA(nn.Module):
             "q_ent": post_boundary_list.entropy(),
             "beta": self.state_model.mask_beta,
             "train_loss": obs_cost.mean() + kl_abs_state_list.mean() + kl_obs_state_list.mean() + kl_mask_list.mean(),
+            "post_abs_state_list": post_abs_state_list,   # 参照用に追加
+            "post_abs_belief_list": post_abs_belief_list, # ★修正: 参照用に追加
         }
 
     def jumpy_generation(self, *args):
