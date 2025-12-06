@@ -77,6 +77,7 @@ VTA (Variable Temporal Abstraction) を使った世界モデルの実験コー�
 ## ログ・成果物
 - `src_vta/config.py` の `work_dir` 配下に `exp_name` 単位でログとチェックポイントを保存します。
 - TensorBoard ログは `<work_dir>/<exp_name>/logs` に出力されます。
+- 学習時に Weights & Biases へも自動でメトリクスを送信します（`project`: `stable-deep-world-model`）。環境変数 `WANDB_MODE=offline` でオフライン実行も可能です。
 
 ## 補足
 - `src/` 配下は将来の再構成用に空のスケルトンを置いています。現行コードはすべて `src_vta/` を見てください。

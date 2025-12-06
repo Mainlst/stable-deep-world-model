@@ -2,11 +2,13 @@
 便利関数まとめ
 '''
 
-import torch
-import numpy as np
+import gc  # メモリ管理用
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import gc  # メモリ管理用
+import numpy as np
+import torch
 
 def preprocess(images, bits=None):
     if bits is None:
@@ -106,6 +108,14 @@ def log(partition, results, writer, b_idx):
             results['q_ent'].mean(),
         ]
     return log_str, log_data
+
+
+def config_to_dict(cfg):
+    """Convert a Config-like object to a wandb-friendly plain dict."""
+    converted = {}
+    for key, val in vars(cfg).items():
+        converted[key] = str(val) if isinstance(val, Path) else val
+    return converted
 
 def visualize_results(model, loader, config, seq_idx=0, return_fig=False):
     model.eval()

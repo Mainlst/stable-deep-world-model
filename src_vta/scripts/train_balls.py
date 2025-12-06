@@ -14,6 +14,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import wandb
 
 # GUIのない環境でのクラッシュを防ぐ設定
 matplotlib.use('Agg')
@@ -21,7 +22,7 @@ matplotlib.use('Agg')
 # 自作モジュールのインポート
 from src_vta.config import load_config
 from src_vta.models import VTA
-from src_vta.utils import preprocess, visualize_results
+from src_vta.utils import preprocess, visualize_results, config_to_dict
 
 def main():
     parser = argparse.ArgumentParser(description="Train VTA on Bouncing Balls")
@@ -33,6 +34,12 @@ def main():
     # 1. 設定と準備
     # ----------------------------------------------------
     args = load_config(args.config, exp_name=args.exp_name)
+    wandb_run = wandb.init(
+        project="stable-deep-world-model",
+        name=args.exp_name,
+        config=config_to_dict(args),
+        dir=str(args.work_dir),
+    )
     print(f"Device: {args.device}")
     print(f"Loss Type: {args.loss_type}")
     
@@ -128,6 +135,7 @@ def main():
         max_seg_num=args.seg_num,
         loss_type=args.loss_type 
     ).to(args.device)
+    wandb_run.watch(model, log="all", log_freq=200)
     
     # ★重要: 前回の議論にあった「初期バイアス修正」を model.py に適用していない場合、
     # ここで無理やり適用することも可能です（推奨は model.py の修正）
@@ -217,12 +225,20 @@ def main():
         if b_idx % 10 == 0:
             pbar.set_description(f"L:{loss.item():.2f}|B:{model.state_model.mask_beta:.3f}")
             pbar.update(10)
-            writer.add_scalar("Train/Loss", loss.item(), b_idx)
-            writer.add_scalar("Train/Beta", model.state_model.mask_beta, b_idx)
+            metrics = {
+                "train/loss": loss.item(),
+                "train/beta": model.state_model.mask_beta,
+            }
+            writer.add_scalar("Train/Loss", metrics["train/loss"], b_idx)
+            writer.add_scalar("Train/Beta", metrics["train/beta"], b_idx)
             
             # 境界確率の平均 (0に近いほどCOPY, 1に近いほどUPDATE)
             if 'q_mask' in results:
-                writer.add_scalar("Train/Q_Mask_Mean", results['q_mask'].mean().item(), b_idx)
+                q_mask_mean = results['q_mask'].mean().item()
+                metrics["train/q_mask_mean"] = q_mask_mean
+                writer.add_scalar("Train/Q_Mask_Mean", q_mask_mean, b_idx)
+
+            wandb_run.log(metrics, step=b_idx)
 
         # (F) データの再生成 (チャンク更新) -------------
         if b_idx % REFRESH_STEPS == 0 and b_idx < args.max_iters:
@@ -276,6 +292,10 @@ def main():
                 )
                 val_loss = val_results['train_loss'].item()
                 writer.add_scalar("Test/Loss", val_loss, b_idx)
+                val_metrics = {"test/loss": val_loss}
+                if 'q_mask' in val_results:
+                    val_metrics["test/q_mask_mean"] = val_results['q_mask'].mean().item()
+                wandb_run.log(val_metrics, step=b_idx)
                 
                 model.train() # 忘れずに戻す
 
@@ -287,6 +307,7 @@ def main():
                     model.train()
 
     writer.close()
+    wandb_run.finish()
     print("Training Finished.")
 
 if __name__ == "__main__":

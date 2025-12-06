@@ -10,6 +10,7 @@ dependencies = [
     "torch",
     "tensorboard",
     "tqdm",
+    "wandb",
 ]
 
 [build-system]

@@ -2,7 +2,7 @@
   "exp_name": "vta_bouncing_balls_3070",
   "env_type": "bouncing_balls",
   "work_dir": "experiments5_test",
-  "batch_size": 256,
+  "batch_size": 128,
   "epoch_data_size": 24000,
   "max_iters": 50000,
   "beta_anneal": 75,
