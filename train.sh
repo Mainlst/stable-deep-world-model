@@ -1,1 +1,0 @@
-python src_vta/train.py --exp_name vta_bouncing_balls

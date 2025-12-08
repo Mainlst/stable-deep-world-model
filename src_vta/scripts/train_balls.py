@@ -2,31 +2,44 @@
 Bouncing Balls環境用の学習スクリプト
 '''
 
+import argparse
+import gc               # メモリ管理用
+from pathlib import Path
+
+import matplotlib       # バックエンド設定用
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-import numpy as np
-from pathlib import Path
-import gc               # メモリ管理用
-import matplotlib       # バックエンド設定用
-import shutil           # ファイル操作用
+import wandb
 
 # GUIのない環境でのクラッシュを防ぐ設定
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
 # 自作モジュールのインポート
-from config import Config
-from model import VTA
-from utils import visualize_results, preprocess
+from src_vta.config import load_config
+from src_vta.models import VTA
+from src_vta.utils import preprocess, visualize_results, config_to_dict
 
 def main():
+    parser = argparse.ArgumentParser(description="Train VTA on Bouncing Balls")
+    parser.add_argument("--config", type=str, default=None, help="Path to JSON config file")
+    parser.add_argument("--exp_name", type=str, default=None, help="Override experiment name")
+    args = parser.parse_args()
+
     # ----------------------------------------------------
     # 1. 設定と準備
     # ----------------------------------------------------
-    args = Config()
+    args = load_config(args.config, exp_name=args.exp_name)
+    wandb_run = wandb.init(
+        project="stable-deep-world-model",
+        name=args.exp_name,
+        config=config_to_dict(args),
+        dir=str(args.work_dir),
+    )
     print(f"Device: {args.device}")
     print(f"Loss Type: {args.loss_type}")
     
@@ -35,11 +48,12 @@ def main():
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
     torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
     
     if args.env_type == "3d_maze":
-        from maze_env import generate_vta_dataset
+        from src_vta.data.maze_env import generate_vta_dataset
     else:
-        from bouncing_balls import generate_vta_dataset
+        from src_vta.data.bouncing_balls import generate_vta_dataset
     
     # ログディレクトリのクリーンアップと作成
     log_dir = args.work_dir / args.exp_name / "logs"
@@ -62,7 +76,14 @@ def main():
     # ----------------------------------------------------
     print("Generating FIXED test data (500 seqs)...")
     test_data_raw = generate_vta_dataset(500, seq_len=SEQ_LEN_GEN, size=32, dt=args.dt)
-    test_loader = DataLoader(test_data_raw, batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(
+        test_data_raw,
+        batch_size=args.batch_size,
+        shuffle=False,
+        pin_memory=True,
+        num_workers=4,
+        drop_last=False,
+    )
     
     # テスト用バッチの確保（可視化用）
     pre_test_full_data_list = next(iter(test_loader))[0].to(args.device)
@@ -91,7 +112,15 @@ def main():
     # 最初のデータチャンクを生成
     print("Generating Initial Data Chunk...")
     current_data = generate_vta_dataset(CHUNK_DATA_SIZE, seq_len=SEQ_LEN_GEN, size=32, dt=args.dt)
-    train_loader = DataLoader(current_data, batch_size=args.batch_size, shuffle=True, drop_last=True)
+    train_loader = DataLoader(
+        current_data,
+        batch_size=args.batch_size,
+        shuffle=True,
+        drop_last=True,
+        pin_memory=True,
+        num_workers=4,
+        persistent_workers=True,
+    )
     train_iter = iter(train_loader) # 無限ループ用のイテレータ
 
     # ----------------------------------------------------
@@ -106,6 +135,7 @@ def main():
         max_seg_num=args.seg_num,
         loss_type=args.loss_type 
     ).to(args.device)
+    wandb_run.watch(model, log="all", log_freq=200)
     
     # ★重要: 前回の議論にあった「初期バイアス修正」を model.py に適用していない場合、
     # ここで無理やり適用することも可能です（推奨は model.py の修正）
@@ -113,6 +143,8 @@ def main():
     # model.state_model.post_boundary.network[-1].bias.data = torch.tensor([1.0, -1.0]).to(args.device)
     
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learn_rate, amsgrad=True)
+    # 自動混合精度のスケーラー(機能しないためコメントアウト)
+    # scaler = torch.amp.GradScaler('cuda', enabled=args.use_amp and args.device.startswith("cuda"))
 
     # ----------------------------------------------------
     # 5. 学習ループ
@@ -153,6 +185,15 @@ def main():
 
         # (D) 更新ステップ -----------------------------
         optimizer.zero_grad()
+        '''with torch.amp.autocast('cuda', enabled=args.use_amp and args.device.startswith("cuda")):
+            results = model(
+                train_obs_list,
+                train_act_list,
+                args.seq_size,
+                args.init_size,
+                args.obs_std,
+                loss_type=args.loss_type
+            )'''
         results = model(
             train_obs_list,
             train_act_list,
@@ -163,29 +204,41 @@ def main():
         )
         
         # 境界KL項の重み付け (必要に応じて調整。現状は1.0)
-        kl_mask_loss = results['kl_mask'].mean()
+        # kl_mask_loss = results['kl_mask'].mean()
         # loss = results['train_loss'] # デフォルト
         
         # もし境界過多が直らない場合、ここを少し強める (例: + 5.0 * kl_mask_loss)
         # ただし、results['train_loss']には既に1.0倍が含まれているので注意
         loss = results['train_loss'] 
 
+        # scaler.scale(loss).backward()
         loss.backward()
         
         if args.grad_clip > 0.0:
+            # scaler.unscale_(optimizer)
             nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+        # scaler.step(optimizer)
         optimizer.step()
+        # scaler.update()
 
         # (E) ログ記録 --------------------------------
         if b_idx % 10 == 0:
             pbar.set_description(f"L:{loss.item():.2f}|B:{model.state_model.mask_beta:.3f}")
             pbar.update(10)
-            writer.add_scalar("Train/Loss", loss.item(), b_idx)
-            writer.add_scalar("Train/Beta", model.state_model.mask_beta, b_idx)
+            metrics = {
+                "train/loss": loss.item(),
+                "train/beta": model.state_model.mask_beta,
+            }
+            writer.add_scalar("Train/Loss", metrics["train/loss"], b_idx)
+            writer.add_scalar("Train/Beta", metrics["train/beta"], b_idx)
             
             # 境界確率の平均 (0に近いほどCOPY, 1に近いほどUPDATE)
             if 'q_mask' in results:
-                writer.add_scalar("Train/Q_Mask_Mean", results['q_mask'].mean().item(), b_idx)
+                q_mask_mean = results['q_mask'].mean().item()
+                metrics["train/q_mask_mean"] = q_mask_mean
+                writer.add_scalar("Train/Q_Mask_Mean", q_mask_mean, b_idx)
+
+            wandb_run.log(metrics, step=b_idx)
 
         # (F) データの再生成 (チャンク更新) -------------
         if b_idx % REFRESH_STEPS == 0 and b_idx < args.max_iters:
@@ -218,7 +271,17 @@ def main():
         # (H) 評価とベストモデル保存 --------------------
         if b_idx % 500 == 0: # 頻度はお好みで
             with torch.no_grad():
+                # autocast_enabled = args.use_amp and args.device.startswith("cuda")
                 model.eval()
+                '''with torch.amp.autocast('cuda', enabled=autocast_enabled):
+                    val_results = model(
+                        pre_test_full_data_list,
+                        test_act_list,
+                        args.seq_size,
+                        args.init_size,
+                        args.obs_std,
+                        loss_type=args.loss_type
+                    )'''
                 val_results = model(
                     pre_test_full_data_list,
                     test_act_list,
@@ -229,6 +292,10 @@ def main():
                 )
                 val_loss = val_results['train_loss'].item()
                 writer.add_scalar("Test/Loss", val_loss, b_idx)
+                val_metrics = {"test/loss": val_loss}
+                if 'q_mask' in val_results:
+                    val_metrics["test/q_mask_mean"] = val_results['q_mask'].mean().item()
+                wandb_run.log(val_metrics, step=b_idx)
                 
                 model.train() # 忘れずに戻す
 
@@ -240,6 +307,7 @@ def main():
                     model.train()
 
     writer.close()
+    wandb_run.finish()
     print("Training Finished.")
 
 if __name__ == "__main__":

@@ -4,3 +4,4 @@ opencv-python
 torch
 tensorboard
 tqdm
+wandb

@@ -10,7 +10,7 @@ from tqdm import tqdm
 import torch
 
 # 作成済みの環境をインポート
-from maze_env import MazeEnv
+from .maze_env import MazeEnv
 
 def generate_and_save(
     save_dir: Path,

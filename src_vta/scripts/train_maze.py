@@ -2,23 +2,25 @@
 3D_Maze環境用の学習スクリプト
 '''
 
-import torch
-import torch.nn as nn
-from torch.utils.tensorboard import SummaryWriter
-from torch.utils.data import DataLoader
-import numpy as np
-from pathlib import Path
+import argparse
 import glob
-import cv2
-from tqdm import tqdm
 import sys
 import gc               # メモリ管理用
+from pathlib import Path
+
+import cv2
+import numpy as np
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
+import wandb
 
 # 自作モジュールのインポート
-# ※これらが同じディレクトリにあることを想定しています
-from config import Config
-from model import VTA
-from utils import preprocess, visualize_results
+from src_vta.config import load_config
+from src_vta.models import VTA
+from src_vta.utils import preprocess, visualize_results, config_to_dict
 
 # -----------------------------------------------------------------------------
 # Dataset Class (ユーザー提供のコード)
@@ -123,36 +125,58 @@ class MazeDataset(torch.utils.data.Dataset):
 # -----------------------------------------------------------------------------
 # Helper Functions
 # -----------------------------------------------------------------------------
-def log(mode, results, writer, step):
-    """Tensorboardへのログ記録"""
-    # 損失の記録
-    writer.add_scalar(f"{mode}/Loss", results['train_loss'].item(), step)
-    writer.add_scalar(f"{mode}/Obs_Cost", results['obs_cost'].mean().item(), step)
-    writer.add_scalar(f"{mode}/KL_Abs", results['kl_abs_state'].mean().item(), step)
-    writer.add_scalar(f"{mode}/KL_Obs", results['kl_obs_state'].mean().item(), step)
-    writer.add_scalar(f"{mode}/KL_Mask", results['kl_mask'].mean().item(), step)
+def log(mode, results, writer, step, wandb_run=None):
+    """TensorboardとW&Bへのログ記録"""
+    metrics = {
+        f"{mode}/loss": results['train_loss'].item(),
+        f"{mode}/obs_cost": results['obs_cost'].mean().item(),
+        f"{mode}/kl_abs": results['kl_abs_state'].mean().item(),
+        f"{mode}/kl_obs": results['kl_obs_state'].mean().item(),
+        f"{mode}/kl_mask": results['kl_mask'].mean().item(),
+    }
+
+    writer.add_scalar(f"{mode}/Loss", metrics[f"{mode}/loss"], step)
+    writer.add_scalar(f"{mode}/Obs_Cost", metrics[f"{mode}/obs_cost"], step)
+    writer.add_scalar(f"{mode}/KL_Abs", metrics[f"{mode}/kl_abs"], step)
+    writer.add_scalar(f"{mode}/KL_Obs", metrics[f"{mode}/kl_obs"], step)
+    writer.add_scalar(f"{mode}/KL_Mask", metrics[f"{mode}/kl_mask"], step)
     
     # 境界確率の記録 (0=COPY, 1=UPDATE)
     if 'q_mask' in results:
-        writer.add_scalar(f"{mode}/Q_Mask_Mean", results['q_mask'].mean().item(), step)
+        q_mask_mean = results['q_mask'].mean().item()
+        metrics[f"{mode}/q_mask_mean"] = q_mask_mean
+        writer.add_scalar(f"{mode}/Q_Mask_Mean", q_mask_mean, step)
+
+    if wandb_run is not None:
+        wandb_run.log(metrics, step=step)
     
-    return results['train_loss'].item()
+    return metrics[f"{mode}/loss"]
 
 # -----------------------------------------------------------------------------
 # Main Training Loop
 # -----------------------------------------------------------------------------
 def main():
-    # 1. 設定読み込み
-    args = Config()
+    parser = argparse.ArgumentParser(description="Train VTA on 3D Maze dataset")
+    parser.add_argument("--config", type=str, default=None, help="Path to JSON config file")
+    parser.add_argument("--exp_name", type=str, default=None, help="Override experiment name")
+    cli_args = parser.parse_args()
+    args = load_config(cli_args.config, exp_name=cli_args.exp_name)
     
     # Maze用の強制設定 (Configクラスで設定済みなら不要だが念のため)
     args.env_type = "3d_maze"
     args.action_size = ACTION_SIZE
     args.loss_type = "mse" # 連続値画像なのでMSE
     args.obs_bit = 5       # 5bit量子化 (論文準拠)
-    
+
     print(f"Device: {args.device}")
     print(f"Action Size: {args.action_size}")
+
+    wandb_run = wandb.init(
+        project="stable-deep-world-model",
+        name=args.exp_name,
+        config=config_to_dict(args),
+        dir=str(args.work_dir),
+    )
     
     # ログディレクトリ設定
     log_dir = args.work_dir / args.exp_name / "logs"
@@ -168,8 +192,24 @@ def main():
     train_dataset = MazeDataset(full_seq_len, partition="train")
     test_dataset = MazeDataset(full_seq_len, partition="test")
     
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        drop_last=True,
+        pin_memory=True,
+        num_workers=4,
+        persistent_workers=True,
+    )
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
+        drop_last=True,
+        pin_memory=True,
+        num_workers=4,
+        persistent_workers=True,
+    )
 
     # 3. モデル構築
     model = VTA(
@@ -181,8 +221,10 @@ def main():
         max_seg_num=args.seg_num,
         loss_type=args.loss_type
     ).to(args.device)
+    wandb_run.watch(model, log="all", log_freq=200)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learn_rate, amsgrad=True)
+    scaler = torch.cuda.amp.GradScaler(enabled=args.use_amp and args.device.startswith("cuda"))
 
     # テスト用の固定バッチ（学習中の定点観測用）
     # Datasetの仕様に合わせて (frames, actions) を受け取る
@@ -228,26 +270,29 @@ def main():
             # 順伝播
             model.train()
             optimizer.zero_grad()
-            results = model(
-                train_obs_list,
-                train_act_list,
-                args.seq_size,
-                args.init_size,
-                obs_std=args.obs_std,
-                loss_type=args.loss_type
-            )
+            with torch.cuda.amp.autocast(enabled=args.use_amp and args.device.startswith("cuda")):
+                results = model(
+                    train_obs_list,
+                    train_act_list,
+                    args.seq_size,
+                    args.init_size,
+                    obs_std=args.obs_std,
+                    loss_type=args.loss_type
+                )
 
             # 逆伝播・パラメータ更新
             train_total_loss = results['train_loss']
-            train_total_loss.backward()
+            scaler.scale(train_total_loss).backward()
             
             if args.grad_clip > 0.0:
+                scaler.unscale_(optimizer)
                 nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
-            optimizer.step()
+            scaler.step(optimizer)
+            scaler.update()
 
             # プログレスバー更新
             if b_idx % 10 == 0:
-                log( "train", results, writer, b_idx)
+                log("train", results, writer, b_idx, wandb_run)
                 pbar.set_description(f"Loss: {train_total_loss.item():.2f} | Beta: {model.state_model.mask_beta:.3f}")
                 pbar.update(10)
 
@@ -257,17 +302,19 @@ def main():
             if b_idx % 500 == 0: # 頻度は適宜調整 (例: 100 or 500)
                 with torch.no_grad():
                     model.eval()
-                    val_results = model(
-                        pre_test_full_data_list,
-                        test_act_list,
-                        args.seq_size,
-                        args.init_size,
-                        obs_std=args.obs_std,
-                        loss_type=args.loss_type
-                    )
+                    autocast_enabled = args.use_amp and args.device.startswith("cuda")
+                    with torch.cuda.amp.autocast(enabled=autocast_enabled):
+                        val_results = model(
+                            pre_test_full_data_list,
+                            test_act_list,
+                            args.seq_size,
+                            args.init_size,
+                            obs_std=args.obs_std,
+                            loss_type=args.loss_type
+                        )
 
                     # ログ記録
-                    val_loss = log("test", val_results, writer, b_idx)
+                    val_loss = log("test", val_results, writer, b_idx, wandb_run)
 
                     # モデル保存 (損失が下がったら更新)
                     # 元のコードは > best_val_loss でしたが、損失は最小化問題なので < を使用します
@@ -288,6 +335,7 @@ def main():
                     torch.cuda.empty_cache() # GPUメモリも解放（もしGPU使用なら）
 
     writer.close()
+    wandb_run.finish()
     print("Training Finished.")
 
 if __name__ == "__main__":

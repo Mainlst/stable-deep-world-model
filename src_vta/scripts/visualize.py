@@ -12,9 +12,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # 既存のモジュール
-from config import Config
-from model import VTA
-from utils import visualize_results
+from src_vta.config import load_config
+from src_vta.models import VTA
+from src_vta.utils import visualize_results
 
 # ★変更点: 環境に応じてインポートを切り替えるため、ここでの固定インポートは削除
 # from bouncing_balls import generate_vta_dataset 
@@ -27,21 +27,22 @@ def main():
     parser.add_argument('ckpt_path', type=str, help='読み込むチェックポイントファイルのパス (.pt)')
     parser.add_argument('--idx', type=int, default=0, help='可視化するバッチ内のインデックス (デフォルト: 0)')
     parser.add_argument('--num_samples', type=int, default=10, help='生成するテストデータの数')
+    parser.add_argument('--config', type=str, default=None, help='設定ファイル (JSON)')
     args = parser.parse_args()
 
     # -------------------------------------------------
     # 2. 設定の読み込みとデータセット関数のインポート
     # -------------------------------------------------
-    config = Config()
+    config = load_config(args.config)
     device = config.device
     print(f"Device: {device}")
     print(f"Environment: {config.env_type}") # 確認用
 
     # ★変更点: 環境に合わせてデータセット生成関数を読み込む
     if config.env_type == "3d_maze":
-        from maze_env import generate_vta_dataset
+        from src_vta.data.maze_env import generate_vta_dataset
     else:
-        from bouncing_balls import generate_vta_dataset
+        from src_vta.data.bouncing_balls import generate_vta_dataset
 
     # チェックポイントのパス確認
     ckpt_path = Path(args.ckpt_path)
