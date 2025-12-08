@@ -1,0 +1,15 @@
+{
+  "exp_name": "vta_bouncing_balls_3070",
+  "env_type": "bouncing_balls",
+  "work_dir": "experiments5_test",
+  "batch_size": 128,
+  "epoch_data_size": 24000,
+  "max_iters": 50000,
+  "beta_anneal": 75,
+  "learn_rate": 0.0005,
+  "seg_num": 5,
+  "seg_len": 8,
+  "dt": 2.0,
+  "data_mode": "fixed",
+  "use_amp": true
+}

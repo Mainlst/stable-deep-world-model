@@ -2,11 +2,13 @@
 便利関数まとめ
 '''
 
-import torch
-import numpy as np
+import gc  # メモリ管理用
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import gc  # メモリ管理用
+import numpy as np
+import torch
 
 def preprocess(images, bits=None):
     if bits is None:
@@ -107,29 +109,41 @@ def log(partition, results, writer, b_idx):
         ]
     return log_str, log_data
 
+
+def config_to_dict(cfg):
+    """Convert a Config-like object to a wandb-friendly plain dict."""
+    converted = {}
+    for key, val in vars(cfg).items():
+        converted[key] = str(val) if isinstance(val, Path) else val
+    return converted
+
 def visualize_results(model, loader, config, seq_idx=0, return_fig=False):
     model.eval()
     
     # バッチを取得
     batch = next(iter(loader))
     
-    # ★変更点: obsだけでなくactもデータセットから取り出す
-    # Datasetは (obs, act) を返すと想定
+    # データセットの構造に応じて obs / act / hits を振り分ける
     obs = batch[0].to(config.device)
-    
+    true_hits = torch.zeros(obs.size(1))
+
     if len(batch) > 1:
-        act = batch[1].to(config.device)
+        candidate = batch[1]
+        # 行動が (B, T, A) で提供されている場合のみ act として使う
+        if candidate.dim() == 3 and candidate.size(-1) == config.action_size and config.action_size > 0:
+            act = candidate.to(config.device)
+        else:
+            # Bouncing Balls のように (B, T) の衝突ラベルが2番目に来る場合はこちら
+            true_hits = candidate[seq_idx].cpu()
+            act = torch.zeros(obs.size(0), obs.size(1), config.action_size).to(config.device)
     else:
-        # 行動データがない場合はゼロ埋め（Bouncing Balls等の互換性維持）
         act = torch.zeros(obs.size(0), obs.size(1), config.action_size).to(config.device)
 
-    # 真の境界データが存在する場合（データセットの実装による）
-    # maze_env.pyでは境界ラベルは返していないので、なければ可視化しない処理を入れる
+    # 真の境界データが第3要素以降にある場合にも対応
+    '''
     if len(batch) > 2:
-        true_hits = batch[2][seq_idx].cpu() 
-    else:
-        # ダミーの境界データ (全て0)
-        true_hits = torch.zeros(obs.size(1))
+        true_hits = batch[2][seq_idx].cpu()
+    '''
 
     # 前処理
     obs = preprocess(obs, config.obs_bit)
@@ -169,11 +183,10 @@ def visualize_results(model, loader, config, seq_idx=0, return_fig=False):
         ax.axis('off')
         
         # 真の境界があれば赤枠 (Maze環境ではデータセットに含まれない場合があるので注意)
-        if len(batch) > 2: 
-            is_hit = true_hits[config.init_size + t] > 0.5
-            if is_hit:
-                rect = patches.Rectangle((0, 0), 31, 31, linewidth=4, edgecolor='red', facecolor='none')
-                ax.add_patch(rect)
+        is_hit = true_hits[config.init_size + t] > 0.5
+        if is_hit:
+            rect = patches.Rectangle((0, 0), 31, 31, linewidth=4, edgecolor='red', facecolor='none')
+            ax.add_patch(rect)
             
         # ------------------------------------------------
         # 2行目: Rec (再構成画像 + 予測境界)
