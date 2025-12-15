@@ -1,12 +1,14 @@
 import glob
 import sys
-from typing import Dict
+from pathlib import Path
+from typing import Dict, Optional, Union
 
 import cv2
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
+from src_vta.data.paths import resolve_maze_data_dir
 from src_vta.utils import preprocess, visualize_results
 from .base import EnvironmentAdapter, EnvTrainContext, TrainBatchProvider
 
@@ -24,8 +26,9 @@ class MazeDataset(torch.utils.data.Dataset):
         image_height: int = 32,
         image_channels: int = 3,
         one_hot_action: bool = True,
+        data_dir: Optional[Union[Path, str]] = None,
     ):
-        self.path = "3d_maze_default"
+        self.data_dir = resolve_maze_data_dir(data_dir)
         self.partition = partition
         self.length = length
         self.height = image_height
@@ -34,11 +37,16 @@ class MazeDataset(torch.utils.data.Dataset):
         self.one_hot_action = one_hot_action
         self.action_size = ACTION_SIZE
 
-        dir_path = f"{self.path}/{self.partition}"
-        self.file_paths = glob.glob(f"{dir_path}/*.npz")
+        dir_path = self.data_dir / self.partition
+        self.file_paths = sorted(glob.glob(str(dir_path / "*.npz")))
 
         if len(self.file_paths) == 0:
-            print(f"エラー: {dir_path} に .npz ファイルが見つかりません")
+            print(
+                f"エラー: {dir_path} に .npz ファイルが見つかりません\n"
+                "  - データを data/3d_maze_default/{train,test} に配置してください。\n"
+                "  - もしくは Config.maze_data_dir で場所を指定し、"
+                "`python -m src_vta.data.generate_npz --out <path>` で生成できます。"
+            )
             sys.exit(1)
 
         print(
@@ -96,13 +104,18 @@ class MazeAdapter(EnvironmentAdapter):
         args.action_size = ACTION_SIZE
         args.loss_type = "mse"
         args.obs_bit = 5
+        args.maze_data_dir = resolve_maze_data_dir(getattr(args, "maze_data_dir", None))
         return args
 
     def build_context(self, args) -> EnvTrainContext:
         full_seq_len = args.init_size + args.seq_size + 5
 
-        train_dataset = MazeDataset(full_seq_len, partition="train")
-        test_dataset = MazeDataset(full_seq_len, partition="test")
+        train_dataset = MazeDataset(
+            full_seq_len, partition="train", data_dir=args.maze_data_dir
+        )
+        test_dataset = MazeDataset(
+            full_seq_len, partition="test", data_dir=args.maze_data_dir
+        )
 
         train_loader = DataLoader(
             train_dataset,
