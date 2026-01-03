@@ -3,14 +3,15 @@
 (現在3D_Maze環境はうまく設計できていないため，使用予定なし)
 '''
 
-import numpy as np
-import os
+import argparse
 from pathlib import Path
+
+import numpy as np
 from tqdm import tqdm
-import torch
 
 # 作成済みの環境をインポート
 from .maze_env import MazeEnv
+from .paths import DEFAULT_MAZE_DIR, resolve_maze_data_dir
 
 def generate_and_save(
     save_dir: Path,
@@ -74,13 +75,29 @@ def generate_and_save(
             actions=actions_np
         )
 
+
+def build_parser():
+    parser = argparse.ArgumentParser(description="Generate 3D Maze npz datasets.")
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=DEFAULT_MAZE_DIR,
+        help="Base directory to place the generated dataset (train/test).",
+    )
+    parser.add_argument("--train_episodes", type=int, default=1000, help="Number of training episodes.")
+    parser.add_argument("--test_episodes", type=int, default=100, help="Number of test episodes.")
+    parser.add_argument("--seq_len", type=int, default=300, help="Frames per episode.")
+    parser.add_argument("--resolution", type=int, default=32, help="Render resolution.")
+    return parser
+
+
 def main():
-    # 設定
-    ROOT_DIR = Path("3d_maze_default")
-    TRAIN_EPISODES = 1000  # 学習用エピソード数（必要に応じて増減してください）
-    TEST_EPISODES = 100    # テスト用エピソード数
-    SEQ_LEN = 300          # 1エピソードあたりのフレーム数
-    RESOLUTION = 32        # 画像サイズ
+    args = build_parser().parse_args()
+    ROOT_DIR = resolve_maze_data_dir(args.out)
+    TRAIN_EPISODES = args.train_episodes  # 学習用エピソード数（必要に応じて増減してください）
+    TEST_EPISODES = args.test_episodes    # テスト用エピソード数
+    SEQ_LEN = args.seq_len                # 1エピソードあたりのフレーム数
+    RESOLUTION = args.resolution          # 画像サイズ
     
     # Trainデータの生成
     generate_and_save(

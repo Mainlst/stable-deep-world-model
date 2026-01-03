@@ -2,6 +2,12 @@
 
 VTA (Variable Temporal Abstraction) を使った世界モデルの実験コードです。Bouncing Balls と 3D Maze の2環境での学習・可視化スクリプトを含みます。
 
+## DreamerV3 (torch) 統合
+DreamerV3 の PyTorch 実装を `src_dreamerv3/` として統合しています。詳細は `docs/dreamerv3/README.md` を参照してください。
+
+- 依存インストール: `pip install -r requirements-dreamerv3.txt`
+- 例: `python -m src_dreamerv3.dreamer --configs dmc_vision --task dmc_walker_walk --logdir ./logdir/dmc_walker_walk`
+
 ## セットアップ
 - Python 3.9+ を想定
 - 推奨: uv を使う場合  
@@ -55,7 +61,7 @@ VTA (Variable Temporal Abstraction) を使った世界モデルの実験コー�
 
 ## 使い方
 - 設定ファイル（JSON）  
-  `configs/bouncing_balls_3070.json` にこの環境向けの推奨設定を用意しています。別環境では同ファイルをコピーして値を調整してください。
+  `configs/bouncing_balls_3070.json`（Bouncing Balls）と `configs/3d_maze_default.json`（3D Maze）のサンプルを用意しています。自分の環境に合わせて値を調整してください。
 
 - 学習（Bouncing Balls）  
   `python -m src_vta.scripts.train_balls --config configs/bouncing_balls_3070.json`  
@@ -63,7 +69,7 @@ VTA (Variable Temporal Abstraction) を使った世界モデルの実験コー�
 
 - 学習（3D Maze）  
   `python -m src_vta.scripts.train_maze --config <your_maze_config.json>`  
-  `3d_maze_default/train` / `test` 配下に `.npz` データが必要です。無ければ `python -m src_vta.data.generate_npz` で生成してください。
+  デフォルトで `data/3d_maze_default/{train,test}` 配下の `.npz` を参照します（`Config.maze_data_dir` で変更可能）。データが無ければ `python -m src_vta.data.generate_npz --out <保存先>` で生成してください。
 
 - 可視化  
   `python -m src_vta.scripts.visualize <ckpt_path> --config configs/bouncing_balls_3070.json --idx 0 --num_samples 10`  
@@ -72,7 +78,7 @@ VTA (Variable Temporal Abstraction) を使った世界モデルの実験コー�
 ## 設定ファイルについて
 - フォーマットは JSON。`configs/bouncing_balls_3070.json` をベースに環境に合わせて編集してください。
 - 未知のキーは無視され、`Config` クラスに存在するキーのみ上書きされます。
-- `*_dir` キーはパスとして扱われ自動作成されます。
+- `*_dir` キーはパスとして扱われ自動作成されます。3D Maze 用のデータセット場所は `maze_data_dir` で指定できます。
 
 ## ログ・成果物
 - `src_vta/config.py` の `work_dir` 配下に `exp_name` 単位でログとチェックポイントを保存します。

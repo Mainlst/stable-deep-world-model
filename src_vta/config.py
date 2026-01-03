@@ -5,12 +5,17 @@ from pathlib import Path
 
 import torch
 
+from src_vta.data.paths import DEFAULT_MAZE_DIR, resolve_maze_data_dir
+
 class Config:
     def __init__(self):
         self.exp_name = "vta_bouncing_balls"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
         # --- ディレクトリ設定 ---
+        self.data_root = DEFAULT_MAZE_DIR.parent
+        self.data_root.mkdir(parents=True, exist_ok=True)
+        self.maze_data_dir = resolve_maze_data_dir()
         self.work_dir = Path("./src_vta/experimentsa6")
         self.work_dir.mkdir(parents=True, exist_ok=True)
         
