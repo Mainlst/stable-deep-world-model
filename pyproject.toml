@@ -21,5 +21,6 @@ build-backend = "hatchling.build"
 # Explicitly list package directories since our project name differs from the python packages
 packages = [
     "src_vta",
+    "src_dreamerv3",
     "src",
 ]

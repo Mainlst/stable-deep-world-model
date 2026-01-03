@@ -3,6 +3,7 @@ experiments*/
 3d_maze_default/
 *.npz
 *.gif
+*.gz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

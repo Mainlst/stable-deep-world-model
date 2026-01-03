@@ -16,6 +16,9 @@ from IPython.display import HTML
 from pathlib import Path
 import glob
 from tqdm.notebook import tqdm
+from typing import Optional, Union
+
+from src_vta.data.paths import resolve_maze_data_dir
 
 # 離散行動の数（左折，右折，直進で3）
 ACTION_SIZE = 3
@@ -33,6 +36,7 @@ class MazeDataset(torch.utils.data.Dataset):
         image_height=32,
         image_channels=3,
         one_hot_action=True,
+        data_dir: Optional[Union[str, Path]] = None,
     ):
         """
         Parameters
@@ -42,7 +46,7 @@ class MazeDataset(torch.utils.data.Dataset):
             image_width, image_height, image_channels: モデル入力の画像サイズ
             one_hot_action: アクションをone-hot表現に変換するかどうか
         """
-        self.path = "3d_maze_default"
+        self.data_dir = resolve_maze_data_dir(data_dir)
         self.partition = partition
         self.length = length
         self.height = image_height
@@ -55,8 +59,8 @@ class MazeDataset(torch.utils.data.Dataset):
     def _load_data(self) -> None:
         """ すべてのnpzファイルから画像系列と行動系列をメモリに読み込む """
         # Find .npz files
-        dir_path = f"{self.path}/{self.partition}"
-        self.file_paths = glob.glob(f"{dir_path}/*.npz")
+        dir_path = Path(self.data_dir) / self.partition
+        self.file_paths = sorted(glob.glob(str(dir_path / "*.npz")))
         assert len(self.file_paths) > 0, f"Dataset not found: {dir_path}"
 
         self.data = {"video": [], "actions": []}
