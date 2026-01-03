@@ -55,7 +55,7 @@ VTA (Variable Temporal Abstraction) を使った世界モデルの実験コー�
 
 ## 使い方
 - 設定ファイル（JSON）  
-  `configs/bouncing_balls_3070.json` にこの環境向けの推奨設定を用意しています。別環境では同ファイルをコピーして値を調整してください。
+  `configs/bouncing_balls_3070.json`（Bouncing Balls）と `configs/3d_maze_default.json`（3D Maze）のサンプルを用意しています。自分の環境に合わせて値を調整してください。
 
 - 学習（Bouncing Balls）  
   `python -m src_vta.scripts.train_balls --config configs/bouncing_balls_3070.json`  
