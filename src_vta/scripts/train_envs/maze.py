@@ -130,7 +130,7 @@ class MazeAdapter(EnvironmentAdapter):
             test_dataset,
             batch_size=args.batch_size,
             shuffle=False,
-            drop_last=True,
+            drop_last=False,
             pin_memory=True,
             num_workers=4,
             persistent_workers=True,
