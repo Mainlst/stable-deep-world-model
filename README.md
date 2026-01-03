@@ -2,6 +2,12 @@
 
 VTA (Variable Temporal Abstraction) を使った世界モデルの実験コードです。Bouncing Balls と 3D Maze の2環境での学習・可視化スクリプトを含みます。
 
+## DreamerV3 (torch) 統合
+DreamerV3 の PyTorch 実装を `src_dreamerv3/` として統合しています。詳細は `docs/dreamerv3/README.md` を参照してください。
+
+- 依存インストール: `pip install -r requirements-dreamerv3.txt`
+- 例: `python -m src_dreamerv3.dreamer --configs dmc_vision --task dmc_walker_walk --logdir ./logdir/dmc_walker_walk`
+
 ## セットアップ
 - Python 3.9+ を想定
 - 推奨: uv を使う場合  
