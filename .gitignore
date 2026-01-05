@@ -4,6 +4,7 @@ experiments*/
 *.npz
 *.gif
 *.gz
+logdir/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
