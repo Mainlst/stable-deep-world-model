@@ -161,6 +161,8 @@ class RSSM(nn.Module):
     def get_dist(self, state, dtype=None):
         if self._discrete:
             logit = state["logit"]
+            logit = torch.nan_to_num(logit, nan=0.0, posinf=0.0, neginf=0.0)
+            logit = torch.clamp(logit, -50.0, 50.0)
             dist = torchd.independent.Independent(
                 tools.OneHotDist(logit, unimix_ratio=self._unimix_ratio), 1
             )
@@ -711,6 +713,8 @@ class MLP(nn.Module):
                 torchd.independent.Independent(dist, 1), absmax=self._absmax
             )
         elif dist == "onehot":
+            mean = torch.nan_to_num(mean, nan=0.0, posinf=0.0, neginf=0.0)
+            mean = torch.clamp(mean, -50.0, 50.0)
             dist = tools.OneHotDist(mean, unimix_ratio=self._unimix_ratio)
         elif dist == "onehot_gumble":
             dist = tools.ContDist(

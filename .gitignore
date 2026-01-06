@@ -213,5 +213,9 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-docs/
-configs/
+docs/papers
+docs/dreamerv3
+configs
+logdir
+logs
+tasks

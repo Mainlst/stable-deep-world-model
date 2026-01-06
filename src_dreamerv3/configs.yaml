@@ -162,6 +162,15 @@ atari100k:
   actions: needed
   time_limit: 108000
 
+pinpad:
+  envs: 1
+  action_repeat: 1
+  train_ratio: 256
+  video_pred_log: true
+  eval_episode_num: 1
+  actor: {dist: 'onehot', std: 'none'}
+  imag_gradient: 'reinforce'
+
 minecraft:
   task: minecraft_diamond
   step: 1e8

@@ -127,7 +127,12 @@ class LatentDistribution(nn.Module):
         return {"mean": mean, "std": std}
     
     def get_dist(self, stats):
-        return torchd.normal.Normal(stats["mean"], stats["std"])
+        mean = stats["mean"]
+        std = stats["std"]
+        mean = torch.nan_to_num(mean, nan=0.0, posinf=0.0, neginf=0.0)
+        std = torch.nan_to_num(std, nan=self._min_std, posinf=1.0, neginf=self._min_std)
+        std = torch.clamp(std, min=self._min_std, max=1e2)
+        return torchd.normal.Normal(mean, std)
     
     def sample(self, stats):
         dist = self.get_dist(stats)

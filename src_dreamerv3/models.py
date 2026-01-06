@@ -141,9 +141,14 @@ class WorldModel(nn.Module):
         with tools.RequiresGrad(self):
             with torch.cuda.amp.autocast(self._use_amp):
                 embed = self.encoder(data)
-                post, prior = self.dynamics.observe(
-                    embed, data["action"], data["is_first"], reward=data["reward"]
-                )
+                if self._dynamics_type == "vta":
+                    post, prior = self.dynamics.observe(
+                        embed, data["action"], data["is_first"], reward=data["reward"]
+                    )
+                else:
+                    post, prior = self.dynamics.observe(
+                        embed, data["action"], data["is_first"]
+                    )
                 kl_free = self._config.kl_free
                 dyn_scale = self._config.dyn_scale
                 rep_scale = self._config.rep_scale
@@ -273,10 +278,16 @@ class WorldModel(nn.Module):
         data = self.preprocess(data)
         embed = self.encoder(data)
 
-        states, _ = self.dynamics.observe(
-            embed[:6, :5], data["action"][:6, :5], data["is_first"][:6, :5],
-            reward=data["reward"][:6, :5] if "reward" in data else None
-        )
+        if self._dynamics_type == "vta":
+            reward = data["reward"][:6, :5] if "reward" in data else None
+            states, _ = self.dynamics.observe(
+                embed[:6, :5], data["action"][:6, :5], data["is_first"][:6, :5],
+                reward=reward
+            )
+        else:
+            states, _ = self.dynamics.observe(
+                embed[:6, :5], data["action"][:6, :5], data["is_first"][:6, :5]
+            )
         recon = self.heads["decoder"](self.dynamics.get_feat(states))["image"].mode()[
             :6
         ]
