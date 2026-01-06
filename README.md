@@ -7,6 +7,7 @@ DreamerV3 の PyTorch 実装を `src_dreamerv3/` として統合しています�
 
 - 依存インストール: `pip install -r requirements-dreamerv3.txt`
 - 例: `python -m src_dreamerv3.dreamer --configs dmc_vision --task dmc_walker_walk --logdir ./logdir/dmc_walker_walk`
+- クラウドでの再現手順: `docs/cloud_runbook.md`
 
 ## セットアップ
 - Python 3.9+ を想定

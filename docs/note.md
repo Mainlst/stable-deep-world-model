@@ -175,6 +175,10 @@ kill <PID...>
   - periodic_baseline: 0.125
   - auc_read_prob: 0.692
 - 解釈: 少なくともこの条件では、境界が「画面が大きく変わるタイミング」に偏って出ている兆候がある。
+- 可視化プレビュー:
+  - ![grid](logdir/pinpad_full10/pinpad_vta_force0_t1_seed0/boundary_grid.png)
+  - ![internal](logdir/pinpad_full10/pinpad_vta_force0_t1_seed0/boundary_internal.png)
+  - ![fired](logdir/pinpad_full10/pinpad_vta_force0_t1_seed0/boundary_fired.png)
 
 #### 2) `pinpad_vta_force10_t1_seed0`（`max_seg_len=30, force_scale=10, temp=1`）
 - 成果物:
@@ -189,6 +193,10 @@ kill <PID...>
   - periodic_baseline: 0.0606
   - auc_read_prob: 0.465
 - 解釈: 強制境界が強い条件では、frame_delta との整合が弱く、境界が「意味イベント」に寄っていない可能性。
+- 可視化プレビュー:
+  - ![grid](logdir/pinpad_full10/pinpad_vta_force10_t1_seed0/boundary_grid.png)
+  - ![internal](logdir/pinpad_full10/pinpad_vta_force10_t1_seed0/boundary_internal.png)
+  - ![fired](logdir/pinpad_full10/pinpad_vta_force10_t1_seed0/boundary_fired.png)
 
 #### 3) `pinpad_vta_force0_t2_rate_seed0`（`max_seg_len=50, force_scale=0, temp=2, rate/scale=0.1/0.5`）
 - 成果物:
@@ -200,6 +208,10 @@ kill <PID...>
   - delta 評価は NaN（境界が無いため）
   - auc_read_prob: 0.559
 - 解釈: この `rate/scale` 設定では境界が COPY に潰れている可能性が高い。
+- 可視化プレビュー:
+  - ![grid](logdir/pinpad_full10/pinpad_vta_force0_t2_rate_seed0/boundary_grid.png)
+  - ![internal](logdir/pinpad_full10/pinpad_vta_force0_t2_rate_seed0/boundary_internal.png)
+  - ![fired](logdir/pinpad_full10/pinpad_vta_force0_t2_rate_seed0/boundary_fired.png)
 
 ## 修正内容
 - `src_dreamerv3/dreamer.py` に pinpad suite を追加。
@@ -216,3 +228,41 @@ NotImplementedError: pinpad
 - `src_dreamerv3/dreamer.py` の `make_env()` に `suite == "pinpad"` を追加する。
 - pinpad 環境の観測を `{"image": ...}` に整形するラッパを用意する。
 - 既存のログがある場合は `LOGROOT` を変えて新規実行する。
+
+---
+
+# 2026-01-06 中間報告に向けた研究の流れ（VTA+Dreamer / pinpad）
+
+## 何を示したいか（仮説）
+- VTA の境界（READ/COPY）は、単なる等間隔や崩壊ではなく、環境の「意味のある区切り（イベント）」に自律的に整合しうる。
+- その整合は `vta_boundary_force_scale`（強制境界）や `vta_boundary_temp`（探索性）などで変わり、うまく設定できると“意味イベント”に寄る。
+
+## 今どこまで言えるか（現状の結論）
+- pinpad では、少なくとも 1 条件で境界が `frame_delta`（隣接フレーム差分の上位イベント）に **有意に**偏る兆候が出た。
+  - 対象: `logdir/pinpad_full10/pinpad_vta_force0_t1_seed0/boundary_eval.json`
+  - 指標（1 episode, permutations=50, delta_percentile=90）: `lift_over_event_rate=7.70`, `perm_p_value=0.0196`
+- 一方で、条件によっては不整合（lift≪1）や無発火（boundary_count=0）になり、崩壊モードが存在する。
+  - `force_scale=10` は不整合寄り、`temp=2 + rate/scale=0.1/0.5` は無発火（今回の設定では強すぎた可能性）。
+
+## 何が弱点か（中間報告で突かれやすい点）
+- **再現性不足**: seed が実質 1 本のため、偶然の可能性を消せていない。
+- **意味イベント不足**: `reward` が常に 0 のため、最も分かりやすい RL 的主張（return/報酬イベント整合）で語れない。
+  - 現状は代理指標として `frame_delta` を使用しており、主張は「知覚的セグメンテーションの兆候」に寄る。
+
+## 意思決定（なぜ pinpad を優先するか）
+- pinpad はすでに「有意な数値（p<0.05）」と「可視化画像」が揃っているため、少数の追試で中間報告の説得力を大きく上げられる。
+- multiworld は汎化の主張には良いが、立ち上げコストが読みにくく、来週までに確実に“良い図と表”まで到達できる保証が弱い。
+
+## 中間報告までの実行順（最短で強くする）
+1) P0: `reward=0` の切り分け（環境仕様 vs ラッパ取りこぼし）
+2) P1: 当たり条件の seed 追加（0/1/2）で再現性を作る
+3) P2: `max_seg_len` を伸ばして周期性（強制境界）の寄与を分離
+4) P3: “中間値”だけの最小追加スイープ（force=1, temp=1.5, 小さめ rate/scale）
+
+## 参照（成果物の場所）
+- スイープログ: `logdir/pinpad_full10/pinpad_sweep.log`
+- 端末ログ: `logdir/pinpad_full10/run.log`
+- 条件別成果物:
+  - `logdir/pinpad_full10/pinpad_vta_force0_t1_seed0/`（当たり）
+  - `logdir/pinpad_full10/pinpad_vta_force10_t1_seed0/`（不整合）
+  - `logdir/pinpad_full10/pinpad_vta_force0_t2_rate_seed0/`（無発火）
