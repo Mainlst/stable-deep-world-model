@@ -204,6 +204,7 @@ def main():
     parser.add_argument("--task", default="atari_private_eye", help="Task name")
     parser.add_argument("--episodes_dir", default="train_eps", help="Directory containing episodes")
     parser.add_argument("--episodes", type=int, default=5, help="Number of episodes to evaluate")
+    parser.add_argument("--episode_file", nargs="+", default=None, help="Specific episode file(s) to evaluate (takes precedence over --episodes)")
     parser.add_argument("--seed", type=int, default=0, help="Random seed for episode selection")
     parser.add_argument("--percentile", type=float, default=90.0, help="Percentile threshold for stage transitions (used with --method percentile)")
     parser.add_argument("--method", default="peak", choices=["peak", "percentile", "absolute"], help="Method for detecting stage transitions")
@@ -230,18 +231,37 @@ def main():
 
     # Load episodes
     eps_dir = logdir / args.episodes_dir
-    eps_files = sorted(eps_dir.glob("*.npz"), key=lambda p: -int(p.stem.split("-")[-1]) if p.stem.split("-")[-1].isdigit() else 0)
     
-    if not eps_files:
-        raise FileNotFoundError(f"No episodes found in {eps_dir}")
-    
-    # Select episodes
-    rng = np.random.default_rng(args.seed)
-    if args.episodes < len(eps_files):
-        indices = rng.choice(len(eps_files), size=args.episodes, replace=False)
-        eps_files = [eps_files[i] for i in sorted(indices)]
+    # If specific episode files are provided, use those
+    if args.episode_file:
+        eps_files = []
+        for ep_name in args.episode_file:
+            # Support both filename only or full path
+            if Path(ep_name).exists():
+                eps_files.append(Path(ep_name))
+            else:
+                ep_path = eps_dir / ep_name
+                if not ep_path.suffix:
+                    ep_path = ep_path.with_suffix('.npz')
+                if ep_path.exists():
+                    eps_files.append(ep_path)
+                else:
+                    print(f"Warning: Episode file not found: {ep_name}")
+        if not eps_files:
+            raise FileNotFoundError(f"No valid episode files found from: {args.episode_file}")
     else:
-        eps_files = eps_files[:args.episodes]
+        eps_files = sorted(eps_dir.glob("*.npz"), key=lambda p: -int(p.stem.split("-")[-1]) if p.stem.split("-")[-1].isdigit() else 0)
+        
+        if not eps_files:
+            raise FileNotFoundError(f"No episodes found in {eps_dir}")
+        
+        # Select episodes
+        rng = np.random.default_rng(args.seed)
+        if args.episodes < len(eps_files):
+            indices = rng.choice(len(eps_files), size=args.episodes, replace=False)
+            eps_files = [eps_files[i] for i in sorted(indices)]
+        else:
+            eps_files = eps_files[:args.episodes]
 
     print(f"\n{'='*60}")
     print(f"Stage Transition Detection Evaluation")
