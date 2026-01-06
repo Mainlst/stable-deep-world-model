@@ -78,14 +78,14 @@ def create_boundary_visualization(images, boundary_indices, frame_delta, output_
             ax.set_xticks([])
             ax.set_yticks([])
     
-    # Add column labels
+    # Add column labels (positioned above frame titles)
     col_labels = [f"t-{context-j}" if j < context else ("Boundary" if j == context else f"t+{j-context}") 
                   for j in range(n_frames)]
     for j, label in enumerate(col_labels):
-        axes[0, j].annotate(label, xy=(0.5, 1.15), xycoords='axes fraction',
+        axes[0, j].annotate(label, xy=(0.5, 1.35), xycoords='axes fraction',
                            ha='center', fontsize=10, fontweight='bold')
     
-    plt.suptitle(title, fontsize=12, y=1.02)
+    plt.suptitle(title, fontsize=12, y=1.05)
     plt.tight_layout()
     plt.savefig(output_path, dpi=150, bbox_inches='tight')
     plt.close()
