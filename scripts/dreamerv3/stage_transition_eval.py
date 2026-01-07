@@ -367,13 +367,13 @@ def main():
             )
 
     # Aggregate results
-    total_transitions = sum(r["n_transitions"] for r in all_results)
-    total_boundaries = sum(r["n_boundaries"] for r in all_results)
-    total_detected = sum(r["n_detected"] for r in all_results)
+    total_transitions = sum(r.get("n_transitions", 0) for r in all_results)
+    total_boundaries = sum(r.get("n_boundaries", 0) for r in all_results)
+    total_detected = sum(r.get("n_detected", 0) for r in all_results)
     
     avg_recall = total_detected / total_transitions if total_transitions > 0 else float("nan")
     
-    matched = sum(r["n_matched_boundaries"] for r in all_results)
+    matched = sum(r.get("n_matched_boundaries", 0) for r in all_results)
     avg_precision = matched / total_boundaries if total_boundaries > 0 else float("nan")
 
     print(f"\n{'='*60}")
