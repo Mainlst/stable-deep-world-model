@@ -260,8 +260,8 @@ class VTA(nn.Module):
         # ========================
         # Observation Level
         # ========================
-        # Input layer: prev_obs_stoch + abs_feat -> hidden
-        obs_inp_dim = obs_stoch + self._abs_feat_size
+        # Input layer: prev_obs_stoch + abs_feat + action -> hidden
+        obs_inp_dim = obs_stoch + self._abs_feat_size + num_actions
         obs_inp_layers = []
         obs_inp_layers.append(nn.Linear(obs_inp_dim, hidden, bias=False))
         if norm:
@@ -583,7 +583,7 @@ class VTA(nn.Module):
         # Observation level transition
         # ========================
         # Observation belief: reset on boundary, update otherwise
-        obs_inp = self._obs_inp_layers(torch.cat([prev_state["obs_stoch"], abs_feat], dim=-1))
+        obs_inp = self._obs_inp_layers(torch.cat([prev_state["obs_stoch"], abs_feat, prev_action], dim=-1))
         obs_belief_updated, _ = self._obs_cell(obs_inp, [prev_state["obs_belief"]])
         obs_belief_init = self._init_obs_belief(abs_feat)
         obs_belief = read_mask * obs_belief_init + copy_mask * obs_belief_updated
@@ -698,7 +698,7 @@ class VTA(nn.Module):
         abs_feat = torch.cat([abs_belief, abs_stoch], dim=-1)
         
         # Observation level
-        obs_inp = self._obs_inp_layers(torch.cat([prev_state["obs_stoch"], abs_feat], dim=-1))
+        obs_inp = self._obs_inp_layers(torch.cat([prev_state["obs_stoch"], abs_feat, prev_action], dim=-1))
         obs_belief_updated, _ = self._obs_cell(obs_inp, [prev_state["obs_belief"]])
         obs_belief_init = self._init_obs_belief(abs_feat)
         obs_belief = read_mask * obs_belief_init + copy_mask * obs_belief_updated
