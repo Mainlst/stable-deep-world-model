@@ -40,8 +40,13 @@ VTA (Variable Temporal Abstraction) を使った世界モデルの実験コー�
     現状は，単純に抽象状態zの層を追加し，観測状態と結合して方策ネットワークに入力する形で利用．
     
     結果としてDreamerV3と同程度の性能は出せたものの，方策学習にはあまり寄与していないことが実験から分かった．
+
+    以下に結果を添付する．
+    ![breakout_res](./docs/imgs/breakout_result.png)
+    ![frostbite_res](./docs/imgs/frostbite_result.png)
+    ![krull_res](./docs/imgs/krull_result.png)
    
-4. 仮説を立てながら提案手法の実験を進められている．
+5. 仮説を立てながら提案手法の実験を進められている．
     
     ---
     
@@ -49,6 +54,10 @@ VTA (Variable Temporal Abstraction) を使った世界モデルの実験コー�
     
     1. VTAは観測が大きく切り替わる瞬間しか捉えることができないため，Atariのようなタスクでは意味のある区切りを発見することができず，ステージ遷移のようなわかりやすい区切りの発見にとどまっているため，方策学習にはあまり寄与できない．
     2. 単純に抽象状態zを観測状態sと結合して方策選択するだけでは境界を発見した意味が長期的な文脈の保持に留まってしまい，DreamerV3の性能を超えることは難しい．
+
+    以下にkrullにおける境界検出の可視化を添付する
+    ![krull_bou](./docs/imgs/krull_bou_vis.png)
+    ![krull_bou_full](./docs/imgs/krull_full_res.png)
     
     これに対して以下の仮説を立てる．
     
