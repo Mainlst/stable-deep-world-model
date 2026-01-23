@@ -70,12 +70,19 @@ class GoalAutoencoder(nn.Module):
         self._device = device
         self._dist = dist
         
+        
+        # Add input normalization for stability
+        # Custom normalization removed for v12 hybrid fix (Manager uses Raw)
+        # We explicitly set _norm to False to disable it throughout the class
+        self._norm = False
+        self.in_norm = None
+        
         act_fn = getattr(torch.nn, act)
         
-        # Encoder: goal -> discrete latent logits
-        # FIXED: Encoder takes ONLY goal, consistent with official Director
+        # Official default: no context - encoder takes only feat (goal)
+        enc_input_size = feat_size  # No context_size
         enc_layers = []
-        inp_dim = feat_size
+        inp_dim = enc_input_size
         for i in range(layers):
             enc_layers.append(nn.Linear(inp_dim, hidden, bias=not norm))
             if norm:
@@ -87,10 +94,10 @@ class GoalAutoencoder(nn.Module):
         self.encoder.apply(tools.weight_init)
         self.encoder[-1].apply(tools.uniform_weight_init(1.0))
         
-        # Decoder: discrete latent -> reconstructed feat
-        # FIXED: Decoder takes ONLY discrete latent, consistent with official Director
+        # Official default: no context - decoder takes only skill (latent)
+        dec_input_size = stoch * discrete  # No context_size
         dec_layers = []
-        inp_dim = stoch * discrete
+        inp_dim = dec_input_size
         for i in range(layers):
             dec_layers.append(nn.Linear(inp_dim, hidden, bias=not norm))
             if norm:
@@ -100,8 +107,8 @@ class GoalAutoencoder(nn.Module):
         dec_layers.append(nn.Linear(hidden, feat_size))
         self.decoder = nn.Sequential(*dec_layers)
         self.decoder.apply(tools.weight_init)
-        # FIXED: Decoder takes valid outscale=0.1
-        self.decoder[-1].apply(tools.uniform_weight_init(0.1))
+        # FIXED: Decoder takes valid outscale=1.0 (Official Director default)
+        self.decoder[-1].apply(tools.uniform_weight_init(1.0))
 
     @property
     def latent_size(self):
@@ -114,15 +121,30 @@ class GoalAutoencoder(nn.Module):
         
         Args:
             feat: (..., feat_size) input features (goal)
-            context: Ignored (kept for API compatibility)
+            context: (..., context_size) context features
             sample: Whether to sample or use mode
             
         Returns:
             z: (..., stoch, discrete) one-hot encoded latent
             dist: Distribution object
         """
-        # FIXED: Do not use context
-        enc_input = feat
+        if context is not None:
+            # Broadcast context to match feat if necessary (e.g. for scalar context)
+            if context.dim() < feat.dim():
+                 context = context.expand(feat.shape[:-1] + (-1,))
+            enc_input = torch.cat([feat, context], dim=-1)
+        else:
+            enc_input = feat
+            
+
+            
+        if self._norm:
+             # Normalize feat before concat or usage
+             feat = self.in_norm(feat)
+             if context is not None:
+                  enc_input = torch.cat([feat, context], dim=-1)
+             else:
+                  enc_input = feat
         
         logits = self.encoder(enc_input)
         logits = logits.reshape(feat.shape[:-1] + (self._stoch, self._discrete))
@@ -149,7 +171,7 @@ class GoalAutoencoder(nn.Module):
         
         Args:
             z: (..., stoch, discrete) one-hot encoded latent
-            context: Ignored (kept for API compatibility)
+            context: (..., context_size) context features
             
         Returns:
             dist: Distribution over reconstructed features (MSEDist or SymlogDist)
@@ -157,8 +179,16 @@ class GoalAutoencoder(nn.Module):
         # Flatten latent
         z_flat = z.reshape(z.shape[:-2] + (self._stoch * self._discrete,))
         
-        # FIXED: Do not use context
-        decoder_input = z_flat
+        if context is not None:
+            # Broadcast context to match z_flat batch dimensions if needed
+            # Assuming context has same batch dims as z for now based on typical usage
+            # If z has extra sample dim (N, B, ...), context might need expansion
+            if context.dim() < z_flat.dim():
+                 context = context.expand(z_flat.shape[:-1] + (-1,))
+            
+            decoder_input = torch.cat([z_flat, context], dim=-1)
+        else:
+            decoder_input = z_flat
         
         out = self.decoder(decoder_input)
         
@@ -189,6 +219,7 @@ class GoalAutoencoder(nn.Module):
         
         # Reconstruction loss (Negative Log Likelihood)
         # Official: rec = -dec.log_prob(tf.stop_gradient(goal))
+        # Reverted to raw target (v9 style) for Manager stability
         recon_loss = -recon_dist.log_prob(feat.detach())
         
         # KL divergence against uniform prior
@@ -256,6 +287,11 @@ class GoalEncoder(nn.Module):
         self._discrete = discrete
         self._unimix_ratio = unimix_ratio
         
+        # Add input normalization for stability
+        self._norm = norm
+        if norm:
+            self.in_norm = nn.LayerNorm(input_size, eps=1e-03)
+        
         act_fn = getattr(torch.nn, act)
         
         enc_layers = []
@@ -281,6 +317,9 @@ class GoalEncoder(nn.Module):
         Returns:
             dist: OneHotDist over (stoch, discrete)
         """
+        if self._norm:
+            x = self.in_norm(x)
+            
         logits = self.layers(x)
         logits = logits.reshape(x.shape[:-1] + (self._stoch, self._discrete))
         return tools.OneHotDist(logits, unimix_ratio=self._unimix_ratio)

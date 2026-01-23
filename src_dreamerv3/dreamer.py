@@ -4,7 +4,7 @@ import os
 import pathlib
 import sys
 
-os.environ["MUJOCO_GL"] = "osmesa"
+os.environ["MUJOCO_GL"] = "egl"
 
 import numpy as np
 import ruamel.yaml as yaml
@@ -171,20 +171,19 @@ class Dreamer(nn.Module):
             T_seq = feat.shape[1]
             
             if T_seq > K:
-                # context: states at time t (Unused in official Director Goal AE)
+                # context: states at time t (Used in official Director Goal AE)
                 # goal: states at time t+K
-                # context_seq = feat[:, :-K]   # (B, T-K, deter)
+                context_seq = feat[:, :-K]   # (B, T-K, deter)
                 goal_seq = feat[:, K:]       # (B, T-K, deter)
                 
-                # Flatten for training
-                # context_flat = context_seq.reshape(-1, context_seq.shape[-1])
-                goal_flat = goal_seq.reshape(-1, goal_seq.shape[-1])
+                # Use sequence directly (Batch, T-K, Dim) so MSEDist sums over Dim correctly
+                # goal_flat = goal_seq.reshape(-1, goal_seq.shape[-1])
                 
                 # Train Goal AE with gradient enabled
                 with tools.RequiresGrad(self._task_behavior.goal_ae):
                     with torch.cuda.amp.autocast(self._config.precision == 16):
                         goal_ae_loss, goal_ae_mets = self._task_behavior.goal_ae.loss(
-                            goal_flat, context=None  # CRITICAL FIX: No context
+                            goal_seq  # Official default: no context
                         )
                     
                     # Optimize Goal AE

@@ -421,7 +421,7 @@ class ImagActorCritic(nn.Module):
     - REINFORCE or backprop actor gradient
     """
     
-    def __init__(self, vfns, scales, actor_net, act_space, config, device, name="ImagActorCritic", skill_shape=None, actor_grad=None):
+    def __init__(self, vfns, scales, actor_net, act_space, config, device, name="ImagActorCritic", skill_shape=None, actor_grad=None, actent_norm=None, use_fixed_entropy=False, actent_args=None):
         """
         Args:
             vfns: Dict of {name: VFunction} for each reward type
@@ -434,6 +434,9 @@ class ImagActorCritic(nn.Module):
             name: Name for logging
             skill_shape: Tuple (stoch, discrete) for Manager multi-variable distribution, None for Worker
             actor_grad: 'reinforce' or 'dynamics' (default: None, use config default)
+            actent_norm: Override for entropy normalization (True/False/None)
+            use_fixed_entropy: If True, use fixed entropy scale from config (like standard V3) instead of AutoEntropyAdjust
+            actent_args: Optional dict to override AutoEntropyAdjust parameters
         """
         super().__init__()
         self._config = config
@@ -442,6 +445,7 @@ class ImagActorCritic(nn.Module):
         self._scales = scales
         self._skill_shape = skill_shape
         self._actor_grad = actor_grad
+        self._use_fixed_entropy = use_fixed_entropy
         
         # Determine gradient type
         if self._actor_grad is None:
@@ -472,17 +476,31 @@ class ImagActorCritic(nn.Module):
         perdim = getattr(config.actor, "actent_perdim", False) or name == "Manager"
         ent_shape = act_space.shape[:-1] if (hasattr(act_space, 'discrete') and act_space.discrete) or (hasattr(act_space, 'shape') and len(act_space.shape) >= 2) else ()
         
+        # Prepare AutoEntropyAdjust config
+        ae_config = {
+            'scale': config.actor.get("actent_scale", 3e-3),
+            'target': config.actor.get("actent_target", 0.5),
+            'min_scale': 1e-5,
+            'max_scale': 1e2,
+            'velocity': 0.1,
+        }
+        if actent_args:
+            ae_config.update(actent_args)
+            
         self._actent = AutoEntropyAdjust(
-            scale=config.actor.get("actent_scale", 3e-3),
-            target=config.actor.get("actent_target", 0.5),
-            min_scale=1e-5,
-            max_scale=1e2,
-            velocity=0.1,
+            scale=ae_config['scale'],
+            target=ae_config['target'],
+            min_scale=ae_config['min_scale'],
+            max_scale=ae_config['max_scale'],
+            velocity=ae_config['velocity'],
             device=device,
             perdim=perdim,
             shape=ent_shape,
         )
-        self._actent_norm = config.actor.get("actent_norm", True)
+        if actent_norm is not None:
+            self._actent_norm = actent_norm
+        else:
+            self._actent_norm = config.actor.get("actent_norm", True)
         
         # EMA values for return normalization
         self._ret_ema_vals = {k: torch.zeros(2, device=device) for k in vfns}
@@ -654,8 +672,19 @@ class ImagActorCritic(nn.Module):
         else:
             ent_norm = ent
         
-        # Get entropy scale (adjusts to maintain target)
-        ent_scale = self._actent(ent_norm)
+        if self._use_fixed_entropy:
+            # Fixed entropy scale (standard DreamerV3)
+            # Use value from config.actor.entropy (default 3e-4) or director_worker_entropy_scale (3e-3)
+            # Default V3 uses 3e-4. Director config sets 3e-3 for worker.
+            # We use the scale passed to AutoEntropyAdjust (__init__) effectively by bypassing the adjuster.
+            # But simpler: look up config directly.
+            # Since _actent._scale was initialized with config.director_worker_entropy_scale, we can use that initial value?
+            # Or just use config.actor["entropy"] which is 3e-4. 
+            # Let's use config.actor["entropy"] to be SAFE and match V3.
+            ent_scale = self._config.actor["entropy"]
+        else:
+            # Get entropy scale (adjusts to maintain target)
+            ent_scale = self._actent(ent_norm)
         
         # Entropy loss
         ent_loss = -ent_scale * ent_norm
@@ -819,9 +848,9 @@ class HierarchicalBehavior(nn.Module):
             discrete=self._skill_discrete,
             kl_config=config.director_goal_ae_kl_config,
             unimix_ratio=config.director_goal_ae_unimix,
-            context_size=0,  # CRITICAL: Context not used in official Director for AE
+            context_size=self._goal_context_size,  # Pass valid context size to AE
             device=config.device,
-            dist=getattr(config, 'goal_ae_dist', 'mse'),
+            dist=getattr(config, 'goal_ae_dist', 'symlog_mse'),
         )
         
         # Reward weights
@@ -977,10 +1006,20 @@ class HierarchicalBehavior(nn.Module):
         class FakeSpace:
             def __init__(self, shape): self.shape = shape
         
+        worker_actent_args = {
+            'scale': getattr(config, 'director_worker_entropy_scale', 3e-3),
+            'target': getattr(config, 'director_worker_entropy_target', 0.5),
+            'min_scale': getattr(config, 'director_worker_entropy_min', 1e-5),
+            'max_scale': getattr(config, 'director_worker_entropy_max', 1e2),
+            'velocity': getattr(config, 'director_worker_entropy_vel', 0.1),
+        }
+        
         self.worker = ImagActorCritic(
             worker_vfns, worker_scales, worker_net,
             FakeSpace((config.num_actions,)),
-            config, config.device, name="Worker"
+            config, config.device, name="Worker",
+            actent_norm=False,  # CRITICAL FIX: Disable normalization to match unnormalized target (1.5)
+            actent_args=worker_actent_args,
         )
         
         # Remove standalone values (they are inside ImagActorCritic now)
@@ -1039,15 +1078,13 @@ class HierarchicalBehavior(nn.Module):
             self.worker_reward_ema = RewardEMA(config.device)
         self.worker_ema_vals = torch.zeros(2, device=config.device)
         
+        
         # Automatic Entropy Adjustment
-        self.worker_entropy_adj = AutoEntropyAdjust(
-            scale=getattr(config, 'director_worker_entropy_scale', 3e-3),
-            target=getattr(config, 'director_worker_entropy_target', 0.5),
-            min_scale=getattr(config, 'director_worker_entropy_min', 1e-5),
-            max_scale=getattr(config, 'director_worker_entropy_max', 1e2),
-            velocity=getattr(config, 'director_worker_entropy_vel', 0.1),
-            device=config.device,
-        )
+        # REMOVED: Standalone self.worker_entropy_adj (Using self.worker._actent instead)
+        
+        # Hybrid Normalization: Dedicated normalization for Worker's goal reward
+        # This allows Worker to track goals (normalized space) while Manager stays raw
+        self.reward_norm = nn.LayerNorm(config.dyn_deter, eps=1e-03)
         
         # Metrics
         self._metrics = {}
@@ -1183,7 +1220,7 @@ class HierarchicalBehavior(nn.Module):
         skill = switch(carry["skill"], new_skill.detach())
         
         # Decode skill to goal (in goal_feat space = deter only) with context
-        new_goal = self.goal_ae.decode(new_skill, context=context.detach()).mode()
+        new_goal = self.goal_ae.decode(new_skill).mode()  # Official: no context
         
         if self._use_delta:
             # Goal is delta from current state (using goal_feat, not obs_feat)
@@ -1230,6 +1267,11 @@ class HierarchicalBehavior(nn.Module):
         Returns:
             reward: Goal-reaching reward
         """
+        # CRITICAL FIX: Hybrid Normalization (Worker uses dedicated norm)
+        # Normalize obs_feat and goal to match spaces for Cosine Similarity
+        obs_feat = self.reward_norm(obs_feat)
+        goal = self.reward_norm(goal)
+
         if self._goal_reward_type == "cosine_max" or self._goal_reward_type == "cosine":
             # Normalized cosine similarity with max norm (Official 'cosine' and 'cosine_max')
             gnorm = torch.linalg.norm(goal, dim=-1, keepdim=True) + 1e-12
@@ -1264,20 +1306,13 @@ class HierarchicalBehavior(nn.Module):
             goal_feat: Goal features (deter only) to measure novelty
         """
         with torch.no_grad():
-            # Official: context = tf.repeat(feat[0][None], 1 + imag_horizon, 0)
-            # Use first timestep context for entire trajectory
-            context = self._get_goal_context(traj)
-            
-            # Broadcast first timestep context to match goal_feat length
-            T_goal = goal_feat.shape[0]
-            context_broadcast = context[0:1].expand(T_goal, *context.shape[1:])
+            # Official default: no context for Goal AE
             
             # 1. Encode: goal -> z, q(z|g)
-            z, enc_dist = self.goal_ae.encode(goal_feat, context=context_broadcast, sample=True)
+            z, enc_dist = self.goal_ae.encode(goal_feat, sample=True)  # No context
             
             # 2. Decode: z -> p(g|z)
-            # Returns distribution
-            dec_dist = self.goal_ae.decode(z, context=context_broadcast)
+            dec_dist = self.goal_ae.decode(z)  # No context
             ll = dec_dist.log_prob(goal_feat)
             
             # 3. KL(q(z|g) || p(z))
@@ -1299,11 +1334,10 @@ class HierarchicalBehavior(nn.Module):
             
             if adver_impl == 'squared':
                  # Official: ((dec - feat) ** 2).mean(-1)
-                 # Re-decode to get mode for squared error
-                 # This handles "raw" reconstruction error as reward
-                 # CRITICAL FIX: Use context_broadcast, not context
-                 dec_dist = self.goal_ae.decode(z)
+                 dec_dist = self.goal_ae.decode(z)  # No context
                  rec = dec_dist.mode()
+                 
+                 # Reverted to raw target (v9 style) for Manager stability
                  return ((rec - goal_feat) ** 2).mean(-1)
                  
             elif adver_impl == 'kl_ll':
@@ -1315,112 +1349,136 @@ class HierarchicalBehavior(nn.Module):
     
     def _train(self, start, objective):
         """
-        Train hierarchical policy in imagination (Official Director train_jointly).
+        Train hierarchical policy in imagination.
         
-        Official structure:
-        - Single forward pass through imagination with hierarchical policy
-        - split_traj for Worker (K+1 segments)
-        - abstract_traj for Manager (coarse segments)
-        - Shared gradient flow
+        Restructured to match standard DreamerV3 ImagBehavior._train pattern:
+        - Separate RequiresGrad blocks for actor and value
+        - Clear separation between loss computation and optimization
         """
+        self._update_slow_targets()
         metrics = {}
         
         dynamics = self._world_model.dynamics
         flatten = lambda x: x.reshape([-1] + list(x.shape[2:]))\
             if x.dim() > 2 else x
         start = {k: flatten(v) for k, v in start.items()}
-        batch_size = list(start.values())[0].shape[0]
         
-        # Goal AE training moved to dreamer.py _train() as replay-based training
-        # (Official Director: vae_replay=True, vae_imag=False)
-        # The goal AE is now trained on temporal sequences from replay buffer
-        # where context=state[t] and goal=state[t+K], not on flattened start states
+        # === PHASE 1: Imagination (outside RequiresGrad) ===
+        with torch.cuda.amp.autocast(self._use_amp):
+            traj, carry_traj = self._imagine_with_carry(
+                start, self._config.imag_horizon
+            )
+            
+            # Compute all rewards
+            goal_feats = self._get_goal_feat(traj)
+            
+            reward_extr = objective(
+                dynamics.get_feat(traj),
+                traj,
+                traj["action"]
+            )
+            reward_expl = self._expl_reward(traj, goal_feats[1:])
+            reward_goal = self._goal_reward(goal_feats[1:], carry_traj["goal"][1:])
+            
+            # Store in trajectory
+            traj["reward_extr"] = reward_extr
+            traj["reward_expl"] = reward_expl
+            traj["reward_goal"] = reward_goal
+            traj["goal"] = carry_traj["goal"]
+            traj["skill"] = carry_traj["skill"]
+            traj["delta"] = carry_traj["goal"] - goal_feats
+            
+            # Compute cont/discount
+            discount = self._config.discount
+            if "cont" not in traj:
+                traj["cont"] = torch.ones_like(reward_extr)
+            traj["discount"] = discount * traj["cont"]
+            
+            # Prepare Worker and Manager trajectories
+            wtraj, _ = self._split_traj(traj, carry_traj)
+            mtraj, mcarry = self._abstract_traj_official(traj, carry_traj)
         
-        # === TRAIN JOINTLY (Official Director Structure) ===
+        # Prepare worker inputs
+        w_obs = self._get_obs_feat(wtraj)
+        w_goal = wtraj["goal"]
+        dynamics_type = getattr(self._config, 'dynamics_type', 'rssm')
+        w_input_list = [w_obs, w_goal]
+        if self._use_delta:
+            w_delta = wtraj.get("delta", wtraj["goal"] - self._get_goal_feat(wtraj))
+            w_input_list.append(w_delta)
+        if dynamics_type != 'rssm':
+            w_input_list.append(self._get_abs_feat(wtraj))
+        w_input = torch.cat(w_input_list, dim=-1)
+        
+        # === PHASE 2: Worker Training (DreamerV3 Pattern) ===
+        # Worker Actor
+        with tools.RequiresGrad(self.worker.actor):
+            with torch.cuda.amp.autocast(self._use_amp):
+                worker_actor_loss, worker_actor_mets = self._compute_worker_actor_loss(
+                    w_input, wtraj, wtraj['weight']
+                )
+                metrics.update(worker_actor_mets)
+        
+        # Worker Value
+        worker_value_loss = torch.tensor(0.0, device=self._config.device)
+        with tools.RequiresGrad(self.worker.vfns):
+            with torch.cuda.amp.autocast(self._use_amp):
+                for key, vfn in self.worker.vfns.items():
+                    if self.worker._scales.get(key, 0.0) == 0.0:
+                        continue
+                    reward_key = f'reward_{key}'
+                    if reward_key not in wtraj:
+                        continue
+                    vfn_loss, vfn_mets = self._compute_vfn_loss(
+                        vfn, w_input, wtraj, wtraj['weight'], key, "worker"
+                    )
+                    worker_value_loss = worker_value_loss + vfn_loss
+                    metrics.update(vfn_mets)
+                    vfn.update_slow()
+        
+        # Worker Optimize
         with tools.RequiresGrad(self.worker):
-            with tools.RequiresGrad(self.manager):
+            metrics.update(self._worker_opt(
+                worker_actor_loss + worker_value_loss, 
+                self.worker.parameters()
+            ))
+        
+        # === PHASE 3: Manager Training (DreamerV3 Pattern) ===
+        if "reward_extr" in mtraj and mtraj["reward_extr"].shape[0] > 0:
+            m_abs = self._get_abs_feat(mtraj)
+            m_weight = mtraj.get('weight', torch.ones_like(mtraj['reward_extr']))
+            
+            # Manager Actor
+            with tools.RequiresGrad(self.manager.actor):
                 with torch.cuda.amp.autocast(self._use_amp):
-                    # 1. Imagine trajectory with hierarchical policy (carry state)
-                    traj, carry_traj = self._imagine_with_carry(
-                        start, self._config.imag_horizon
+                    manager_actor_loss, manager_actor_mets = self._compute_manager_actor_loss(
+                        m_abs, mtraj, m_weight
                     )
-                    
-                    # 2. Compute all rewards
-                    goal_feats = self._get_goal_feat(traj)
-                    
-                    reward_extr = objective(
-                        dynamics.get_feat(traj),
-                        traj,
-                        traj["action"]
-                    )
-                    
-                    # Official: context = tf.repeat(feat[0][None], ...)
-                    # Pass original traj for context (uses index 0), but goal_feat[1:] for reward
-                    reward_expl = self._expl_reward(traj, goal_feats[1:])
-                    
-                    # Goal reward: compare current feat to goal in carry
-                    reward_goal = self._goal_reward(goal_feats[1:], carry_traj["goal"][1:])
-                    
-                    # Store in trajectory
-                    traj["reward_extr"] = reward_extr
-                    traj["reward_expl"] = reward_expl
-                    traj["reward_goal"] = reward_goal
-                    traj["goal"] = carry_traj["goal"]
-                    traj["skill"] = carry_traj["skill"]
-                    traj["delta"] = carry_traj["goal"] - goal_feats
-                    
-                    # Discount/cont handling - add to traj BEFORE split_traj
-                    discount = self._config.discount
-                    if "cont" not in traj:
-                        traj["cont"] = torch.ones_like(reward_extr)
-                    # Add discount to traj so it gets properly unfolded in split_traj
-                    traj["discount"] = discount * traj["cont"]
-                    
-                    # 3. Prepare Worker trajectory (split_traj with weight)
-                    wtraj, _ = self._split_traj(traj, carry_traj)
-                    
-                    # 4. Prepare Manager trajectory (abstract_traj)
-                    mtraj, mcarry = self._abstract_traj_official(traj, carry_traj)
-                    
-                    # 5. Update Worker (using wtraj['weight'])
-                    w_obs = self._get_obs_feat(wtraj)
-                    w_abs = self._get_abs_feat(wtraj)
-                    w_goal = wtraj["goal"]
-                    w_delta = wtraj.get("delta", wtraj["goal"] - self._get_goal_feat(wtraj))
-                    
-                    dynamics_type = getattr(self._config, 'dynamics_type', 'rssm')
-                    
-                    w_input_list = [w_obs, w_goal]
-                    if self._use_delta:
-                        w_input_list.append(w_delta)
-                        
-                    # Only add abs_feat if NOT RSSM (redundant for RSSM)
-                    if dynamics_type != 'rssm':
-                        w_input_list.append(w_abs)
-                        
-                    w_input = torch.cat(w_input_list, dim=-1)
-                    
-                    worker_loss, worker_mets = self.worker.update(
-                        w_input, wtraj, wtraj['weight']
-                    )
-                    metrics.update({f'worker_{k}': v for k, v in worker_mets.items()})
-                    
-                    # 6. Update Manager (using mtraj['weight'])
-                    if "reward_extr" in mtraj and mtraj["reward_extr"].shape[0] > 0:
-                        m_abs = self._get_abs_feat(mtraj)
-                        manager_loss, manager_mets = self.manager.update(
-                            m_abs, mtraj, mtraj.get('weight', torch.ones_like(mtraj['reward_extr']))
+                    metrics.update(manager_actor_mets)
+            
+            # Manager Value
+            manager_value_loss = torch.tensor(0.0, device=self._config.device)
+            with tools.RequiresGrad(self.manager.vfns):
+                with torch.cuda.amp.autocast(self._use_amp):
+                    for key, vfn in self.manager.vfns.items():
+                        if self.manager._scales.get(key, 0.0) == 0.0:
+                            continue
+                        reward_key = f'reward_{key}'
+                        if reward_key not in mtraj:
+                            continue
+                        vfn_loss, vfn_mets = self._compute_vfn_loss(
+                            vfn, m_abs, mtraj, m_weight, key, "manager"
                         )
-                        metrics.update({f'manager_{k}': v for k, v in manager_mets.items()})
-                    else:
-                        manager_loss = torch.tensor(0.0, device=self._config.device)
-                # Optimize Worker (first backward)
-                metrics.update(self._worker_opt(worker_loss, self.worker.parameters()))
-                
-                # Optimize Manager (second backward)
-                # Manager uses different trajectory (mtraj from abstract_traj), so gradients should be independent
-                if "reward_extr" in mtraj and mtraj["reward_extr"].shape[0] > 0:
-                    metrics.update(self._manager_opt(manager_loss, self.manager.parameters()))
+                        manager_value_loss = manager_value_loss + vfn_loss
+                        metrics.update(vfn_mets)
+                        vfn.update_slow()
+            
+            # Manager Optimize
+            with tools.RequiresGrad(self.manager):
+                metrics.update(self._manager_opt(
+                    manager_actor_loss + manager_value_loss, 
+                    self.manager.parameters()
+                ))
         
         self._update_count += 1
         
@@ -1429,6 +1487,180 @@ class HierarchicalBehavior(nn.Module):
         metrics["manager_reward_mean"] = reward_extr.mean().item() if reward_extr.numel() > 0 else 0.0
         
         return None, None, None, None, metrics
+    
+    def _update_slow_targets(self):
+        """Update slow target networks for all VFunctions."""
+        for vfn in self.worker.vfns.values():
+            vfn.update_slow()
+        for vfn in self.manager.vfns.values():
+            vfn.update_slow()
+    
+    def _compute_worker_actor_loss(self, features, traj, weight):
+        """
+        Compute Worker actor loss (matching DreamerV3 ImagBehavior pattern).
+        """
+        metrics = {}
+        
+        # Get score from worker
+        score = self.worker.score(features, traj, weight)
+        
+        # Actor loss via REINFORCE or dynamics gradient
+        T = score.shape[0]
+        policy = self.worker.actor(features[:T].detach())
+        action = traj['action'][:T]
+        
+        # REINFORCE loss
+        log_prob = policy.log_prob(action.detach())
+        if log_prob.shape[0] > T:
+            log_prob = log_prob[:T]
+            
+        # DEBUG: Check why loss is 0 (Critical for diagnosis)
+        if score.abs().mean() < 1e-6:
+             print(f"DEBUG: Worker Score is ZERO! shape={score.shape}, mean={score.mean().item()}")
+        if log_prob.abs().mean() < 1e-6:
+             print(f"DEBUG: Worker LogProb is ZERO! shape={log_prob.shape}, mean={log_prob.mean().item()}")
+        
+        actor_loss = -(log_prob * score.detach())
+            
+        # Entropy bonus
+        ent = policy.entropy()[:T]
+        if hasattr(policy, 'maxent') and hasattr(policy, 'minent'):
+            lo, hi = policy.minent, policy.maxent
+        else:
+            lo = 0.0
+            hi = float(torch.log(torch.tensor(self._config.num_actions, dtype=torch.float32)))
+        ent_norm = (ent - lo) / (hi - lo + 1e-8)
+        
+        # Adaptive entropy scale (CRITICAL FIX: Connect AutoEntropyAdjust)
+        if hasattr(self.worker, '_actent'):
+            ent_scale = self.worker._actent(ent_norm)
+        else:
+            # Fallback
+            ent_scale = self._config.actor["entropy"]
+            
+        ent_loss = -ent_scale * ent_norm
+        
+        # Weight by discount
+        weight_T = weight[:T] if weight.shape[0] >= T else weight
+        
+        # DEBUG: Check shapes for broadcasting mismatch
+        # print(f"DEBUG: actor_loss={actor_loss.shape}, ent_loss={ent_loss.shape}, weight_T={weight_T.shape}")
+        
+        # Normalize weight shape (remove last dim 1 if present) to match target/log_prob/actor_loss
+        # actor_loss: (T, B), weight: (T, B, 1) -> mismatch if not squeezed
+        if weight_T.dim() > actor_loss.dim():
+             weight_T = weight_T.squeeze(-1)
+             
+        loss = ((actor_loss + ent_loss) * weight_T.detach()).mean()
+        
+        metrics['Worker_actor_loss'] = actor_loss.mean().detach().cpu()
+        metrics['Worker_entropy'] = ent.mean().detach().cpu()
+        
+        return loss, metrics
+    
+    def _compute_manager_actor_loss(self, features, traj, weight):
+        """
+        Compute Manager actor loss (matching DreamerV3 ImagBehavior pattern).
+        """
+        metrics = {}
+        
+        # Get score from manager
+        score = self.manager.score(features, traj, weight)
+        
+        # Actor loss via REINFORCE
+        T = score.shape[0]
+        policy = self.manager(features[:T].detach())  # Uses forward() for MultiCategoricalDist
+        action = traj['action'][:T]
+        
+        # REINFORCE loss
+        log_prob = policy.log_prob(action.detach())
+        if log_prob.shape[0] > T:
+            log_prob = log_prob[:T]
+            
+        # DEBUG: Check why loss is 0 (Critical for diagnosis)
+        if score.abs().mean() < 1e-6:
+             print(f"DEBUG: Worker Score is ZERO! shape={score.shape}, mean={score.mean().item()}")
+        if log_prob.abs().mean() < 1e-6:
+             print(f"DEBUG: Worker LogProb is ZERO! shape={log_prob.shape}, mean={log_prob.mean().item()}")
+        
+        actor_loss = -(log_prob * score.detach())
+        
+        # Entropy bonus
+        ent = policy.entropy()[:T]
+        if hasattr(policy, 'maxent') and hasattr(policy, 'minent'):
+            lo, hi = policy.minent, policy.maxent
+        else:
+            # Manager: stoch * log(discrete)
+            lo = 0.0
+            hi = float(self._skill_stoch * torch.log(torch.tensor(self._skill_discrete, dtype=torch.float32)))
+        ent_norm = (ent - lo) / (hi - lo + 1e-8)
+        
+        # Adaptive entropy scale (CRITICAL FIX: Connect AutoEntropyAdjust)
+        if hasattr(self.manager, '_actent'):
+            ent_scale = self.manager._actent(ent_norm)
+        else:
+            # Fallback (should not happen with v12 fix)
+            ent_scale = self._config.actor["entropy"]
+            
+        ent_loss = -ent_scale * ent_norm
+        
+        # Weight by discount
+        weight_T = weight[:T] if weight.shape[0] >= T else weight
+        
+        # Normalize weight shape (remove last dim 1 if present)
+        if weight_T.dim() > actor_loss.dim():
+             weight_T = weight_T.squeeze(-1)
+             
+        loss = ((actor_loss + ent_loss) * weight_T.detach()).mean()
+        
+        metrics['Manager_actor_loss'] = actor_loss.mean().detach().cpu()
+        metrics['Manager_entropy'] = ent.mean().detach().cpu()
+        
+        return loss, metrics
+    
+    def _compute_vfn_loss(self, vfn, features, traj, weight, reward_key, prefix):
+        """
+        Compute VFunction loss (matching DreamerV3 ImagBehavior pattern).
+        """
+        metrics = {}
+        discount_scalar = self._config.discount
+        
+        reward = traj[f'reward_{reward_key}']
+        T = reward.shape[0]
+        
+        # Compute disc from cont
+        if 'cont' in traj:
+            cont = traj['cont']
+            if cont.shape[0] > T:
+                disc = cont[1:T+1] * discount_scalar
+            else:
+                disc = cont * discount_scalar
+        else:
+            disc = discount_scalar * torch.ones_like(reward)
+        
+        if disc.dim() > reward.dim():
+            disc = disc.squeeze(-1)
+        
+        # Compute target
+        target, baseline = vfn.compute_target_with_disc(
+            features, reward, disc,
+            impl=self._config.critic.get("return", "gve")
+        )
+        
+        # Compute loss
+        weight_use = weight[:-1] if weight.shape[0] > T else weight
+        
+        # Normalize weight shape (remove last dim 1 if present) to match target/log_prob
+        if weight_use.dim() > target.dim():
+             weight_use = weight_use.squeeze(-1)
+             
+        loss, vfn_mets = vfn.loss(features, target, weight_use)
+        
+        metrics[f'{prefix}_{reward_key}_value_loss'] = loss.detach().cpu()
+        metrics[f'{prefix}_{reward_key}_value_mean'] = baseline.mean().detach().cpu()
+        metrics[f'{prefix}_{reward_key}_target_mean'] = target.mean().detach().cpu()
+        
+        return loss, metrics
 
 
 
