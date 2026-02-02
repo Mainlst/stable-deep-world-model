@@ -11,6 +11,8 @@ dependencies = [
     "tensorboard",
     "tqdm",
     "wandb",
+    "gym",
+    "ruamel.yaml<0.18",
 ]
 
 [build-system]
