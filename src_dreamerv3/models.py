@@ -50,6 +50,7 @@ class WorldModel(nn.Module):
                 max_seg_num=config.vta_max_seg_num,
                 boundary_temp=config.vta_boundary_temp,
                 boundary_force_scale=config.vta_boundary_force_scale,
+                boundary_threshold=config.vta_boundary_threshold,
                 act=config.act,
                 norm=config.norm,
                 min_std=config.dyn_min_std,

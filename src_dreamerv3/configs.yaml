@@ -71,6 +71,7 @@ defaults:
   vta_max_seg_num: 200    # Maximum number of segments
   vta_boundary_temp: 1.0 # Gumbel-softmax temperature for boundary sampling
   vta_boundary_force_scale: 10.0 # Hard forcing strength at segment limits (0 disables)
+  vta_boundary_threshold: 0.5 # READ threshold for inference (prob >= threshold => READ)
   vta_imag_type: 'full'  # 'jumpy' (abstract only) or 'full' (both levels)
   vta_imag_boundary: 'prior'  # 'prior', 'fixed', or 'none'
   vta_mask_scale: 1.0  # weight for kl_mask loss (trains Prior BD to match Post BD)

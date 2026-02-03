@@ -1,11 +1,17 @@
-import gymnasium as gym
+try:
+    import gymnasium as gym
+except ModuleNotFoundError:  # Fall back when gymnasium is not installed.
+    import gym
 import numpy as np
 
 # Ensure ALE envs are registered (gymnasium[atari] provides these).
 try:
     import gymnasium.envs.atari  # noqa: F401
 except ModuleNotFoundError:
-    pass
+    try:
+        import gym.envs.atari  # noqa: F401
+    except ModuleNotFoundError:
+        pass
 
 try:
     import ale_py

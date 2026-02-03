@@ -1,6 +1,9 @@
 import datetime
 import gym
-import gymnasium
+try:
+    import gymnasium
+except ModuleNotFoundError:  # Fall back when gymnasium is not installed.
+    gymnasium = gym
 import numpy as np
 import uuid
 

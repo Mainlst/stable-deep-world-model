@@ -264,8 +264,33 @@ def render_fired_plot(images, boundary, indices, out_path, title):
 
 
 def main():
+    def prepare_csv(path: Path, fieldnames, overwrite: bool):
+        """
+        Returns (final_path, write_header, mode).
+        If an existing file has a different header, default to writing a new *_v2.csv file,
+        unless overwrite=True.
+        """
+        if not path.exists():
+            return path, True, "w"
+        try:
+            with path.open() as f:
+                header = f.readline().strip().split(",")
+        except OSError:
+            header = []
+        if header == list(fieldnames):
+            return path, False, "a"
+        if overwrite:
+            return path, True, "w"
+        v2 = path.with_name(f"{path.stem}_v2{path.suffix}")
+        return v2, True, "w"
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--logdir", required=True, help="Directory with checkpoint and episodes.")
+    parser.add_argument(
+        "--ckpt_path",
+        default=None,
+        help="Checkpoint path (defaults to logdir/latest.pt). Relative paths are resolved from --logdir.",
+    )
     parser.add_argument(
         "--output_dir",
         default=None,
@@ -293,6 +318,16 @@ def main():
         default=None,
         help="CSV path to write z_t/z_{t+1} distance summaries (defaults to output_dir/zt_zt_1.csv).",
     )
+    parser.add_argument(
+        "--dist_plot_out",
+        default=None,
+        help="Output image path for z_t/z_{t+1} distance plot (defaults to output_dir/zt_zt_1_plot.png).",
+    )
+    parser.add_argument(
+        "--overwrite_csv",
+        action="store_true",
+        help="Overwrite CSV outputs if an incompatible schema is detected.",
+    )
     parser.add_argument("--configs", nargs="+", default=["atari100k"])
     parser.add_argument("--task", default="atari_breakout")
     parser.add_argument("--episode", default=None, help="Path to a .npz episode file")
@@ -305,10 +340,14 @@ def main():
         choices=["boundary", "reward", "delta", "reward_or_delta"],
     )
     parser.add_argument("--device", default=None)
+    parser.add_argument("--seed", type=int, default=0, help="Random seed for deterministic sampling.")
     parser.add_argument("--out", default=None)
     parser.add_argument("--internal_out", default=None)
     parser.add_argument("--fired_out", default=None)
     args, overrides = parser.parse_known_args()
+
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
 
     device = args.device
     if device is None:
@@ -322,7 +361,9 @@ def main():
     logdir = Path(args.logdir)
     output_dir = Path(args.output_dir) if args.output_dir else logdir
     output_dir.mkdir(parents=True, exist_ok=True)
-    ckpt_path = logdir / "latest.pt"
+    ckpt_path = Path(args.ckpt_path) if args.ckpt_path else (logdir / "latest.pt")
+    if not ckpt_path.is_absolute():
+        ckpt_path = logdir / ckpt_path
     if not ckpt_path.exists():
         raise FileNotFoundError(f"Missing checkpoint: {ckpt_path}")
 
@@ -365,6 +406,9 @@ def main():
     stats = compute_vta_stats(wm, data)
 
     # Compute z (abstract) and s (obs) distances for adjacent steps.
+    # Note:
+    # - *_mean below refers to posterior distribution parameters (can change even if COPY).
+    # - *_stoch below refers to the latent state actually used by the dynamics (COPY makes it piecewise constant).
     with torch.no_grad():
         proc = wm.preprocess(data)
         embed = wm.encoder(proc)
@@ -372,6 +416,14 @@ def main():
         post, _ = wm.dynamics.observe(embed, proc["action"], proc["is_first"], reward=reward)
         abs_mean = post["abs_mean"].detach().cpu().numpy()  # (B, T, D)
         obs_mean = post["obs_mean"].detach().cpu().numpy()
+        abs_stoch = post["abs_stoch"].detach().cpu().numpy()
+        obs_stoch = post["obs_stoch"].detach().cpu().numpy()
+        boundary_logit = post.get("boundary_logit", None)
+        read_prob = (
+            torch.softmax(boundary_logit, dim=-1)[..., 0].detach().cpu().numpy()
+            if boundary_logit is not None
+            else stats.get("read_prob", None)
+        )
         boundary = stats["boundary"]  # (B, T)
 
     def adjacent_l2(x):
@@ -380,13 +432,20 @@ def main():
 
     abs_l2 = adjacent_l2(abs_mean)
     obs_l2 = adjacent_l2(obs_mean)
+    abs_stoch_l2 = adjacent_l2(abs_stoch)
+    obs_stoch_l2 = adjacent_l2(obs_stoch)
     boundary_next = boundary[:, 1:]  # align with z_t -> z_{t+1}
+    read_prob_next = read_prob[:, 1:] if read_prob is not None else None
 
     abs_kl_mean = float(stats["abs_kl"].mean())
     abs_kl_std = float(stats["abs_kl"].std())
     obs_kl_mean = float(stats["obs_kl"].mean())
     obs_kl_std = float(stats["obs_kl"].std())
     boundary_rate = float((stats["boundary"] > 0.5).mean())
+    read_prob_mean = float(np.asarray(read_prob).mean()) if read_prob is not None else float("nan")
+    read_prob_p99 = (
+        float(np.quantile(np.asarray(read_prob).reshape(-1), 0.99)) if read_prob is not None else float("nan")
+    )
 
     frame_delta = None
     if images.shape[0] > 1:
@@ -420,24 +479,32 @@ def main():
     summary = {
         "task": args.task,
         "logdir": str(logdir),
+        "ckpt": str(ckpt_path),
         "episode": str(ep_path),
         "abs_kl_mean": abs_kl_mean,
         "abs_kl_std": abs_kl_std,
         "obs_kl_mean": obs_kl_mean,
         "obs_kl_std": obs_kl_std,
         "boundary_rate": boundary_rate,
+        "read_prob_mean": read_prob_mean,
+        "read_prob_p99": read_prob_p99,
         "abs_l2_mean": float(abs_l2.mean()),
         "obs_l2_mean": float(obs_l2.mean()),
+        "abs_stoch_l2_mean": float(abs_stoch_l2.mean()),
+        "obs_stoch_l2_mean": float(obs_stoch_l2.mean()),
         "abs_l2_read_mean": float(abs_l2[boundary_next > 0.5].mean()) if (boundary_next > 0.5).any() else float("nan"),
         "obs_l2_read_mean": float(obs_l2[boundary_next > 0.5].mean()) if (boundary_next > 0.5).any() else float("nan"),
+        "abs_stoch_l2_read_mean": float(abs_stoch_l2[boundary_next > 0.5].mean()) if (boundary_next > 0.5).any() else float("nan"),
+        "obs_stoch_l2_read_mean": float(obs_stoch_l2[boundary_next > 0.5].mean()) if (boundary_next > 0.5).any() else float("nan"),
     }
     print(json.dumps(summary, ensure_ascii=False))
 
     csv_path = Path(args.csv_out) if args.csv_out else output_dir / "boundary_stats.csv"
-    write_header = not csv_path.exists()
     csv_path.parent.mkdir(parents=True, exist_ok=True)
-    with csv_path.open("a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(summary.keys()))
+    summary_fieldnames = list(summary.keys())
+    csv_path, write_header, mode = prepare_csv(csv_path, summary_fieldnames, args.overwrite_csv)
+    with csv_path.open(mode, newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=summary_fieldnames)
         if write_header:
             writer.writeheader()
         writer.writerow(summary)
@@ -445,21 +512,27 @@ def main():
     # Sliding window summaries for adjacent z distances.
     dist_csv = Path(args.dist_csv) if args.dist_csv else output_dir / "zt_zt_1.csv"
     dist_csv.parent.mkdir(parents=True, exist_ok=True)
-    write_header = not dist_csv.exists()
-    with dist_csv.open("a", newline="") as f:
-        fieldnames = [
+    dist_fieldnames = [
             "task",
             "logdir",
+            "ckpt",
             "episode",
             "window_start",
             "window_end",
             "boundary_rate",
+            "read_prob_mean",
             "abs_l2_mean",
             "obs_l2_mean",
+            "abs_stoch_l2_mean",
+            "obs_stoch_l2_mean",
             "abs_l2_read_mean",
             "obs_l2_read_mean",
+            "abs_stoch_l2_read_mean",
+            "obs_stoch_l2_read_mean",
         ]
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+    dist_csv, write_header, mode = prepare_csv(dist_csv, dist_fieldnames, args.overwrite_csv)
+    with dist_csv.open(mode, newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=dist_fieldnames)
         if write_header:
             writer.writeheader()
         T = abs_l2.shape[1]
@@ -469,19 +542,85 @@ def main():
             end = min(T, start + win)
             sl = slice(start, end)
             bn = boundary_next[:, sl]
+            rp = read_prob_next[:, sl] if read_prob_next is not None else None
             row = {
                 "task": args.task,
                 "logdir": str(logdir),
+                "ckpt": str(ckpt_path),
                 "episode": str(ep_path),
                 "window_start": start,
                 "window_end": end,
                 "boundary_rate": float((bn > 0.5).mean()),
+                "read_prob_mean": float(np.asarray(rp).mean()) if rp is not None else float("nan"),
                 "abs_l2_mean": float(abs_l2[:, sl].mean()),
                 "obs_l2_mean": float(obs_l2[:, sl].mean()),
+                "abs_stoch_l2_mean": float(abs_stoch_l2[:, sl].mean()),
+                "obs_stoch_l2_mean": float(obs_stoch_l2[:, sl].mean()),
                 "abs_l2_read_mean": float(abs_l2[:, sl][bn > 0.5].mean()) if (bn > 0.5).any() else float("nan"),
                 "obs_l2_read_mean": float(obs_l2[:, sl][bn > 0.5].mean()) if (bn > 0.5).any() else float("nan"),
+                "abs_stoch_l2_read_mean": float(abs_stoch_l2[:, sl][bn > 0.5].mean()) if (bn > 0.5).any() else float("nan"),
+                "obs_stoch_l2_read_mean": float(obs_stoch_l2[:, sl][bn > 0.5].mean()) if (bn > 0.5).any() else float("nan"),
             }
             writer.writerow(row)
+
+    # Plot z_t to z_{t+1} distance summaries.
+    plot_out = (
+        Path(args.dist_plot_out)
+        if args.dist_plot_out
+        else output_dir / f"{dist_csv.stem}_plot.png"
+    )
+    window_start = []
+    abs_l2_mean = []
+    abs_stoch_l2_mean = []
+    abs_l2_read = []
+    obs_l2_mean = []
+    obs_stoch_l2_mean = []
+    obs_l2_read = []
+    boundary_rate = []
+    read_prob_mean = []
+    with dist_csv.open() as f:
+        for r in csv.DictReader(f):
+            if r.get("task") != args.task:
+                continue
+            try:
+                window_start.append(float(r.get("window_start", "nan")))
+                abs_l2_mean.append(float(r.get("abs_l2_mean", "nan")))
+                abs_l2_read.append(float(r.get("abs_l2_read_mean", "nan")))
+                obs_l2_mean.append(float(r.get("obs_l2_mean", "nan")))
+                obs_l2_read.append(float(r.get("obs_l2_read_mean", "nan")))
+                abs_stoch_l2_mean.append(float(r.get("abs_stoch_l2_mean", "nan")))
+                obs_stoch_l2_mean.append(float(r.get("obs_stoch_l2_mean", "nan")))
+                boundary_rate.append(float(r.get("boundary_rate", "nan")))
+                read_prob_mean.append(float(r.get("read_prob_mean", "nan")))
+            except ValueError:
+                continue
+    if window_start:
+        fig, axes = plt.subplots(4, 1, figsize=(10, 11), sharex=True)
+        axes[0].plot(window_start, abs_l2_mean, label="abs_mean_l2", color="#1f77b4")
+        axes[0].plot(window_start, abs_stoch_l2_mean, label="abs_stoch_l2", color="#17becf", linestyle="--")
+        axes[0].plot(window_start, abs_l2_read, label="abs_mean_l2@READ", color="#ff7f0e")
+        axes[0].set_ylabel("Abs z distance")
+        axes[0].legend(loc="upper right")
+
+        axes[1].plot(window_start, obs_l2_mean, label="obs_mean_l2", color="#2ca02c")
+        axes[1].plot(window_start, obs_stoch_l2_mean, label="obs_stoch_l2", color="#1f77b4", linestyle="--")
+        axes[1].plot(window_start, obs_l2_read, label="obs_mean_l2@READ", color="#d62728")
+        axes[1].set_ylabel("Obs s distance")
+        axes[1].legend(loc="upper right")
+
+        axes[2].plot(window_start, boundary_rate, label="boundary_rate", color="#9467bd")
+        axes[2].set_ylabel("Boundary rate")
+        axes[2].legend(loc="upper right")
+
+        axes[3].plot(window_start, read_prob_mean, label="read_prob_mean", color="#8c564b")
+        axes[3].set_ylabel("READ prob")
+        axes[3].set_xlabel("Window start")
+        axes[3].legend(loc="upper right")
+
+        fig.suptitle(f"z_t to z_(t+1) distances - {args.task}")
+        fig.tight_layout()
+        fig.savefig(plot_out, dpi=150)
+        plt.close(fig)
 
 
 if __name__ == "__main__":

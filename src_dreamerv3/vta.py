@@ -155,6 +155,7 @@ class VTA(nn.Module):
         max_seg_num=5,
         boundary_temp=1.0,
         boundary_force_scale=10.0,
+        boundary_threshold=0.5,
         act="SiLU",
         norm=True,
         min_std=0.1,
@@ -182,6 +183,7 @@ class VTA(nn.Module):
         self._max_seg_num = max_seg_num
         self._boundary_temp = boundary_temp
         self._boundary_force_scale = boundary_force_scale
+        self._boundary_threshold = boundary_threshold
         
         # Feature sizes
         self._abs_feat_size = abs_belief + abs_stoch
@@ -389,8 +391,14 @@ class VTA(nn.Module):
         sample_prob = log_sample.exp()
         
         # Hard sample with straight-through estimator
-        hard_sample = torch.zeros_like(sample_prob)
-        hard_sample.scatter_(-1, sample_prob.argmax(dim=-1, keepdim=True), 1.0)
+        if self.training or self._boundary_threshold is None:
+            hard_sample = torch.zeros_like(sample_prob)
+            hard_sample.scatter_(-1, sample_prob.argmax(dim=-1, keepdim=True), 1.0)
+        else:
+            read_prob = sample_prob[..., 0:1]
+            read_mask = (read_prob >= float(self._boundary_threshold)).to(sample_prob.dtype)
+            copy_mask = 1.0 - read_mask
+            hard_sample = torch.cat([read_mask, copy_mask], dim=-1)
         sample = hard_sample.detach() + (sample_prob - sample_prob.detach())
         
         return sample, log_sample
