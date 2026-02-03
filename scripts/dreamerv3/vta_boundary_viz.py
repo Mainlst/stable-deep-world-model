@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 import argparse
+import csv
 import json
 from pathlib import Path
 import sys
 
 import numpy as np
 import torch
-import ruamel.yaml as yaml
+from ruamel.yaml import YAML
 import matplotlib
 
 matplotlib.use("Agg")
@@ -29,7 +30,8 @@ def load_config(config_names, overrides):
             else:
                 base[key] = value
 
-    configs = yaml.safe_load(
+    yaml = YAML(typ="safe", pure=True)
+    configs = yaml.load(
         (Path(__file__).resolve().parents[2] / "src_dreamerv3" / "configs.yaml").read_text()
     )
     defaults = {}
@@ -177,10 +179,18 @@ def render_internal_plot(stats, reward, frame_delta, start, end, out_path, title
     seg_num = stats["seg_num"][0, start:end]
     abs_kl = stats["abs_kl"][0, start:end]
     obs_kl = stats["obs_kl"][0, start:end]
+    t = np.arange(len(boundary))
+
     reward_win = reward[start:end] if reward is not None else None
     delta_win = frame_delta[start:end] if frame_delta is not None else None
-
-    t = np.arange(len(boundary))
+    if reward_win is not None:
+        reward_win = np.asarray(reward_win).reshape(-1)
+        if reward_win.shape[0] != t.shape[0]:
+            reward_win = None
+    if delta_win is not None:
+        delta_win = np.asarray(delta_win).reshape(-1)
+        if delta_win.shape[0] != t.shape[0]:
+            delta_win = None
     fig, axes = plt.subplots(4, 1, figsize=(10, 8), sharex=True)
 
     axes[0].plot(t, read_prob, color="black", linewidth=2.0, label="READ prob")
@@ -255,7 +265,34 @@ def render_fired_plot(images, boundary, indices, out_path, title):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--logdir", required=True)
+    parser.add_argument("--logdir", required=True, help="Directory with checkpoint and episodes.")
+    parser.add_argument(
+        "--output_dir",
+        default=None,
+        help="Directory to save outputs (defaults to --logdir).",
+    )
+    parser.add_argument(
+        "--csv_out",
+        default=None,
+        help="CSV path to append summary stats (defaults to output_dir/boundary_stats.csv).",
+    )
+    parser.add_argument(
+        "--dist_window",
+        type=int,
+        default=20,
+        help="Window size for z_t to z_{t+1} distance summary.",
+    )
+    parser.add_argument(
+        "--dist_stride",
+        type=int,
+        default=5,
+        help="Stride for sliding window summaries.",
+    )
+    parser.add_argument(
+        "--dist_csv",
+        default=None,
+        help="CSV path to write z_t/z_{t+1} distance summaries (defaults to output_dir/zt_zt_1.csv).",
+    )
     parser.add_argument("--configs", nargs="+", default=["atari100k"])
     parser.add_argument("--task", default="atari_breakout")
     parser.add_argument("--episode", default=None, help="Path to a .npz episode file")
@@ -283,6 +320,8 @@ def main():
     )
 
     logdir = Path(args.logdir)
+    output_dir = Path(args.output_dir) if args.output_dir else logdir
+    output_dir.mkdir(parents=True, exist_ok=True)
     ckpt_path = logdir / "latest.pt"
     if not ckpt_path.exists():
         raise FileNotFoundError(f"Missing checkpoint: {ckpt_path}")
@@ -325,6 +364,30 @@ def main():
 
     stats = compute_vta_stats(wm, data)
 
+    # Compute z (abstract) and s (obs) distances for adjacent steps.
+    with torch.no_grad():
+        proc = wm.preprocess(data)
+        embed = wm.encoder(proc)
+        reward = proc.get("reward", None)
+        post, _ = wm.dynamics.observe(embed, proc["action"], proc["is_first"], reward=reward)
+        abs_mean = post["abs_mean"].detach().cpu().numpy()  # (B, T, D)
+        obs_mean = post["obs_mean"].detach().cpu().numpy()
+        boundary = stats["boundary"]  # (B, T)
+
+    def adjacent_l2(x):
+        diff = x[:, 1:, :] - x[:, :-1, :]
+        return np.linalg.norm(diff, axis=-1)  # (B, T-1)
+
+    abs_l2 = adjacent_l2(abs_mean)
+    obs_l2 = adjacent_l2(obs_mean)
+    boundary_next = boundary[:, 1:]  # align with z_t -> z_{t+1}
+
+    abs_kl_mean = float(stats["abs_kl"].mean())
+    abs_kl_std = float(stats["abs_kl"].std())
+    obs_kl_mean = float(stats["obs_kl"].mean())
+    obs_kl_std = float(stats["obs_kl"].std())
+    boundary_rate = float((stats["boundary"] > 0.5).mean())
+
     frame_delta = None
     if images.shape[0] > 1:
         diff = np.abs(images[1:].astype(np.float32) - images[:-1].astype(np.float32))
@@ -337,20 +400,88 @@ def main():
     images_win = images[start:end]
     boundary_win = stats["boundary"][0, start:end]
 
-    out_path = Path(args.out) if args.out else logdir / "boundary_grid.png"
+    out_path = Path(args.out) if args.out else output_dir / "boundary_grid.png"
     title = f"VTA Boundary Detection - {args.task} ({ep_path.name})"
     render_plot(images_win, boundary_win, out_path, title)
     print(out_path)
 
-    internal_out = Path(args.internal_out) if args.internal_out else logdir / "boundary_internal.png"
+    internal_out = (
+        Path(args.internal_out) if args.internal_out else output_dir / "boundary_internal.png"
+    )
     render_internal_plot(stats, reward, frame_delta, start, end, internal_out, title)
     print(internal_out)
 
-    fired_out = Path(args.fired_out) if args.fired_out else logdir / "boundary_fired.png"
+    fired_out = Path(args.fired_out) if args.fired_out else output_dir / "boundary_fired.png"
     boundary_all = stats["boundary"][0]
     fired_indices = np.where(boundary_all > 0.5)[0].tolist()
     render_fired_plot(images, boundary_all, fired_indices, fired_out, title)
     print(fired_out)
+
+    summary = {
+        "task": args.task,
+        "logdir": str(logdir),
+        "episode": str(ep_path),
+        "abs_kl_mean": abs_kl_mean,
+        "abs_kl_std": abs_kl_std,
+        "obs_kl_mean": obs_kl_mean,
+        "obs_kl_std": obs_kl_std,
+        "boundary_rate": boundary_rate,
+        "abs_l2_mean": float(abs_l2.mean()),
+        "obs_l2_mean": float(obs_l2.mean()),
+        "abs_l2_read_mean": float(abs_l2[boundary_next > 0.5].mean()) if (boundary_next > 0.5).any() else float("nan"),
+        "obs_l2_read_mean": float(obs_l2[boundary_next > 0.5].mean()) if (boundary_next > 0.5).any() else float("nan"),
+    }
+    print(json.dumps(summary, ensure_ascii=False))
+
+    csv_path = Path(args.csv_out) if args.csv_out else output_dir / "boundary_stats.csv"
+    write_header = not csv_path.exists()
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    with csv_path.open("a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(summary.keys()))
+        if write_header:
+            writer.writeheader()
+        writer.writerow(summary)
+
+    # Sliding window summaries for adjacent z distances.
+    dist_csv = Path(args.dist_csv) if args.dist_csv else output_dir / "zt_zt_1.csv"
+    dist_csv.parent.mkdir(parents=True, exist_ok=True)
+    write_header = not dist_csv.exists()
+    with dist_csv.open("a", newline="") as f:
+        fieldnames = [
+            "task",
+            "logdir",
+            "episode",
+            "window_start",
+            "window_end",
+            "boundary_rate",
+            "abs_l2_mean",
+            "obs_l2_mean",
+            "abs_l2_read_mean",
+            "obs_l2_read_mean",
+        ]
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        if write_header:
+            writer.writeheader()
+        T = abs_l2.shape[1]
+        win = args.dist_window
+        stride = max(1, args.dist_stride)
+        for start in range(0, max(1, T - win + 1), stride):
+            end = min(T, start + win)
+            sl = slice(start, end)
+            bn = boundary_next[:, sl]
+            row = {
+                "task": args.task,
+                "logdir": str(logdir),
+                "episode": str(ep_path),
+                "window_start": start,
+                "window_end": end,
+                "boundary_rate": float((bn > 0.5).mean()),
+                "abs_l2_mean": float(abs_l2[:, sl].mean()),
+                "obs_l2_mean": float(obs_l2[:, sl].mean()),
+                "abs_l2_read_mean": float(abs_l2[:, sl][bn > 0.5].mean()) if (bn > 0.5).any() else float("nan"),
+                "obs_l2_read_mean": float(obs_l2[:, sl][bn > 0.5].mean()) if (bn > 0.5).any() else float("nan"),
+            }
+            writer.writerow(row)
 
 
 if __name__ == "__main__":
