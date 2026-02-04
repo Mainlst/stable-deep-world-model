@@ -2,6 +2,7 @@ import argparse
 import functools
 import os
 import pathlib
+import re
 import sys
 
 os.environ["MUJOCO_GL"] = "osmesa"
@@ -222,6 +223,23 @@ def main(config):
     logdir.mkdir(parents=True, exist_ok=True)
     config.traindir.mkdir(parents=True, exist_ok=True)
     config.evaldir.mkdir(parents=True, exist_ok=True)
+
+    ckpt_dir = logdir / str(getattr(config, "ckpt_dir", "checkpoints"))
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+    ckpt_every = int(getattr(config, "ckpt_every", 0) or 0)
+    ckpt_steps_raw = getattr(config, "ckpt_steps", ())
+    if isinstance(ckpt_steps_raw, (list, tuple)):
+        ckpt_steps = [int(s) for s in ckpt_steps_raw]
+    elif isinstance(ckpt_steps_raw, str):
+        ckpt_steps = [int(s) for s in ckpt_steps_raw.split(",") if s.strip()]
+    else:
+        ckpt_steps = [int(ckpt_steps_raw)]
+    ckpt_steps = sorted({s for s in ckpt_steps if s > 0})
+    existing_ckpt_steps = set()
+    for p in ckpt_dir.glob("step-*.pt"):
+        m = re.search(r"step-(\d+)\.pt$", p.name)
+        if m:
+            existing_ckpt_steps.add(int(m.group(1)))
     
     # Save training configuration
     config_path = logdir / "config.yaml"
@@ -332,6 +350,7 @@ def main(config):
                 video_pred = agent._wm.video_pred(next(eval_dataset))
                 logger.video("eval_openl", to_np(video_pred))
         print("Start training.")
+        prev_step = agent._step
         state = tools.simulate(
             agent,
             train_envs,
@@ -347,6 +366,22 @@ def main(config):
             "optims_state_dict": tools.recursively_collect_optim_state_dict(agent),
         }
         torch.save(items_to_save, logdir / "latest.pt")
+
+        # Save additional checkpoints at specified steps or intervals.
+        targets = []
+        if ckpt_steps:
+            for step in ckpt_steps:
+                if prev_step < step <= agent._step and step not in existing_ckpt_steps:
+                    targets.append(step)
+        if ckpt_every > 0:
+            start = ((prev_step // ckpt_every) + 1) * ckpt_every
+            for step in range(start, agent._step + 1, ckpt_every):
+                if step not in existing_ckpt_steps:
+                    targets.append(step)
+        for step in sorted(set(targets)):
+            ckpt_path = ckpt_dir / f"step-{step:09d}.pt"
+            torch.save(items_to_save, ckpt_path)
+            existing_ckpt_steps.add(step)
     for env in train_envs + eval_envs:
         try:
             env.close()

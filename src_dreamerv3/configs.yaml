@@ -18,6 +18,9 @@ defaults:
   precision: 32
   debug: False
   video_pred_log: True
+  ckpt_every: 0
+  ckpt_steps: [0]
+  ckpt_dir: 'checkpoints'
 
   # Environment
   task: 'dmc_walker_walk'

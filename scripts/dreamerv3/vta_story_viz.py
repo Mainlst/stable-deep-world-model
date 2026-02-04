@@ -63,6 +63,16 @@ def load_abs_ctx_series(path):
     return by_task
 
 
+def _get_float(row, *keys):
+    for key in keys:
+        if key in row and row[key] != "":
+            try:
+                return float(row[key])
+            except ValueError:
+                return float("nan")
+    return float("nan")
+
+
 def load_zt_windows(paths):
     by_task = {}
     for path in paths:
@@ -77,48 +87,68 @@ def load_zt_windows(paths):
                     continue
                 try:
                     w = float(row.get("window_start", "nan"))
-                    abs_stoch = float(row.get("abs_stoch_l2_mean", "nan"))
-                    obs_stoch = float(row.get("obs_stoch_l2_mean", "nan"))
-                    boundary_rate = float(row.get("boundary_rate", "nan"))
-                    read_prob = float(row.get("read_prob_mean", "nan"))
+                    boundary_rate = _get_float(row, "boundary_rate")
+                    read_prob = _get_float(row, "read_prob_mean")
+                    abs_l2 = _get_float(row, "abs_l2_mean", "abs_stoch_l2_mean")
+                    obs_l2 = _get_float(row, "obs_l2_mean", "obs_stoch_l2_mean")
+                    abs_l2_read = _get_float(
+                        row, "abs_l2_read_mean", "abs_stoch_l2_read_mean"
+                    )
+                    obs_l2_read = _get_float(
+                        row, "obs_l2_read_mean", "obs_stoch_l2_read_mean"
+                    )
                 except ValueError:
                     continue
                 by_task.setdefault(
                     task,
                     {
                         "window_start": [],
-                        "abs_stoch_l2_mean": [],
-                        "obs_stoch_l2_mean": [],
+                        "abs_l2_mean": [],
+                        "obs_l2_mean": [],
+                        "abs_l2_read_mean": [],
+                        "obs_l2_read_mean": [],
                         "boundary_rate": [],
                         "read_prob_mean": [],
                     },
                 )
                 by_task[task]["window_start"].append(w)
-                by_task[task]["abs_stoch_l2_mean"].append(abs_stoch)
-                by_task[task]["obs_stoch_l2_mean"].append(obs_stoch)
+                by_task[task]["abs_l2_mean"].append(abs_l2)
+                by_task[task]["obs_l2_mean"].append(obs_l2)
+                by_task[task]["abs_l2_read_mean"].append(abs_l2_read)
+                by_task[task]["obs_l2_read_mean"].append(obs_l2_read)
                 by_task[task]["boundary_rate"].append(boundary_rate)
                 by_task[task]["read_prob_mean"].append(read_prob)
     for task, data in by_task.items():
         order = np.argsort(data["window_start"])
         by_task[task] = {
             "window_start": np.asarray(data["window_start"])[order],
-            "abs_stoch_l2_mean": np.asarray(data["abs_stoch_l2_mean"])[order],
-            "obs_stoch_l2_mean": np.asarray(data["obs_stoch_l2_mean"])[order],
+            "abs_l2_mean": np.asarray(data["abs_l2_mean"])[order],
+            "obs_l2_mean": np.asarray(data["obs_l2_mean"])[order],
+            "abs_l2_read_mean": np.asarray(data["abs_l2_read_mean"])[order],
+            "obs_l2_read_mean": np.asarray(data["obs_l2_read_mean"])[order],
             "boundary_rate": np.asarray(data["boundary_rate"])[order],
             "read_prob_mean": np.asarray(data["read_prob_mean"])[order],
         }
     return by_task
 
 
-def plot_story(task, abs_ctx, zt, out_path, smooth):
+def plot_story(task, abs_ctx, zt, out_path, smooth, latent_mode, ctx_only_out):
     fig, axes = plt.subplots(3, 1, figsize=(11, 11), sharex=False)
 
     # 1) Latent prediction stability (latent step distance)
     if zt is not None and len(zt["window_start"]) > 0:
         x = zt["window_start"]
-        z = zt["abs_stoch_l2_mean"]
+        if latent_mode == "read":
+            z = zt["abs_l2_read_mean"]
+            label = "z (stoch) Δt @READ"
+        else:
+            z = zt["abs_l2_mean"]
+            label = "z (stoch) Δt"
+        if np.isnan(z).all():
+            z = zt["abs_l2_mean"]
+            label = "z (stoch) Δt"
         z_sm = moving_average(np.nan_to_num(z, nan=0.0), smooth)
-        axes[0].plot(x, z_sm, color="#1f77b4", linewidth=2.0, label="z (stoch) Δt")
+        axes[0].plot(x, z_sm, color="#1f77b4", linewidth=2.0, label=label)
         axes[0].plot(x, z, color="#1f77b4", alpha=0.25, linewidth=1.0)
         axes[0].set_ylabel("Latent distance (||z_{t+1}-z_t||)")
         axes[0].set_title("Latent Prediction Stability")
@@ -170,6 +200,23 @@ def plot_story(task, abs_ctx, zt, out_path, smooth):
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
 
+    # Context KL only plot (separate scale).
+    if ctx_only_out is not None and abs_ctx is not None and len(abs_ctx["t"]) > 0:
+        t = abs_ctx["t"]
+        ctx = abs_ctx["ctx_kl"]
+        ctx_sm = moving_average(np.nan_to_num(ctx, nan=0.0), smooth)
+        fig_ctx, ax_ctx = plt.subplots(1, 1, figsize=(10, 4))
+        ax_ctx.plot(t, ctx_sm, color="#d62728", linewidth=2.0, label="Context KL")
+        ax_ctx.plot(t, ctx, color="#d62728", alpha=0.25, linewidth=1.0)
+        ax_ctx.set_ylabel("KL(q(b|x) || p(b|s))")
+        ax_ctx.set_xlabel("Time Step")
+        ax_ctx.set_title(f"{task} - Context KL (boundary posterior vs prior)")
+        ax_ctx.legend(loc="upper right")
+        fig_ctx.tight_layout()
+        ctx_only_out.parent.mkdir(parents=True, exist_ok=True)
+        fig_ctx.savefig(ctx_only_out, dpi=150)
+        plt.close(fig_ctx)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -201,6 +248,25 @@ def main():
         default=5,
         help="Moving average window for visualization.",
     )
+    parser.add_argument(
+        "--latent_mode",
+        choices=["read", "all"],
+        default="read",
+        help="Use READ-only windows (m_t fired) or all windows for z distance.",
+    )
+    parser.add_argument(
+        "--ctx_only",
+        dest="ctx_only",
+        action="store_true",
+        default=True,
+        help="Also save a Context-KL-only plot per task (separate scale).",
+    )
+    parser.add_argument(
+        "--no-ctx-only",
+        dest="ctx_only",
+        action="store_false",
+        help="Disable Context-KL-only plot per task.",
+    )
     args = parser.parse_args()
 
     configure_font()
@@ -229,6 +295,8 @@ def main():
             zt.get(task),
             out_dir / f"{task}_story.png",
             args.smooth,
+            args.latent_mode,
+            out_dir / f"{task}_context_kl.png" if args.ctx_only else None,
         )
 
 
