@@ -56,19 +56,44 @@ class PriorBoundaryDetector(nn.Module):
 class PostBoundaryDetector(nn.Module):
     """Infers boundary from full encoded sequence (posterior)."""
     
-    def __init__(self, input_size, hidden_size, num_layers=2, act="SiLU", norm=True):
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        num_layers=2,
+        act="SiLU",
+        norm=True,
+        kernel_size=3,
+    ):
         super().__init__()
         act_fn = getattr(torch.nn, act)
+        if kernel_size < 1:
+            raise ValueError(f"kernel_size must be >= 1, got {kernel_size}")
+        if kernel_size % 2 == 0:
+            raise ValueError(
+                f"kernel_size must be odd for same-length Conv1d, got {kernel_size}"
+            )
+        padding = kernel_size // 2
         
         # 1D convolution over time dimension
         layers = []
         for i in range(num_layers):
             in_ch = input_size if i == 0 else hidden_size
-            layers.append(nn.Conv1d(in_ch, hidden_size, kernel_size=3, padding=1, bias=not norm))
+            layers.append(
+                nn.Conv1d(
+                    in_ch,
+                    hidden_size,
+                    kernel_size=kernel_size,
+                    padding=padding,
+                    bias=not norm,
+                )
+            )
             if norm:
                 layers.append(nn.BatchNorm1d(hidden_size))
             layers.append(act_fn())
-        layers.append(nn.Conv1d(hidden_size, 2, kernel_size=3, padding=1))
+        layers.append(
+            nn.Conv1d(hidden_size, 2, kernel_size=kernel_size, padding=padding)
+        )
         self.network = nn.Sequential(*layers)
         self.network.apply(tools.weight_init)
     
@@ -163,6 +188,7 @@ class VTA(nn.Module):
         embed_size=None,
         device=None,
         vta_posterior_input='embed',
+        vta_post_boundary_kernel_size=3,
     ):
         super().__init__()
         
@@ -214,6 +240,7 @@ class VTA(nn.Module):
             num_layers=num_layers,
             act=act,
             norm=norm,
+            kernel_size=vta_post_boundary_kernel_size,
         )
         
         # ========================

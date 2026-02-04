@@ -1,7 +1,10 @@
 import numpy as np
 from . import minecraft_base
 
-import gym
+try:
+    import gymnasium as gym
+except ModuleNotFoundError:  # Fall back when gymnasium is not installed.
+    import gym
 
 
 def make_env(task, *args, **kwargs):

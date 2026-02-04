@@ -13,8 +13,12 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import gym
+try:
+    import gymnasium as gym
+except Exception:  # pragma: no cover
+    import gym
 from torch import distributions as torchd
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT))
@@ -43,6 +47,18 @@ def load_config(config_names, overrides):
         arg_type = tools.args_type(value)
         parser.add_argument(f"--{key}", type=arg_type, default=arg_type(value))
     return parser.parse_args(overrides)
+
+
+def load_logdir_config(logdir: Path):
+    path = Path(logdir) / "config.yaml"
+    if not path.exists():
+        return None
+    # Logdir configs are produced via PyYAML and can include tags like !!python/tuple.
+    yaml = YAML(typ="unsafe", pure=True)
+    cfg = yaml.load(path.read_text())
+    if not isinstance(cfg, dict):
+        return None
+    return SimpleNamespace(**cfg)
 
 
 def pick_episode(episodes_dir, explicit_path=None):
@@ -210,10 +226,17 @@ def main():
     meta = []
 
     for logdir, task, ckpt_path, episode in zip(logdirs, tasks, ckpt_paths, episodes):
-        config = load_config(
-            args.configs,
-            ["--task", task, "--dynamics_type", "vta", "--device", device, *overrides],
-        )
+        config = load_logdir_config(logdir)
+        if config is None:
+            config = load_config(
+                args.configs,
+                ["--task", task, "--dynamics_type", "vta", "--device", device, *overrides],
+            )
+        else:
+            # Ensure analysis uses the requested device.
+            config.device = device
+            # Ensure dynamics type is VTA for boundary logits.
+            config.dynamics_type = getattr(config, "dynamics_type", "vta") or "vta"
 
         ckpt = Path(ckpt_path) if ckpt_path else (logdir / "latest.pt")
         if not ckpt.is_absolute():
@@ -268,12 +291,14 @@ def main():
         series.append(abs_kl)
         series_rev.append(abs_kl_rev)
         ctx_series.append(kl_mask)
+        ksize = getattr(config, "vta_post_boundary_kernel_size", 3)
         meta.append(
             {
                 "logdir": str(logdir),
                 "task": task,
                 "ckpt": str(ckpt),
                 "episode": str(ep_path),
+                "vta_post_boundary_kernel_size": int(ksize) if ksize is not None else None,
             }
         )
 
@@ -349,15 +374,17 @@ def main():
         sm = moving_average(np.nan_to_num(s, nan=0.0), args.smooth)
         sr_sm = moving_average(np.nan_to_num(sr, nan=0.0), args.smooth)
         c_sm = moving_average(np.nan_to_num(c, nan=0.0), args.smooth)
-        label = f"{m['task']} (mean={np.nanmean(s):.4f})"
+        k = m.get("vta_post_boundary_kernel_size", None)
+        ktxt = f", k={k}" if k is not None else ""
+        label = f"{m['task']}{ktxt} (mean={np.nanmean(s):.4f})"
         axes[0].plot(t, sm, linewidth=2.0, label=label)
         axes[0].plot(t, s, linewidth=1.0, alpha=0.25)
 
-        label_rev = f"{m['task']} (mean={np.nanmean(sr):.4f})"
+        label_rev = f"{m['task']}{ktxt} (mean={np.nanmean(sr):.4f})"
         axes[1].plot(t, sr_sm, linewidth=2.0, label=label_rev)
         axes[1].plot(t, sr, linewidth=1.0, alpha=0.25)
 
-        label_ctx = f"{m['task']} (mean={np.nanmean(c):.4f})"
+        label_ctx = f"{m['task']}{ktxt} (mean={np.nanmean(c):.4f})"
         axes[2].plot(t, c_sm, linewidth=2.0, label=label_ctx)
         axes[2].plot(t, c, linewidth=1.0, alpha=0.25)
 
@@ -384,8 +411,10 @@ def main():
     for s, sr, m in zip(series, series_rev, meta):
         sm = moving_average(np.nan_to_num(s, nan=0.0), args.smooth)
         sr_sm = moving_average(np.nan_to_num(sr, nan=0.0), args.smooth)
-        label_pp = f"{m['task']} post||prior"
-        label_pp_rev = f"{m['task']} prior||post"
+        k = m.get("vta_post_boundary_kernel_size", None)
+        ktxt = f", k={k}" if k is not None else ""
+        label_pp = f"{m['task']}{ktxt} post||prior"
+        label_pp_rev = f"{m['task']}{ktxt} prior||post"
         ax.plot(t, sm, linewidth=2.0, label=label_pp)
         ax.plot(t, sr_sm, linewidth=2.0, linestyle="--", label=label_pp_rev)
     ax.set_xlabel("Time Step")
@@ -402,7 +431,9 @@ def main():
     fig, ax = plt.subplots(figsize=(10, 4))
     for c, m in zip(ctx_series, meta):
         c_sm = moving_average(np.nan_to_num(c, nan=0.0), args.smooth)
-        label_ctx = f"{m['task']} (mean={np.nanmean(c):.4f})"
+        k = m.get("vta_post_boundary_kernel_size", None)
+        ktxt = f", k={k}" if k is not None else ""
+        label_ctx = f"{m['task']}{ktxt} (mean={np.nanmean(c):.4f})"
         ax.plot(t, c_sm, linewidth=2.0, label=label_ctx)
         ax.plot(t, c, linewidth=1.0, alpha=0.25)
     ax.set_ylabel("KL(q(b|x) || p(b|s))")

@@ -40,17 +40,17 @@ class WorldModel(nn.Module):
         self._dynamics_type = getattr(config, 'dynamics_type', 'rssm')
         if self._dynamics_type == 'vta':
             self.dynamics = vta_module.VTA(
-                abs_belief=config.vta_abs_belief,
-                abs_stoch=config.vta_abs_stoch,
-                obs_belief=config.vta_obs_belief,
-                obs_stoch=config.vta_obs_stoch,
+                abs_belief=getattr(config, "vta_abs_belief", 512),
+                abs_stoch=getattr(config, "vta_abs_stoch", 32),
+                obs_belief=getattr(config, "vta_obs_belief", 512),
+                obs_stoch=getattr(config, "vta_obs_stoch", 32),
                 hidden=config.dyn_hidden,
                 num_layers=config.dyn_rec_depth,
-                max_seg_len=config.vta_max_seg_len,
-                max_seg_num=config.vta_max_seg_num,
-                boundary_temp=config.vta_boundary_temp,
-                boundary_force_scale=config.vta_boundary_force_scale,
-                boundary_threshold=config.vta_boundary_threshold,
+                max_seg_len=getattr(config, "vta_max_seg_len", 50),
+                max_seg_num=getattr(config, "vta_max_seg_num", 200),
+                boundary_temp=getattr(config, "vta_boundary_temp", 1.0),
+                boundary_force_scale=getattr(config, "vta_boundary_force_scale", 10.0),
+                boundary_threshold=getattr(config, "vta_boundary_threshold", 0.5),
                 act=config.act,
                 norm=config.norm,
                 min_std=config.dyn_min_std,
@@ -58,6 +58,9 @@ class WorldModel(nn.Module):
                 embed_size=self.embed_size,
                 device=config.device,
                 vta_posterior_input=getattr(config, 'vta_posterior_input', 'embed'),
+                vta_post_boundary_kernel_size=getattr(
+                    config, "vta_post_boundary_kernel_size", 3
+                ),
             )
             feat_size = self.dynamics.feat_size
         else:

@@ -2,7 +2,10 @@ import logging
 import threading
 
 import numpy as np
-import gym
+try:
+    import gymnasium as gym
+except ModuleNotFoundError:  # Fall back when gymnasium is not installed.
+    import gym
 
 
 class MinecraftBase(gym.Env):

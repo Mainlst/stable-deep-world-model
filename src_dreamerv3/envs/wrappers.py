@@ -1,14 +1,22 @@
 import datetime
-import gym
 try:
-    import gymnasium
+    import gymnasium as gym
 except ModuleNotFoundError:  # Fall back when gymnasium is not installed.
-    gymnasium = gym
+    import gym
 import numpy as np
 import uuid
 
 
-class TimeLimit(gym.Wrapper):
+class Wrapper:
+    # Minimal wrapper base that does not require `gym.Env` inheritance.
+    def __init__(self, env):
+        self.env = env
+
+    def __getattr__(self, name):
+        return getattr(self.env, name)
+
+
+class TimeLimit(Wrapper):
     def __init__(self, env, duration):
         super().__init__(env)
         self._duration = duration
@@ -30,7 +38,7 @@ class TimeLimit(gym.Wrapper):
         return self.env.reset()
 
 
-class NormalizeActions(gym.Wrapper):
+class NormalizeActions(Wrapper):
     def __init__(self, env):
         super().__init__(env)
         self._mask = np.logical_and(
@@ -48,9 +56,9 @@ class NormalizeActions(gym.Wrapper):
         return self.env.step(original)
 
 
-class OneHotAction(gym.Wrapper):
+class OneHotAction(Wrapper):
     def __init__(self, env):
-        assert isinstance(env.action_space, (gym.spaces.Discrete, gymnasium.spaces.Discrete))
+        assert isinstance(env.action_space, gym.spaces.Discrete)
         super().__init__(env)
         self._random = np.random.RandomState()
         shape = (self.env.action_space.n,)
@@ -77,7 +85,7 @@ class OneHotAction(gym.Wrapper):
         return reference
 
 
-class RewardObs(gym.Wrapper):
+class RewardObs(Wrapper):
     def __init__(self, env):
         super().__init__(env)
         spaces = self.env.observation_space.spaces
@@ -100,7 +108,7 @@ class RewardObs(gym.Wrapper):
         return obs
 
 
-class SelectAction(gym.Wrapper):
+class SelectAction(Wrapper):
     def __init__(self, env, key):
         super().__init__(env)
         self._key = key
@@ -109,7 +117,7 @@ class SelectAction(gym.Wrapper):
         return self.env.step(action[self._key])
 
 
-class UUID(gym.Wrapper):
+class UUID(Wrapper):
     def __init__(self, env):
         super().__init__(env)
         timestamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")

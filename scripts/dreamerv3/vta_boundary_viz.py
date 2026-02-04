@@ -12,7 +12,10 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import gym
+try:
+    import gymnasium as gym
+except Exception:  # gymnasium not available
+    import gym
 from torch import distributions as torchd
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -184,6 +187,8 @@ def render_internal_plot(stats, reward, frame_delta, start, end, out_path, title
     reward_win = reward[start:end] if reward is not None else None
     delta_win = frame_delta[start:end] if frame_delta is not None else None
     if reward_win is not None:
+        if torch.is_tensor(reward_win):
+            reward_win = reward_win.detach().cpu().numpy()
         reward_win = np.asarray(reward_win).reshape(-1)
         if reward_win.shape[0] != t.shape[0]:
             reward_win = None

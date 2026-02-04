@@ -81,6 +81,7 @@ defaults:
   vta_boundary_rate: 0.0  # target READ rate for boundary prior (0 disables)
   vta_boundary_scale: 0.0 # weight for boundary prior loss
   vta_posterior_input: 'embed' # 'embed' or 'embed_reward'
+  vta_post_boundary_kernel_size: 3  # Conv1d kernel size for posterior boundary detector (odd recommended)
 
   # Training
   batch_size: 16

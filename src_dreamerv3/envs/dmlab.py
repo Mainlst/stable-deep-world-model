@@ -1,4 +1,7 @@
-import gym
+try:
+    import gymnasium as gym
+except ModuleNotFoundError:  # Fall back when gymnasium is not installed.
+    import gym
 import numpy as np
 import deepmind_lab
 
