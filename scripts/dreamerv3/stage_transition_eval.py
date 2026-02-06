@@ -48,23 +48,26 @@ def visualize_stage_eval(images, frame_delta, transition_mask, boundary_mask,
     
     # Subplot 1: Frame delta with markers
     ax1 = axes[0]
-    ax1.plot(frame_delta, color='gray', alpha=0.7, linewidth=0.8, label='Frame Delta')
-    ax1.fill_between(range(T), frame_delta, alpha=0.3, color='gray')
     
-    # Mark stage transitions (ground truth)
+    # Mark stage transitions (ground truth) - draw first (behind)
     for idx in transition_indices:
-        ax1.axvline(x=idx, color='green', linestyle='-', linewidth=1.5, alpha=0.8)
+        ax1.axvline(x=idx, color='green', linestyle='-', linewidth=1.5, alpha=0.4, zorder=1)
     
-    # Mark model boundaries
+    # Mark model boundaries - draw second
     for idx in boundary_indices:
-        ax1.axvline(x=idx, color='red', linestyle='--', linewidth=1.2, alpha=0.6)
+        ax1.axvline(x=idx, color='red', linestyle='--', linewidth=1.2, alpha=0.4, zorder=2)
+    
+    # Draw frame delta on top
+    ax1.fill_between(range(T), frame_delta, alpha=0.3, color='gray', zorder=3)
+    ax1.plot(frame_delta, color='black', alpha=0.9, linewidth=1.0, label='Frame Delta', zorder=4)
     
     ax1.set_ylabel('Frame Delta')
     ax1.set_xlim(0, T)
     ax1.legend([
-        plt.Line2D([0], [0], color='green', linewidth=2, label='Stage Transition (GT)'),
-        plt.Line2D([0], [0], color='red', linestyle='--', linewidth=2, label='Model Boundary'),
-    ], ['Stage Transition (GT)', 'Model Boundary'], loc='upper right')
+        plt.Line2D([0], [0], color='black', linewidth=2, label='Frame Delta'),
+        plt.Line2D([0], [0], color='green', linewidth=2, alpha=0.6, label='Stage Transition (GT)'),
+        plt.Line2D([0], [0], color='red', linestyle='--', linewidth=2, alpha=0.6, label='Model Boundary'),
+    ], ['Frame Delta', 'Stage Transition (GT)', 'Model Boundary'], loc='upper right')
     ax1.set_title(f"{title}\nRecall: {metrics['recall']*100:.1f}%, Precision: {metrics['precision']*100:.1f}%")
     
     # Subplot 2: Timeline visualization
