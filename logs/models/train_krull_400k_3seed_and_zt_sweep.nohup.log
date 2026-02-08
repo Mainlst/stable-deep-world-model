@@ -1,0 +1,52 @@
+nohup: ignoring input
+[0/3] Prepare run directory: /home/haselab/projects/stable-deep-world-model/logs/models/from_scratch_atari_krull_vta_3seed_to_400000_20260208_112207
+[1/3][seed=0] Train from scratch to env step 400000
+Logdir /home/haselab/projects/stable-deep-world-model/logs/models/from_scratch_atari_krull_vta_3seed_to_400000_20260208_112207/atari_krull_seed0
+Config saved to /home/haselab/projects/stable-deep-world-model/logs/models/from_scratch_atari_krull_vta_3seed_to_400000_20260208_112207/atari_krull_seed0/config.yaml
+Create envs.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+A.L.E: Arcade Learning Environment (version 0.11.2+ecc1138)
+[Powered by Stella]
+Action Space Box(0.0, 1.0, (18,), float32)
+Prefill dataset (2500 steps).
+[0] dataset_size 1446.0 / train_return 2540.0 / train_length 1446.0 / train_episodes 1.0
+Logger: (10000 steps).
+Simulate agent.
+Encoder CNN shapes: {'image': (64, 64, 3)}
+Encoder MLP shapes: {}
+Decoder CNN shapes: {'image': (64, 64, 3)}
+Decoder MLP shapes: {}
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/tools.py:747: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self._scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+Optimizer model_opt has 23085447 variables.
+Optimizer actor_opt has 830482 variables.
+Optimizer value_opt has 952063 variables.
+[10000] 
+Start evaluation.
+[10000] eval_return 472.0 / eval_length 6566.4 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:146: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:216: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:448: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:479: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+[10000] model_loss 814.7 / model_grad_norm 2852.2 / image_loss 784.0 / reward_loss 2.9 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 46.4 / rep_loss 46.4 / kl 46.4 / prior_abs_ent 35.7 / post_abs_ent -4.5 / prior_obs_ent 31.3 / post_obs_ent 7.8 / boundary_ratio 0.3 / kl_mask 0.1 / normed_target_mean 1.3 / normed_target_std 0.6 / normed_target_min 0.1 / normed_target_max 2.2 / EMA_005 0.1 / EMA_095 0.7 / value_mean 0.0 / value_std 0.0 / value_min 0.0 / value_max 0.0 / target_mean 1.5 / target_std 0.7 / target_min 0.2 / target_max 2.6 / imag_reward_mean 0.2 / imag_reward_std 0.0 / imag_reward_min 0.2 / imag_reward_max 0.3 / imag_action_mean 9.1 / imag_action_std 4.8 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 2.5 / actor_loss 3.6 / actor_grad_norm 0.4 / value_loss 9.4 / value_grad_norm 13.2 / update_count 100.0 / fps 0.0
+add_video needs package moviepy
+add_video needs package moviepy
+[10624] 
+Start evaluation.
+[10624] eval_return 0.0 / eval_length 1218.8 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[10624] model_loss 129.8 / model_grad_norm 283.0 / image_loss 123.5 / reward_loss 0.6 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 9.3 / rep_loss 9.3 / kl 9.3 / prior_abs_ent 21.8 / post_abs_ent -13.2 / prior_obs_ent 5.3 / post_obs_ent 1.1 / boundary_ratio 0.2 / kl_mask 0.1 / normed_target_mean 0.8 / normed_target_std 0.4 / normed_target_min 0.1 / normed_target_max 1.4 / EMA_005 0.4 / EMA_095 2.5 / value_mean 0.3 / value_std 0.0 / value_min 0.3 / value_max 0.3 / target_mean 2.1 / target_std 0.8 / target_min 0.6 / target_max 3.3 / imag_reward_mean 0.3 / imag_reward_std 0.0 / imag_reward_min 0.3 / imag_reward_max 0.3 / imag_action_mean 9.3 / imag_action_std 4.4 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 2.1 / actor_loss 3.6 / actor_grad_norm 0.5 / value_loss 6.5 / value_grad_norm 11.7 / update_count 256.0 / fps 13.5
+add_video needs package moviepy
+add_video needs package moviepy
+[11248] 
+Start evaluation.

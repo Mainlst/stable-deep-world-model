@@ -1,0 +1,161 @@
+act: SiLU
+action_repeat: 4
+actions: needed
+actor:
+  dist: onehot
+  entropy: 0.0003
+  eps: 1e-05
+  grad_clip: 100.0
+  layers: 2
+  lr: 3e-05
+  max_std: 1.0
+  min_std: 0.1
+  outscale: 1.0
+  std: none
+  temp: 0.1
+  unimix_ratio: 0.01
+batch_length: 64
+batch_size: 16
+ckpt_dir: checkpoints
+ckpt_every: 6250
+ckpt_steps: !!python/tuple
+- 0
+compile: true
+cont_head:
+  layers: 2
+  loss_scale: 1.0
+  outscale: 1.0
+critic:
+  dist: symlog_disc
+  eps: 1e-05
+  grad_clip: 100.0
+  layers: 2
+  lr: 3e-05
+  outscale: 0.0
+  slow_target: true
+  slow_target_fraction: 0.02
+  slow_target_update: 1
+dataset_size: 1000000
+debug: false
+decoder:
+  act: SiLU
+  cnn_depth: 32
+  cnn_keys: image
+  cnn_sigmoid: false
+  image_dist: mse
+  kernel_size: 4
+  minres: 4
+  mlp_keys: $^
+  mlp_layers: 5
+  mlp_units: 1024
+  norm: true
+  outscale: 1.0
+  vector_dist: symlog_mse
+deterministic_run: false
+device: cuda:0
+disag_action_cond: false
+disag_layers: 4
+disag_log: true
+disag_models: 10
+disag_offset: 1
+disag_target: stoch
+disag_units: 400
+discount: 0.997
+discount_lambda: 0.95
+dyn_deter: 512
+dyn_discrete: 32
+dyn_hidden: 512
+dyn_mean_act: none
+dyn_min_std: 0.1
+dyn_rec_depth: 1
+dyn_scale: 0.5
+dyn_std_act: sigmoid2
+dyn_stoch: 32
+dynamics_type: vta
+encoder:
+  act: SiLU
+  cnn_depth: 32
+  cnn_keys: image
+  kernel_size: 4
+  minres: 4
+  mlp_keys: $^
+  mlp_layers: 5
+  mlp_units: 1024
+  norm: true
+  symlog_inputs: true
+envs: 1
+eval_episode_num: 5
+eval_every: 625.0
+eval_state_mean: false
+evaldir: 
+  /home/haselab/projects/stable-deep-world-model/logs/models/retrain_100k_atari_private_eye_atari_private_eye_vta_20260108_185758_to_500000/eval_eps
+expl_behavior: greedy
+expl_extr_scale: 0.0
+expl_intr_scale: 1.0
+expl_until: 0
+grad_clip: 1000
+grad_heads: !!python/tuple
+- decoder
+- reward
+- cont
+grayscale: false
+imag_gradient: reinforce
+imag_gradient_mix: 0.0
+imag_horizon: 15
+initial: learned
+kl_free: 1.0
+lives: unused
+log_every: 625.0
+logdir: 
+  /home/haselab/projects/stable-deep-world-model/logs/models/retrain_100k_atari_private_eye_atari_private_eye_vta_20260108_185758_to_500000
+model_lr: 0.0001
+noops: 30
+norm: true
+offline_evaldir: ''
+offline_traindir: ''
+opt: adam
+opt_eps: 1e-08
+parallel: false
+precision: 32
+prefill: 2500
+pretrain: 100
+rep_scale: 0.1
+reset_every: 0
+resize: pillow
+reward_EMA: true
+reward_head:
+  dist: symlog_disc
+  layers: 2
+  loss_scale: 1.0
+  outscale: 0.0
+seed: 0
+size: !!python/tuple
+- 64
+- 64
+steps: 125000.0
+stickey: false
+task: atari_private_eye
+time_limit: 27000
+train_ratio: 1024
+traindir: 
+  /home/haselab/projects/stable-deep-world-model/logs/models/retrain_100k_atari_private_eye_atari_private_eye_vta_20260108_185758_to_500000/train_eps
+unimix_ratio: 0.01
+units: 512
+video_pred_log: true
+vta_abs_belief: 512
+vta_abs_stoch: 32
+vta_boundary_force_scale: 10.0
+vta_boundary_rate: 0.0
+vta_boundary_scale: 0.0
+vta_boundary_temp: 1.0
+vta_boundary_threshold: 0.5
+vta_imag_boundary: prior
+vta_imag_type: full
+vta_mask_scale: 1.0
+vta_max_seg_len: 50
+vta_max_seg_num: 200
+vta_obs_belief: 512
+vta_obs_stoch: 32
+vta_post_boundary_kernel_size: 3
+vta_posterior_input: embed
+weight_decay: 0.0

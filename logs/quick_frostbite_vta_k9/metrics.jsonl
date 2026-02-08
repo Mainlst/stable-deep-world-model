@@ -1,0 +1,6 @@
+{"step": 0, "dataset_size": 461.0, "train_return": 110.0, "train_length": 461.0, "train_episodes": 1.0}
+{"step": 0, "dataset_size": 759.0, "train_return": 30.0, "train_length": 298.0, "train_episodes": 2.0}
+{"step": 0, "dataset_size": 1184.0, "train_return": 60.0, "train_length": 425.0, "train_episodes": 3.0}
+{"step": 0, "dataset_size": 1507.0, "train_return": 20.0, "train_length": 323.0, "train_episodes": 4.0}
+{"step": 0, "dataset_size": 1982.0, "train_return": 70.0, "train_length": 475.0, "train_episodes": 5.0}
+{"step": 0, "dataset_size": 2373.0, "train_return": 130.0, "train_length": 391.0, "train_episodes": 6.0}

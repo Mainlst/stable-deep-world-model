@@ -1,0 +1,4 @@
+task=atari_krull
+target_env_steps=400000
+action_repeat=4
+seeds=0 1 2

@@ -216,4 +216,23 @@ __marimo__/
 
 docs/
 configs/
-logs/
+# logs: track experiment artifacts (text/metadata), skip heavy binaries
+logs/**
+!logs/**/
+!logs/**/*.csv
+!logs/**/*.jsonl
+!logs/**/*.log
+!logs/**/*.out
+!logs/**/*.txt
+!logs/**/*.md
+!logs/**/*.sh
+!logs/**/*.yaml
+!logs/**/*.yml
+!logs/**/*.py
+logs/**/*.pt
+logs/**/*.npz
+logs/**/*.png
+logs/**/*.gif
+logs/**/*.mp4
+logs/**/*.npy
+logs/**/*.pyc

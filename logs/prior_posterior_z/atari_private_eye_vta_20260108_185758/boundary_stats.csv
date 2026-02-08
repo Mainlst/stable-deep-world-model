@@ -1,0 +1,2 @@
+task,logdir,episode,abs_kl_mean,abs_kl_std,obs_kl_mean,obs_kl_std,boundary_rate
+atari_private_eye,/home/haselab/murakawa/stable-deep-world-model/logdir/atari_private_eye_vta_20260108_185758,/home/haselab/murakawa/stable-deep-world-model/logdir/atari_private_eye_vta_20260108_185758/train_eps/20260109T132052-aea21edf924748b7af34daa02366cf5f-2699.npz,57.44015121459961,2.694711208343506,2.127682685852051,1.728642463684082,0.0

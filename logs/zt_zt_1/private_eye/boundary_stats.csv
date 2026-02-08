@@ -1,0 +1,2 @@
+task,logdir,episode,abs_kl_mean,abs_kl_std,obs_kl_mean,obs_kl_std,boundary_rate,abs_l2_mean,obs_l2_mean,abs_l2_read_mean,obs_l2_read_mean
+atari_private_eye,/home/haselab/murakawa/stable-deep-world-model/logdir/atari_frostbite_vta_20260107_202443,/home/haselab/murakawa/stable-deep-world-model/logdir/atari_frostbite_vta_20260107_202443/train_eps/20260108T163622-6a2855e80f96423f8e6321ab3a435bdc-1194.npz,121.9566421508789,54.95256423950195,9.833192825317383,6.28848934173584,0.0033500837520938024,0.6332589387893677,1.4144597053527832,6.317560195922852,8.089954376220703

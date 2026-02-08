@@ -1,0 +1,118 @@
+{"step": 0, "dataset_size": 461.0, "train_return": 110.0, "train_length": 461.0, "train_episodes": 1.0}
+{"step": 0, "dataset_size": 759.0, "train_return": 30.0, "train_length": 298.0, "train_episodes": 2.0}
+{"step": 0, "dataset_size": 1184.0, "train_return": 60.0, "train_length": 425.0, "train_episodes": 3.0}
+{"step": 0, "dataset_size": 1507.0, "train_return": 20.0, "train_length": 323.0, "train_episodes": 4.0}
+{"step": 0, "dataset_size": 1982.0, "train_return": 70.0, "train_length": 475.0, "train_episodes": 5.0}
+{"step": 0, "dataset_size": 2373.0, "train_return": 130.0, "train_length": 391.0, "train_episodes": 6.0}
+{"step": 10000}
+{"step": 10000, "eval_return": 80.0, "eval_length": 348.0, "eval_episodes": 1.0}
+{"step": 10000, "model_loss": 582.471923828125, "model_grad_norm": 1679.8006591796875, "image_loss": 553.8927612304688, "reward_loss": 2.7461159229278564, "cont_loss": 0.025680948048830032, "kl_free": 1.0, "dyn_scale": 0.5, "rep_scale": 0.09999999999999998, "dyn_loss": 42.79188537597656, "rep_loss": 42.79188537597656, "kl": 42.79188537597656, "prior_abs_ent": 35.67848205566406, "post_abs_ent": -4.946244239807129, "prior_obs_ent": 26.140819549560547, "post_obs_ent": 5.126741409301758, "boundary_ratio": 0.35584962368011475, "kl_mask": 0.13230928778648376, "normed_target_mean": 0.17939314246177673, "normed_target_std": 0.08758855611085892, "normed_target_min": 0.017869040369987488, "normed_target_max": 0.3248687982559204, "EMA_005": 0.01096318569034338, "EMA_095": 0.10253654420375824, "value_mean": 0.0027217597234994173, "value_std": 3.9422073314199224e-05, "value_min": 0.002364399377256632, "value_max": 0.0027716350741684437, "target_mean": 0.1903562992811203, "target_std": 0.08758855611085892, "target_min": 0.02883222885429859, "target_max": 0.33583199977874756, "imag_reward_mean": 0.03200308978557587, "imag_reward_std": 0.0012053345562890172, "imag_reward_min": 0.024721290916204453, "imag_reward_max": 0.03447789326310158, "imag_action_mean": 8.920246124267578, "imag_action_std": 5.27626895904541, "imag_action_min": 0.0, "imag_action_max": 17.0, "actor_entropy": 2.474886178970337, "actor_loss": 0.4435214102268219, "actor_grad_norm": 0.05221644043922424, "value_loss": 9.034219741821289, "value_grad_norm": 15.599037170410156, "update_count": 100.0, "fps": 0}
+{"step": 11016, "dataset_size": 2754.0, "train_return": 80.0, "train_length": 381.0, "train_episodes": 7.0}
+{"step": 12668, "dataset_size": 3167.0, "train_return": 70.0, "train_length": 413.0, "train_episodes": 8.0}
+{"step": 15308, "dataset_size": 3827.0, "train_return": 60.0, "train_length": 660.0, "train_episodes": 9.0}
+{"step": 17740, "dataset_size": 4435.0, "train_return": 20.0, "train_length": 608.0, "train_episodes": 10.0}
+{"step": 19780, "dataset_size": 4945.0, "train_return": 50.0, "train_length": 510.0, "train_episodes": 11.0}
+{"step": 21244, "dataset_size": 5311.0, "train_return": 80.0, "train_length": 366.0, "train_episodes": 12.0}
+{"step": 22532, "dataset_size": 5633.0, "train_return": 80.0, "train_length": 322.0, "train_episodes": 13.0}
+{"step": 23748, "dataset_size": 5937.0, "train_return": 80.0, "train_length": 304.0, "train_episodes": 14.0}
+{"step": 24976, "dataset_size": 6244.0, "train_return": 80.0, "train_length": 307.0, "train_episodes": 15.0}
+{"step": 26244, "dataset_size": 6561.0, "train_return": 100.0, "train_length": 317.0, "train_episodes": 16.0}
+{"step": 27948, "dataset_size": 6987.0, "train_return": 110.0, "train_length": 426.0, "train_episodes": 17.0}
+{"step": 29848, "dataset_size": 7462.0, "train_return": 130.0, "train_length": 475.0, "train_episodes": 18.0}
+{"step": 30000}
+{"step": 30000, "eval_return": 130.0, "eval_length": 495.0, "eval_episodes": 1.0}
+{"step": 30000, "model_loss": 14.715340614318848, "model_grad_norm": 45.00082015991211, "image_loss": 8.62331485748291, "reward_loss": 0.04776414856314659, "cont_loss": 0.006613984704017639, "kl_free": 1.0, "dyn_scale": 0.5, "rep_scale": 0.09999999999999999, "dyn_loss": 9.99836540222168, "rep_loss": 9.99836540222168, "kl": 9.998364448547363, "prior_abs_ent": 31.06058692932129, "post_abs_ent": -18.756607055664062, "prior_obs_ent": 27.9533748626709, "post_obs_ent": 20.067440032958984, "boundary_ratio": 0.047612108290195465, "kl_mask": 0.038628336042165756, "normed_target_mean": 0.39818477630615234, "normed_target_std": 0.49460527300834656, "normed_target_min": -0.34586504101753235, "normed_target_max": 8.6201753616333, "EMA_005": 0.7296465039253235, "EMA_095": 2.1584174633026123, "value_mean": 1.221390962600708, "value_std": 0.28642529249191284, "value_min": 0.6090188026428223, "value_max": 1.7405320405960083, "target_mean": 1.372732400894165, "target_std": 0.7872864007949829, "target_min": 0.16147415339946747, "target_max": 14.653557777404785, "imag_reward_mean": 0.034475021064281464, "imag_reward_std": 0.2636454701423645, "imag_reward_min": 0.005245281849056482, "imag_reward_max": 7.706101417541504, "imag_action_mean": 5.608485221862793, "imag_action_std": 3.232926607131958, "imag_action_min": 0.0, "imag_action_max": 17.0, "actor_entropy": 1.0153436660766602, "actor_loss": 0.14317938685417175, "actor_grad_norm": 0.08204355090856552, "value_loss": 1.8991820812225342, "value_grad_norm": 2.0248470306396484, "update_count": 5100.0, "fps": 16.28368799439908}
+{"step": 31100, "dataset_size": 7775.0, "train_return": 50.0, "train_length": 313.0, "train_episodes": 19.0}
+{"step": 32680, "dataset_size": 8170.0, "train_return": 80.0, "train_length": 395.0, "train_episodes": 20.0}
+{"step": 34684, "dataset_size": 8671.0, "train_return": 110.0, "train_length": 501.0, "train_episodes": 21.0}
+{"step": 36276, "dataset_size": 9069.0, "train_return": 100.0, "train_length": 398.0, "train_episodes": 22.0}
+{"step": 37864, "dataset_size": 9466.0, "train_return": 100.0, "train_length": 397.0, "train_episodes": 23.0}
+{"step": 38984, "dataset_size": 9746.0, "train_return": 40.0, "train_length": 280.0, "train_episodes": 24.0}
+{"step": 40380, "dataset_size": 10095.0, "train_return": 70.0, "train_length": 349.0, "train_episodes": 25.0}
+{"step": 41748, "dataset_size": 10437.0, "train_return": 120.0, "train_length": 342.0, "train_episodes": 26.0}
+{"step": 43368, "dataset_size": 10842.0, "train_return": 130.0, "train_length": 405.0, "train_episodes": 27.0}
+{"step": 45136, "dataset_size": 11284.0, "train_return": 180.0, "train_length": 442.0, "train_episodes": 28.0}
+{"step": 46828, "dataset_size": 11707.0, "train_return": 160.0, "train_length": 423.0, "train_episodes": 29.0}
+{"step": 48672, "dataset_size": 12168.0, "train_return": 160.0, "train_length": 461.0, "train_episodes": 30.0}
+{"step": 50000}
+{"step": 50000, "eval_return": 110.0, "eval_length": 375.0, "eval_episodes": 1.0}
+{"step": 50000, "model_loss": 9.353358268737793, "model_grad_norm": 18.8942813873291, "image_loss": 2.977034091949463, "reward_loss": 0.02273682877421379, "cont_loss": 0.003840586869046092, "kl_free": 1.0, "dyn_scale": 0.5, "rep_scale": 0.09999999999999999, "dyn_loss": 10.513973236083984, "rep_loss": 10.513973236083984, "kl": 10.513973236083984, "prior_abs_ent": 35.461402893066406, "post_abs_ent": -8.979927062988281, "prior_obs_ent": 37.82859420776367, "post_obs_ent": 28.318927764892578, "boundary_ratio": 0.023705273866653442, "kl_mask": 0.041362691670656204, "normed_target_mean": 0.502933144569397, "normed_target_std": 0.4180746078491211, "normed_target_min": -0.32629600167274475, "normed_target_max": 5.973992347717285, "EMA_005": 1.2221896648406982, "EMA_095": 4.805997371673584, "value_mean": 2.848501205444336, "value_std": 0.8828231692314148, "value_min": 0.6427547931671143, "value_max": 5.326628684997559, "target_mean": 2.9765090942382812, "target_std": 1.463651418685913, "target_min": 0.0556957945227623, "target_max": 21.11214256286621, "imag_reward_mean": 0.04866534098982811, "imag_reward_std": 0.5235312581062317, "imag_reward_min": -1.4076232446313952e-07, "imag_reward_max": 9.953132629394531, "imag_action_mean": 7.319806098937988, "imag_action_std": 1.6997559070587158, "imag_action_min": 0.0, "imag_action_max": 17.0, "actor_entropy": 0.3520095944404602, "actor_loss": 0.02746831439435482, "actor_grad_norm": 0.08581966906785965, "value_loss": 1.7469933032989502, "value_grad_norm": 0.7577283978462219, "update_count": 10100.0, "fps": 16.15884462830834}
+{"step": 50328, "dataset_size": 12582.0, "train_return": 160.0, "train_length": 414.0, "train_episodes": 31.0}
+{"step": 51760, "dataset_size": 12940.0, "train_return": 110.0, "train_length": 358.0, "train_episodes": 32.0}
+{"step": 53108, "dataset_size": 13277.0, "train_return": 90.0, "train_length": 337.0, "train_episodes": 33.0}
+{"step": 54408, "dataset_size": 13602.0, "train_return": 80.0, "train_length": 325.0, "train_episodes": 34.0}
+{"step": 55808, "dataset_size": 13952.0, "train_return": 120.0, "train_length": 350.0, "train_episodes": 35.0}
+{"step": 57552, "dataset_size": 14388.0, "train_return": 180.0, "train_length": 436.0, "train_episodes": 36.0}
+{"step": 58864, "dataset_size": 14716.0, "train_return": 100.0, "train_length": 328.0, "train_episodes": 37.0}
+{"step": 60052, "dataset_size": 15013.0, "train_return": 80.0, "train_length": 297.0, "train_episodes": 38.0}
+{"step": 61188, "dataset_size": 15297.0, "train_return": 80.0, "train_length": 284.0, "train_episodes": 39.0}
+{"step": 62452, "dataset_size": 15613.0, "train_return": 110.0, "train_length": 316.0, "train_episodes": 40.0}
+{"step": 63672, "dataset_size": 15918.0, "train_return": 100.0, "train_length": 305.0, "train_episodes": 41.0}
+{"step": 64892, "dataset_size": 16223.0, "train_return": 80.0, "train_length": 305.0, "train_episodes": 42.0}
+{"step": 66124, "dataset_size": 16531.0, "train_return": 80.0, "train_length": 308.0, "train_episodes": 43.0}
+{"step": 67432, "dataset_size": 16858.0, "train_return": 100.0, "train_length": 327.0, "train_episodes": 44.0}
+{"step": 68644, "dataset_size": 17161.0, "train_return": 80.0, "train_length": 303.0, "train_episodes": 45.0}
+{"step": 69880, "dataset_size": 17470.0, "train_return": 80.0, "train_length": 309.0, "train_episodes": 46.0}
+{"step": 70000}
+{"step": 70000, "eval_return": 100.0, "eval_length": 337.0, "eval_episodes": 1.0}
+{"step": 70000, "model_loss": 7.660406112670898, "model_grad_norm": 13.593708992004395, "image_loss": 1.591910719871521, "reward_loss": 0.019000113010406494, "cont_loss": 0.0016397082945331931, "kl_free": 1.0, "dyn_scale": 0.5, "rep_scale": 0.09999999999999999, "dyn_loss": 10.015774726867676, "rep_loss": 10.015774726867676, "kl": 10.015774726867676, "prior_abs_ent": 36.230899810791016, "post_abs_ent": -7.313562393188477, "prior_obs_ent": 34.59986877441406, "post_obs_ent": 25.31537437438965, "boundary_ratio": 0.01925976574420929, "kl_mask": 0.03838997706770897, "normed_target_mean": 0.46364858746528625, "normed_target_std": 0.3063676655292511, "normed_target_min": -0.22096887230873108, "normed_target_max": 2.297762632369995, "EMA_005": 2.7343127727508545, "EMA_095": 16.166324615478516, "value_mean": 8.731809616088867, "value_std": 3.3467371463775635, "value_min": 0.7309452295303345, "value_max": 16.83143424987793, "target_mean": 9.050943374633789, "target_std": 4.0447282791137695, "target_min": 0.013383724726736546, "target_max": 31.33534049987793, "imag_reward_mean": 0.12683232128620148, "imag_reward_std": 0.9915307760238647, "imag_reward_min": -1.1148452472298231e-07, "imag_reward_max": 10.006990432739258, "imag_action_mean": 7.694123268127441, "imag_action_std": 1.3500107526779175, "imag_action_min": 0.0, "imag_action_max": 17.0, "actor_entropy": 0.16632813215255737, "actor_loss": 0.044773269444704056, "actor_grad_norm": 0.1335889846086502, "value_loss": 2.1078901290893555, "value_grad_norm": 0.9128031134605408, "update_count": 15100.0, "fps": 16.2112641080507}
+{"step": 71244, "dataset_size": 17811.0, "train_return": 100.0, "train_length": 341.0, "train_episodes": 47.0}
+{"step": 72616, "dataset_size": 18154.0, "train_return": 100.0, "train_length": 343.0, "train_episodes": 48.0}
+{"step": 73916, "dataset_size": 18479.0, "train_return": 100.0, "train_length": 325.0, "train_episodes": 49.0}
+{"step": 75260, "dataset_size": 18815.0, "train_return": 90.0, "train_length": 336.0, "train_episodes": 50.0}
+{"step": 76632, "dataset_size": 19158.0, "train_return": 120.0, "train_length": 343.0, "train_episodes": 51.0}
+{"step": 78040, "dataset_size": 19510.0, "train_return": 120.0, "train_length": 352.0, "train_episodes": 52.0}
+{"step": 79360, "dataset_size": 19840.0, "train_return": 100.0, "train_length": 330.0, "train_episodes": 53.0}
+{"step": 80720, "dataset_size": 20180.0, "train_return": 100.0, "train_length": 340.0, "train_episodes": 54.0}
+{"step": 82036, "dataset_size": 20509.0, "train_return": 90.0, "train_length": 329.0, "train_episodes": 55.0}
+{"step": 83300, "dataset_size": 20825.0, "train_return": 80.0, "train_length": 316.0, "train_episodes": 56.0}
+{"step": 84604, "dataset_size": 21151.0, "train_return": 100.0, "train_length": 326.0, "train_episodes": 57.0}
+{"step": 85952, "dataset_size": 21488.0, "train_return": 110.0, "train_length": 337.0, "train_episodes": 58.0}
+{"step": 87348, "dataset_size": 21837.0, "train_return": 130.0, "train_length": 349.0, "train_episodes": 59.0}
+{"step": 88724, "dataset_size": 22181.0, "train_return": 100.0, "train_length": 344.0, "train_episodes": 60.0}
+{"step": 90000}
+{"step": 90000, "eval_return": 90.0, "eval_length": 329.0, "eval_episodes": 1.0}
+{"step": 90000, "model_loss": 6.473062515258789, "model_grad_norm": 11.591625213623047, "image_loss": 1.0065758228302002, "reward_loss": 0.016862843185663223, "cont_loss": 0.0009873508242890239, "kl_free": 1.0, "dyn_scale": 0.5, "rep_scale": 0.09999999999999999, "dyn_loss": 9.019009590148926, "rep_loss": 9.019009590148926, "kl": 9.018980979919434, "prior_abs_ent": 36.227230072021484, "post_abs_ent": -12.535848617553711, "prior_obs_ent": 30.188749313354492, "post_obs_ent": 21.94582176208496, "boundary_ratio": 0.018415624275803566, "kl_mask": 0.03723146766424179, "normed_target_mean": 0.501166582107544, "normed_target_std": 0.2800949215888977, "normed_target_min": -0.127240851521492, "normed_target_max": 1.4988701343536377, "EMA_005": 3.0359902381896973, "EMA_095": 27.027063369750977, "value_mean": 14.782306671142578, "value_std": 6.303020000457764, "value_min": 0.37321335077285767, "value_max": 30.605968475341797, "target_mean": 15.072419166564941, "target_std": 6.708163261413574, "target_min": 0.006825084798038006, "target_max": 38.83497619628906, "imag_reward_mean": 0.1924760937690735, "imag_reward_std": 1.301211953163147, "imag_reward_min": -3.8836003568576416e-07, "imag_reward_max": 10.013995170593262, "imag_action_mean": 9.274871826171875, "imag_action_std": 2.285792112350464, "imag_action_min": 0.0, "imag_action_max": 17.0, "actor_entropy": 0.24864692986011505, "actor_loss": 0.05594470351934433, "actor_grad_norm": 0.211288183927536, "value_loss": 1.935182809829712, "value_grad_norm": 1.0756515264511108, "update_count": 20100.0, "fps": 16.156981795750323}
+{"step": 90212, "dataset_size": 22553.0, "train_return": 140.0, "train_length": 372.0, "train_episodes": 61.0}
+{"step": 91636, "dataset_size": 22909.0, "train_return": 100.0, "train_length": 356.0, "train_episodes": 62.0}
+{"step": 93128, "dataset_size": 23282.0, "train_return": 120.0, "train_length": 373.0, "train_episodes": 63.0}
+{"step": 94520, "dataset_size": 23630.0, "train_return": 110.0, "train_length": 348.0, "train_episodes": 64.0}
+{"step": 96048, "dataset_size": 24012.0, "train_return": 120.0, "train_length": 382.0, "train_episodes": 65.0}
+{"step": 97636, "dataset_size": 24409.0, "train_return": 140.0, "train_length": 397.0, "train_episodes": 66.0}
+{"step": 99220, "dataset_size": 24805.0, "train_return": 130.0, "train_length": 396.0, "train_episodes": 67.0}
+{"step": 100776, "dataset_size": 25194.0, "train_return": 140.0, "train_length": 389.0, "train_episodes": 68.0}
+{"step": 102512, "dataset_size": 25628.0, "train_return": 160.0, "train_length": 434.0, "train_episodes": 69.0}
+{"step": 104180, "dataset_size": 26045.0, "train_return": 160.0, "train_length": 417.0, "train_episodes": 70.0}
+{"step": 105828, "dataset_size": 26457.0, "train_return": 170.0, "train_length": 412.0, "train_episodes": 71.0}
+{"step": 107348, "dataset_size": 26837.0, "train_return": 140.0, "train_length": 380.0, "train_episodes": 72.0}
+{"step": 108956, "dataset_size": 27239.0, "train_return": 170.0, "train_length": 402.0, "train_episodes": 73.0}
+{"step": 110000}
+{"step": 110000, "eval_return": 160.0, "eval_length": 400.0, "eval_episodes": 1.0}
+{"step": 110000, "model_loss": 5.9420084953308105, "model_grad_norm": 10.635823249816895, "image_loss": 0.8019498586654663, "reward_loss": 0.017467018216848373, "cont_loss": 0.0007115323096513748, "kl_free": 1.0, "dyn_scale": 0.5, "rep_scale": 0.09999999999999999, "dyn_loss": 8.478179931640625, "rep_loss": 8.478179931640625, "kl": 8.477954864501953, "prior_abs_ent": 35.91210174560547, "post_abs_ent": -18.007556915283203, "prior_obs_ent": 26.806312561035156, "post_obs_ent": 19.177988052368164, "boundary_ratio": 0.018037695437669754, "kl_mask": 0.034972336143255234, "normed_target_mean": 0.5188969373703003, "normed_target_std": 0.27464228868484497, "normed_target_min": -0.12921054661273956, "normed_target_max": 1.3366754055023193, "EMA_005": 4.199153423309326, "EMA_095": 36.45781707763672, "value_mean": 20.571191787719727, "value_std": 8.450461387634277, "value_min": 0.21409745514392853, "value_max": 41.272605895996094, "target_mean": 20.93558120727539, "target_std": 8.858924865722656, "target_min": 0.0037405292969197035, "target_max": 47.26131820678711, "imag_reward_mean": 0.2364763617515564, "imag_reward_std": 1.4401901960372925, "imag_reward_min": -2.2771358487716498e-07, "imag_reward_max": 10.01722526550293, "imag_action_mean": 9.204174995422363, "imag_action_std": 2.6939682960510254, "imag_action_min": 0.0, "imag_action_max": 17.0, "actor_entropy": 0.21778835356235504, "actor_loss": 0.06708024442195892, "actor_grad_norm": 0.2960452437400818, "value_loss": 1.8905340433120728, "value_grad_norm": 1.105193018913269, "update_count": 25100.0, "fps": 16.089493418718543}
+{"step": 110580, "dataset_size": 27645.0, "train_return": 160.0, "train_length": 406.0, "train_episodes": 74.0}
+{"step": 112156, "dataset_size": 28039.0, "train_return": 150.0, "train_length": 394.0, "train_episodes": 75.0}
+{"step": 113756, "dataset_size": 28439.0, "train_return": 180.0, "train_length": 400.0, "train_episodes": 76.0}
+{"step": 115540, "dataset_size": 28885.0, "train_return": 180.0, "train_length": 446.0, "train_episodes": 77.0}
+{"step": 117144, "dataset_size": 29286.0, "train_return": 160.0, "train_length": 401.0, "train_episodes": 78.0}
+{"step": 118744, "dataset_size": 29686.0, "train_return": 160.0, "train_length": 400.0, "train_episodes": 79.0}
+{"step": 120384, "dataset_size": 30096.0, "train_return": 160.0, "train_length": 410.0, "train_episodes": 80.0}
+{"step": 121872, "dataset_size": 30468.0, "train_return": 160.0, "train_length": 372.0, "train_episodes": 81.0}
+{"step": 123536, "dataset_size": 30884.0, "train_return": 160.0, "train_length": 416.0, "train_episodes": 82.0}
+{"step": 125152, "dataset_size": 31288.0, "train_return": 190.0, "train_length": 404.0, "train_episodes": 83.0}
+{"step": 126632, "dataset_size": 31658.0, "train_return": 140.0, "train_length": 370.0, "train_episodes": 84.0}
+{"step": 128256, "dataset_size": 32064.0, "train_return": 190.0, "train_length": 406.0, "train_episodes": 85.0}
+{"step": 129808, "dataset_size": 32452.0, "train_return": 170.0, "train_length": 388.0, "train_episodes": 86.0}
+{"step": 130000}
+{"step": 130000, "eval_return": 160.0, "eval_length": 409.0, "eval_episodes": 1.0}
+{"step": 130000, "model_loss": 5.625593662261963, "model_grad_norm": 10.186495780944824, "image_loss": 0.7056495547294617, "reward_loss": 0.017759116366505623, "cont_loss": 0.0006033340469002724, "kl_free": 1.0, "dyn_scale": 0.5, "rep_scale": 0.09999999999999999, "dyn_loss": 8.114001274108887, "rep_loss": 8.114001274108887, "kl": 8.11293888092041, "prior_abs_ent": 35.69525146484375, "post_abs_ent": -22.42769432067871, "prior_obs_ent": 22.864763259887695, "post_obs_ent": 15.658802032470703, "boundary_ratio": 0.017830664291977882, "kl_mask": 0.033180952072143555, "normed_target_mean": 0.5260632038116455, "normed_target_std": 0.2764865756034851, "normed_target_min": -0.19036410748958588, "normed_target_max": 1.2739007472991943, "EMA_005": 8.095803260803223, "EMA_095": 50.49937057495117, "value_mean": 29.984569549560547, "value_std": 11.283032417297363, "value_min": 0.21532714366912842, "value_max": 56.90568923950195, "target_mean": 30.416574478149414, "target_std": 11.724690437316895, "target_min": 0.00758379278704524, "target_max": 62.04051208496094, "imag_reward_mean": 0.28699979186058044, "imag_reward_std": 1.601497769355774, "imag_reward_min": -1.617670051246023e-07, "imag_reward_max": 10.018038749694824, "imag_action_mean": 9.929019927978516, "imag_action_std": 3.2326388359069824, "imag_action_min": 0.0, "imag_action_max": 17.0, "actor_entropy": 0.2305861860513687, "actor_loss": 0.0899001806974411, "actor_grad_norm": 0.41950723528862, "value_loss": 1.7829889059066772, "value_grad_norm": 1.2175695896148682, "update_count": 30100.0, "fps": 16.042835430558657}
+{"step": 131356, "dataset_size": 32839.0, "train_return": 150.0, "train_length": 387.0, "train_episodes": 87.0}
+{"step": 133080, "dataset_size": 33270.0, "train_return": 180.0, "train_length": 431.0, "train_episodes": 88.0}
+{"step": 134608, "dataset_size": 33652.0, "train_return": 140.0, "train_length": 382.0, "train_episodes": 89.0}
+{"step": 136344, "dataset_size": 34086.0, "train_return": 180.0, "train_length": 434.0, "train_episodes": 90.0}
+{"step": 138224, "dataset_size": 34556.0, "train_return": 200.0, "train_length": 470.0, "train_episodes": 91.0}
+{"step": 140076, "dataset_size": 35019.0, "train_return": 190.0, "train_length": 463.0, "train_episodes": 92.0}
+{"step": 141860, "dataset_size": 35465.0, "train_return": 160.0, "train_length": 446.0, "train_episodes": 93.0}
+{"step": 143644, "dataset_size": 35911.0, "train_return": 180.0, "train_length": 446.0, "train_episodes": 94.0}
+{"step": 145276, "dataset_size": 36319.0, "train_return": 180.0, "train_length": 408.0, "train_episodes": 95.0}
+{"step": 146880, "dataset_size": 36720.0, "train_return": 170.0, "train_length": 401.0, "train_episodes": 96.0}
+{"step": 148612, "dataset_size": 37153.0, "train_return": 200.0, "train_length": 433.0, "train_episodes": 97.0}
