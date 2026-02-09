@@ -41,6 +41,29 @@ def read_last_step(metrics_path: Path):
     return last
 
 
+def read_reward_series(metrics_path: Path, key: str):
+    if not metrics_path.exists():
+        return np.array([]), np.array([])
+    steps = []
+    values = []
+    with metrics_path.open() as f:
+        for line in f:
+            try:
+                j = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if "step" not in j or key not in j:
+                continue
+            try:
+                steps.append(float(j["step"]))
+                values.append(float(j[key]))
+            except (TypeError, ValueError):
+                continue
+    if not steps:
+        return np.array([]), np.array([])
+    return np.asarray(steps, dtype=float), np.asarray(values, dtype=float)
+
+
 def parse_task_from_stats(stats_path: Path):
     if not stats_path.exists():
         return None
@@ -143,7 +166,9 @@ def main():
             writer.writerow(r)
 
     steps = np.array([r["step"] for r in rows], dtype=float)
-    fig, axes = plt.subplots(3, 1, figsize=(10, 9), sharex=True)
+    eval_steps, eval_returns = read_reward_series(metrics_path, "eval_return")
+    train_steps, train_returns = read_reward_series(metrics_path, "train_return")
+    fig, axes = plt.subplots(4, 1, figsize=(10, 12), sharex=True)
 
     axes[0].plot(steps, [r["abs_l2_mean"] for r in rows], marker="o", label="abs_l2_mean")
     axes[0].plot(
@@ -172,8 +197,19 @@ def main():
     )
     axes[2].set_ylabel("Boundary / READ prob")
     axes[2].set_title("Boundary Usage")
-    axes[2].set_xlabel("Env step")
     axes[2].legend(loc="upper right")
+
+    if eval_steps.size > 0:
+        axes[3].plot(eval_steps, eval_returns, label="eval_return", alpha=0.9)
+    if train_steps.size > 0:
+        axes[3].plot(train_steps, train_returns, label="train_return", alpha=0.7)
+    axes[3].set_ylabel("Return")
+    axes[3].set_title("Reward")
+    axes[3].set_xlabel("Env step")
+    if eval_steps.size > 0 or train_steps.size > 0:
+        axes[3].legend(loc="upper left")
+    else:
+        axes[3].text(0.5, 0.5, "No reward series in metrics.jsonl", ha="center", va="center")
 
     for ax in axes:
         ax.grid(True, alpha=0.25)

@@ -297,6 +297,11 @@ def main():
         help="Checkpoint path (defaults to logdir/latest.pt). Relative paths are resolved from --logdir.",
     )
     parser.add_argument(
+        "--random_init",
+        action="store_true",
+        help="Use randomly initialized model weights (skip checkpoint loading).",
+    )
+    parser.add_argument(
         "--output_dir",
         default=None,
         help="Directory to save outputs (defaults to --logdir).",
@@ -366,11 +371,15 @@ def main():
     logdir = Path(args.logdir)
     output_dir = Path(args.output_dir) if args.output_dir else logdir
     output_dir.mkdir(parents=True, exist_ok=True)
-    ckpt_path = Path(args.ckpt_path) if args.ckpt_path else (logdir / "latest.pt")
-    if not ckpt_path.is_absolute():
-        ckpt_path = logdir / ckpt_path
-    if not ckpt_path.exists():
-        raise FileNotFoundError(f"Missing checkpoint: {ckpt_path}")
+    ckpt_path = None
+    ckpt_label = "random_init"
+    if not args.random_init:
+        ckpt_path = Path(args.ckpt_path) if args.ckpt_path else (logdir / "latest.pt")
+        if not ckpt_path.is_absolute():
+            ckpt_path = logdir / ckpt_path
+        if not ckpt_path.exists():
+            raise FileNotFoundError(f"Missing checkpoint: {ckpt_path}")
+        ckpt_label = str(ckpt_path)
 
     ep_path = pick_episode(logdir / args.episodes_dir, args.episode)
     with np.load(ep_path) as ep:
@@ -391,11 +400,12 @@ def main():
     act_space.discrete = True
 
     wm = models.WorldModel(obs_space, act_space, step=0, config=config).to(device)
-    state = torch.load(ckpt_path, map_location=device)["agent_state_dict"]
-    wm_state = {k[len("_wm."):]: v for k, v in state.items() if k.startswith("_wm.")}
-    # Remove _orig_mod. prefix from torch.compile() saved checkpoints
-    wm_state = {k.replace("_orig_mod.", ""): v for k, v in wm_state.items()}
-    wm.load_state_dict(wm_state, strict=True)
+    if ckpt_path is not None:
+        state = torch.load(ckpt_path, map_location=device)["agent_state_dict"]
+        wm_state = {k[len("_wm."):]: v for k, v in state.items() if k.startswith("_wm.")}
+        # Remove _orig_mod. prefix from torch.compile() saved checkpoints
+        wm_state = {k.replace("_orig_mod.", ""): v for k, v in wm_state.items()}
+        wm.load_state_dict(wm_state, strict=True)
 
     data = {
         "image": images[None],
@@ -484,7 +494,7 @@ def main():
     summary = {
         "task": args.task,
         "logdir": str(logdir),
-        "ckpt": str(ckpt_path),
+        "ckpt": ckpt_label,
         "episode": str(ep_path),
         "abs_kl_mean": abs_kl_mean,
         "abs_kl_std": abs_kl_std,
@@ -551,7 +561,7 @@ def main():
             row = {
                 "task": args.task,
                 "logdir": str(logdir),
-                "ckpt": str(ckpt_path),
+                "ckpt": ckpt_label,
                 "episode": str(ep_path),
                 "window_start": start,
                 "window_end": end,
