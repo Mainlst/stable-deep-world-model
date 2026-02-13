@@ -237,4 +237,8 @@ logs/**/*.mp4
 logs/**/*.npy
 logs/**/*.pyc
 
+# CSV outputs
 *.csv
+
+# Safety rule for large sweep artifacts under logs
+logs/models/**/vta_z_windows*.csv
