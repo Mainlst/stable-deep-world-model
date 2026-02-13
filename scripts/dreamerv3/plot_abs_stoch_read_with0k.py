@@ -141,6 +141,18 @@ def plot_curve(
     metric: str,
     xtick_k: int = 50,
 ):
+    label_map = {
+        "abs_stoch_l2_read_mean": (
+            r"Read-Conditioned Abstract Latent Distance "
+            r"$\mathbb{E}\!\left[\left\|\mathbf{z}^{\mathrm{abs}}_{t}-\mathbf{z}^{\mathrm{abs}}_{t-1}\right\|_2 \mid b_t=1\right]$",
+            "Read-Conditioned Abstract Latent Transition Distance Across Training",
+        ),
+    }
+    ylabel, title = label_map.get(
+        metric,
+        (f"{metric} (read-conditioned mean)", f"{metric} Across Training"),
+    )
+
     colors = {0: "#1f77b4", 1: "#2ca02c", 2: "#d62728"}
     plt.figure(figsize=(10.8, 6.0))
     for seed in sorted(by_seed):
@@ -161,9 +173,9 @@ def plot_curve(
     plt.xlim(0, 400000)
     ticks = np.arange(0, 400001, xtick_k * 1000)
     plt.xticks(ticks, [f"{int(t / 1000)}k" for t in ticks])
-    plt.xlabel("Environment steps")
-    plt.ylabel(f"{metric} (||z_t-z_(t-1)||_2 @ b_t=1)")
-    plt.title("VTA read-step latent distance across 3 seeds")
+    plt.xlabel("Environment Steps")
+    plt.ylabel(ylabel)
+    plt.title(title)
     plt.legend(loc="best")
     plt.tight_layout()
     out_png.parent.mkdir(parents=True, exist_ok=True)
