@@ -61,6 +61,10 @@ class WorldModel(nn.Module):
                 vta_post_boundary_kernel_size=getattr(
                     config, "vta_post_boundary_kernel_size", 3
                 ),
+                train_boundary_mode=getattr(config, "vta_train_boundary_mode", "learned"),
+                train_fixed_k=getattr(config, "vta_train_fixed_k", 20),
+                train_bernoulli_p=getattr(config, "vta_train_bernoulli_p", 0.05),
+                train_exp_lambda=getattr(config, "vta_train_exp_lambda", 0.05),
             )
             feat_size = self.dynamics.feat_size
         else:

@@ -227,6 +227,8 @@ def main(config):
     ckpt_dir = logdir / str(getattr(config, "ckpt_dir", "checkpoints"))
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     ckpt_every = int(getattr(config, "ckpt_every", 0) or 0)
+    if ckpt_every > 0:
+        ckpt_every //= config.action_repeat
     ckpt_steps_raw = getattr(config, "ckpt_steps", ())
     if isinstance(ckpt_steps_raw, (list, tuple)):
         ckpt_steps = [int(s) for s in ckpt_steps_raw]
@@ -234,7 +236,7 @@ def main(config):
         ckpt_steps = [int(s) for s in ckpt_steps_raw.split(",") if s.strip()]
     else:
         ckpt_steps = [int(ckpt_steps_raw)]
-    ckpt_steps = sorted({s for s in ckpt_steps if s > 0})
+    ckpt_steps = sorted({s for s in ckpt_steps if s >= 0})
     existing_ckpt_steps = set()
     for p in ckpt_dir.glob("step-*.pt"):
         m = re.search(r"step-(\d+)\.pt$", p.name)
@@ -331,7 +333,16 @@ def main(config):
         tools.recursively_load_optim_state_dict(agent, checkpoint["optims_state_dict"])
         agent._should_pretrain._once = False
 
-    # make sure eval will be executed once after config.steps
+    # Save step-0 checkpoint if requested
+    if 0 in ckpt_steps and 0 not in existing_ckpt_steps:
+        items_to_save = {
+            "agent_state_dict": agent.state_dict(),
+            "optims_state_dict": tools.recursively_collect_optim_state_dict(agent),
+        }
+        ckpt_path = ckpt_dir / f"step-{0:09d}.pt"
+        ckpt_dir.mkdir(parents=True, exist_ok=True)
+        torch.save(items_to_save, ckpt_path)
+        existing_ckpt_steps.add(0)
     while agent._step < config.steps + config.eval_every:
         logger.write()
         if config.eval_episode_num > 0:

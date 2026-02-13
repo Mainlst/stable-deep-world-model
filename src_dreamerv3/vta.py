@@ -189,6 +189,10 @@ class VTA(nn.Module):
         device=None,
         vta_posterior_input='embed',
         vta_post_boundary_kernel_size=3,
+        train_boundary_mode="learned",
+        train_fixed_k=20,
+        train_bernoulli_p=0.05,
+        train_exp_lambda=0.05,
     ):
         super().__init__()
         
@@ -210,6 +214,10 @@ class VTA(nn.Module):
         self._boundary_temp = boundary_temp
         self._boundary_force_scale = boundary_force_scale
         self._boundary_threshold = boundary_threshold
+        self._train_boundary_mode = train_boundary_mode
+        self._train_fixed_k = max(1, int(train_fixed_k))
+        self._train_bernoulli_p = float(train_bernoulli_p)
+        self._train_exp_lambda = float(train_exp_lambda)
         
         # Feature sizes
         self._abs_feat_size = abs_belief + abs_stoch
@@ -355,6 +363,7 @@ class VTA(nn.Module):
         # Segment tracking
         seg_len = torch.zeros(batch_size, 1, device=device)
         seg_num = torch.zeros(batch_size, 1, device=device)
+        exp_countdown = self._sample_exp_interval(batch_size, device)
         
         return {
             "abs_belief": abs_belief,
@@ -369,6 +378,7 @@ class VTA(nn.Module):
             "boundary_logit": boundary_logit,
             "seg_len": seg_len,
             "seg_num": seg_num,
+            "exp_countdown": exp_countdown,
         }
     
     def _get_abs_feat(self, state):
@@ -459,6 +469,58 @@ class VTA(nn.Module):
             log_alpha = over_num * force_copy + (1 - over_num) * log_alpha
         
         return log_alpha
+
+    def _sample_exp_interval(self, batch_size, device):
+        """Sample integer interval from Exp(lambda), at least 1 step."""
+        rate = max(self._train_exp_lambda, 1e-6)
+        tau = torch.distributions.Exponential(rate).sample((batch_size, 1)).to(device)
+        return torch.clamp(torch.ceil(tau), min=1.0)
+
+    def _sample_boundary_by_mode(
+        self,
+        prev_state,
+        prior_boundary_logit,
+        post_boundary_logit=None,
+    ):
+        """Boundary sampling for training/eval under configurable boundary mode."""
+        mode = self._train_boundary_mode
+        if mode == "learned":
+            if post_boundary_logit is not None:
+                boundary_logit = post_boundary_logit
+            else:
+                boundary_logit = prior_boundary_logit
+            boundary_logit = self._regularize_boundary(
+                boundary_logit, prev_state["seg_len"], prev_state["seg_num"]
+            )
+            boundary_sample, _ = self._sample_boundary(boundary_logit)
+            exp_countdown = prev_state["exp_countdown"]
+            return boundary_sample, boundary_logit, exp_countdown
+
+        if mode == "fixed":
+            # Boundary every k steps: trigger when current segment reaches k.
+            is_boundary = (prev_state["seg_len"] >= float(self._train_fixed_k - 1)).float()
+            boundary_sample = torch.stack([is_boundary, 1 - is_boundary], dim=-1).squeeze(-2)
+            exp_countdown = prev_state["exp_countdown"]
+            return boundary_sample, prior_boundary_logit, exp_countdown
+
+        if mode == "bernoulli":
+            p = min(max(self._train_bernoulli_p, 0.0), 1.0)
+            read_mask = torch.bernoulli(
+                torch.full_like(prev_state["seg_len"], p)
+            )
+            boundary_sample = torch.cat([read_mask, 1.0 - read_mask], dim=-1)
+            exp_countdown = prev_state["exp_countdown"]
+            return boundary_sample, prior_boundary_logit, exp_countdown
+
+        if mode == "exponential":
+            prev_countdown = prev_state["exp_countdown"]
+            read_mask = (prev_countdown <= 1.0).float()
+            boundary_sample = torch.cat([read_mask, 1.0 - read_mask], dim=-1)
+            new_interval = self._sample_exp_interval(read_mask.shape[0], read_mask.device)
+            next_countdown = read_mask * new_interval + (1.0 - read_mask) * (prev_countdown - 1.0)
+            return boundary_sample, prior_boundary_logit, next_countdown
+
+        raise ValueError(f"Unknown train_boundary_mode: {mode}")
     
     def observe(self, embed, action, is_first, state=None, reward=None):
         """
@@ -563,19 +625,11 @@ class VTA(nn.Module):
         obs_feat = self._get_obs_feat(prev_state)
         prior_boundary_logit = self.prior_boundary(obs_feat)
         
-        # Get boundary decision for sampling
-        if post_boundary_logit is not None:
-            # Use posterior boundary (training)
-            boundary_logit = post_boundary_logit
-        else:
-            # Use prior boundary (inference)
-            boundary_logit = prior_boundary_logit
-        
-        # Regularize and sample boundary
-        boundary_logit = self._regularize_boundary(
-            boundary_logit, prev_state["seg_len"], prev_state["seg_num"]
+        boundary_sample, boundary_logit, exp_countdown = self._sample_boundary_by_mode(
+            prev_state,
+            prior_boundary_logit=prior_boundary_logit,
+            post_boundary_logit=post_boundary_logit,
         )
-        boundary_sample, boundary_log = self._sample_boundary(boundary_logit)
         
         # boundary_sample[:, 0] = 1 means READ (boundary), [:, 1] = 1 means COPY
         read_mask = boundary_sample[:, 0:1]  # (batch, 1)
@@ -654,6 +708,7 @@ class VTA(nn.Module):
             "boundary_logit": boundary_logit,  # post boundary logit (regularized)
             "seg_len": seg_len,
             "seg_num": seg_num,
+            "exp_countdown": exp_countdown,
         }
         
         # Regularize prior boundary logit for storing
@@ -674,6 +729,7 @@ class VTA(nn.Module):
             "boundary_logit": prior_boundary_logit_reg,  # prior boundary logit (regularized)
             "seg_len": seg_len,
             "seg_num": seg_num,
+            "exp_countdown": exp_countdown,
         }
         
         return post, prior
@@ -699,15 +755,19 @@ class VTA(nn.Module):
         )
         
         if boundary_mode == "prior":
-            boundary_sample, _ = self._sample_boundary(boundary_logit)
+            boundary_sample, _, exp_countdown = self._sample_boundary_by_mode(
+                prev_state, prior_boundary_logit=boundary_logit
+            )
         elif boundary_mode == "fixed":
-            # Fixed interval: boundary every max_seg_len steps
+            # Fixed interval: boundary every max_seg_len steps (legacy/explicit fixed mode)
             is_boundary = (prev_state["seg_len"] >= self._max_seg_len - 1).float()
             boundary_sample = torch.stack([is_boundary, 1 - is_boundary], dim=-1).squeeze(-2)
+            exp_countdown = prev_state["exp_countdown"]
         else:  # "none"
             # No boundaries during imagination
             boundary_sample = torch.zeros_like(boundary_logit)
             boundary_sample[:, 1] = 1.0  # Always COPY
+            exp_countdown = prev_state["exp_countdown"]
         
         read_mask = boundary_sample[:, 0:1]
         copy_mask = boundary_sample[:, 1:2]
@@ -759,6 +819,7 @@ class VTA(nn.Module):
             "boundary_logit": boundary_logit,
             "seg_len": seg_len,
             "seg_num": seg_num,
+            "exp_countdown": exp_countdown,
         }
     
     def jumpy_img_step(self, prev_state, prev_action, sample=True):
@@ -815,6 +876,7 @@ class VTA(nn.Module):
             "boundary_logit": torch.zeros(read_mask.shape[0], 2, device=self._device),
             "seg_len": torch.ones_like(read_mask),
             "seg_num": prev_state["seg_num"] + 1,
+            "exp_countdown": prev_state["exp_countdown"],
         }
     
     def imagine_with_action(self, action, state, jumpy=False, boundary_mode="prior"):

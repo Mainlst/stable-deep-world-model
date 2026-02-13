@@ -82,6 +82,10 @@ defaults:
   vta_boundary_scale: 0.0 # weight for boundary prior loss
   vta_posterior_input: 'embed' # 'embed' or 'embed_reward'
   vta_post_boundary_kernel_size: 3  # Conv1d kernel size for posterior boundary detector (odd recommended)
+  vta_train_boundary_mode: 'learned'  # 'learned', 'fixed', 'bernoulli', 'exponential'
+  vta_train_fixed_k: 20  # Used when vta_train_boundary_mode='fixed'
+  vta_train_bernoulli_p: 0.05  # Used when vta_train_boundary_mode='bernoulli'
+  vta_train_exp_lambda: 0.05  # Used when vta_train_boundary_mode='exponential' (E[tau]=1/lambda)
 
   # Training
   batch_size: 16

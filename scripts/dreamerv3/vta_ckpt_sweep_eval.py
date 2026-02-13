@@ -21,13 +21,14 @@ import sys
 import numpy as np
 import torch
 import gym
+from torch import distributions as torchd
 from ruamel.yaml import YAML
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT))
 
 from src_dreamerv3 import models
-from scripts.dreamerv3.vta_boundary_viz import load_config, pick_episode, compute_vta_stats
+from scripts.dreamerv3.vta_boundary_viz import load_config, pick_episode
 
 
 def _quantile(x: np.ndarray, q: float) -> float:
@@ -48,6 +49,8 @@ def prepare_csv(path: Path, fieldnames, overwrite: bool):
     If an existing file has a different header, default to writing a new *_v2.csv file,
     unless overwrite=True.
     """
+    if overwrite:
+        return path, True, "w"
     if not path.exists():
         return path, True, "w"
     try:
@@ -57,8 +60,6 @@ def prepare_csv(path: Path, fieldnames, overwrite: bool):
         header = []
     if header == list(fieldnames):
         return path, False, "a"
-    if overwrite:
-        return path, True, "w"
     v2 = path.with_name(f"{path.stem}_v2{path.suffix}")
     return v2, True, "w"
 
@@ -85,7 +86,13 @@ def infer_task_from_name(logdir: Path) -> str | None:
     return None
 
 
-def list_checkpoints(logdir: Path, include_latest: bool = True) -> list[Path]:
+def list_checkpoints(
+    logdir: Path, include_latest: bool = True, latest_only: bool = False
+) -> list[Path]:
+    if latest_only:
+        p = logdir / "latest.pt"
+        return [p] if p.exists() else []
+
     cands: list[Path] = []
     if include_latest and (logdir / "latest.pt").exists():
         cands.append(logdir / "latest.pt")
@@ -119,6 +126,47 @@ def list_checkpoints(logdir: Path, include_latest: bool = True) -> list[Path]:
     return sorted(unique, key=step_key)
 
 
+def parse_ckpt_step(path: Path) -> int | None:
+    # Prefer explicit step-XXXXXXXXX.pt naming.
+    m = re.search(r"step-(\d+)\.pt$", path.name)
+    if m:
+        return int(m.group(1))
+    # Fallback: trailing integer before .pt (e.g. model-12345.pt, 12345.pt).
+    m = re.search(r"(\d+)(?=\.pt$)", path.name)
+    if m:
+        return int(m.group(1))
+    return None
+
+
+def filter_checkpoints(
+    ckpts: list[Path], eval_every_k: int | None, eval_steps_k: list[int] | None
+) -> list[Path]:
+    if eval_every_k is None and not eval_steps_k:
+        return ckpts
+
+    if eval_every_k is not None and eval_every_k <= 0:
+        raise ValueError("--eval_every_k must be positive")
+
+    target_steps = None
+    if eval_steps_k:
+        target_steps = {int(k) * 1000 for k in eval_steps_k}
+
+    interval = int(eval_every_k) * 1000 if eval_every_k is not None else None
+    kept = []
+    for ckpt in ckpts:
+        ckpt_step = parse_ckpt_step(ckpt)
+        if ckpt_step is None:
+            # With point-filtering enabled, skip non-step checkpoints (e.g., latest.pt).
+            continue
+        env_step = ckpt_step * 4
+        if target_steps is not None and env_step not in target_steps:
+            continue
+        if interval is not None and (env_step % interval) != 0:
+            continue
+        kept.append(ckpt)
+    return kept
+
+
 @dataclass(frozen=True)
 class EvalInputs:
     task: str
@@ -132,6 +180,71 @@ class EvalInputs:
     device: str
     configs: list[str]
     overrides: list[str]
+    boundary_source: str
+
+
+
+def _get_vta_overrides(logdir: Path) -> list[str]:
+    """
+    Extract VTA-specific training parameters from config.yaml in logdir.
+    This ensures evaluation uses the same boundary mode/params as training.
+    """
+    cfg_path = logdir / "config.yaml"
+    if not cfg_path.exists():
+        return []
+    
+    yaml = YAML(typ="unsafe", pure=True)
+    try:
+        data = yaml.load(cfg_path.read_text())
+    except Exception:
+        return []
+        
+    overrides = []
+    # Keys to foster from training config
+    keys = [
+        "vta_train_boundary_mode",
+        "vta_train_fixed_k",
+        "vta_train_bernoulli_p",
+        "vta_train_exp_lambda",
+    ]
+    
+    if isinstance(data, dict):
+        for k in keys:
+            if k in data:
+                overrides.append(f"--{k}")
+                overrides.append(str(data[k]))
+                
+    return overrides
+
+
+def _rollout_states(wm, proc, boundary_source: str):
+    if boundary_source == "posterior":
+        reward_t = proc.get("reward", None)
+        return wm.dynamics.observe(proc["embed"], proc["action"], proc["is_first"], reward=reward_t)
+    if boundary_source != "prior":
+        raise ValueError(f"Unknown boundary_source: {boundary_source}")
+
+    # Prior-boundary rollout: use obs_step with post_boundary_logit=None at every time step.
+    swap = lambda x: x.permute([1, 0] + list(range(2, len(x.shape))))
+    embed = swap(proc["embed"])
+    action = swap(proc["action"])
+    is_first = swap(proc["is_first"])
+    batch_size, seq_len = proc["embed"].shape[:2]
+
+    state = wm.dynamics.initial(batch_size)
+    posts = {k: [] for k in state.keys()}
+    priors = {k: [] for k in state.keys()}
+    for t in range(seq_len):
+        post, prior = wm.dynamics.obs_step(
+            state, action[t], embed[t], is_first[t], post_boundary_logit=None
+        )
+        for k in state.keys():
+            posts[k].append(post[k])
+            priors[k].append(prior[k])
+        state = post
+    posts = {k: swap(torch.stack(v, dim=0)) for k, v in posts.items()}
+    priors = {k: swap(torch.stack(v, dim=0)) for k, v in priors.items()}
+    return posts, priors
 
 
 def evaluate_one(inputs: EvalInputs):
@@ -186,27 +299,39 @@ def evaluate_one(inputs: EvalInputs):
     if discount is not None:
         data["discount"] = discount[None]
 
-    stats = compute_vta_stats(wm, data)
-
     wm.eval()
     with torch.no_grad():
         proc = wm.preprocess(data)
-        embed = wm.encoder(proc)
-        reward_t = proc.get("reward", None)
-        post, _ = wm.dynamics.observe(embed, proc["action"], proc["is_first"], reward=reward_t)
+        proc["embed"] = wm.encoder(proc)
+        post, prior = _rollout_states(wm, proc, inputs.boundary_source)
+
+        # For prior-boundary evaluation, use prior states for boundary/read masking
+        # and abs_stoch distance, matching "prior-driven read" analysis.
+        state_for_read = prior if inputs.boundary_source == "prior" else post
+        state_for_abs_stoch = prior if inputs.boundary_source == "prior" else post
 
         abs_mean = post["abs_mean"].detach().cpu().numpy()
         obs_mean = post["obs_mean"].detach().cpu().numpy()
-        abs_stoch = post["abs_stoch"].detach().cpu().numpy()
+        abs_stoch = state_for_abs_stoch["abs_stoch"].detach().cpu().numpy()
         obs_stoch = post["obs_stoch"].detach().cpu().numpy()
-
-        boundary = stats["boundary"]  # (B, T)
-        boundary_logit = post.get("boundary_logit", None)
+        boundary = state_for_read["boundary"].squeeze(-1).detach().cpu().numpy()  # (B, T)
+        boundary_logit = state_for_read.get("boundary_logit", None)
         read_prob = (
             torch.softmax(boundary_logit, dim=-1)[..., 0].detach().cpu().numpy()
-            if boundary_logit is not None
-            else stats.get("read_prob", None)
+            if boundary_logit is not None else None
         )
+        post_abs = torchd.normal.Normal(post["abs_mean"], post["abs_std"])
+        prior_abs = torchd.normal.Normal(prior["abs_mean"], prior["abs_std"])
+        post_obs = torchd.normal.Normal(post["obs_mean"], post["obs_std"])
+        prior_obs = torchd.normal.Normal(prior["obs_mean"], prior["obs_std"])
+        abs_kl = torchd.kl.kl_divergence(
+            torchd.independent.Independent(post_abs, 1),
+            torchd.independent.Independent(prior_abs, 1),
+        ).detach().cpu().numpy()
+        obs_kl = torchd.kl.kl_divergence(
+            torchd.independent.Independent(post_obs, 1),
+            torchd.independent.Independent(prior_obs, 1),
+        ).detach().cpu().numpy()
 
     abs_l2 = adjacent_l2(abs_mean)
     obs_l2 = adjacent_l2(obs_mean)
@@ -225,13 +350,14 @@ def evaluate_one(inputs: EvalInputs):
         "dist_window": int(inputs.dist_window),
         "dist_stride": int(inputs.dist_stride),
         "vta_boundary_force_scale": float(inputs.vta_boundary_force_scale),
+        "boundary_source": inputs.boundary_source,
         "boundary_rate": float((boundary > 0.5).mean()),
         "read_prob_mean": float(np.asarray(read_prob).mean()) if read_prob is not None else float("nan"),
         "read_prob_p99": _quantile(read_prob, 0.99) if read_prob is not None else float("nan"),
-        "abs_kl_mean": float(stats["abs_kl"].mean()),
-        "abs_kl_std": float(stats["abs_kl"].std()),
-        "obs_kl_mean": float(stats["obs_kl"].mean()),
-        "obs_kl_std": float(stats["obs_kl"].std()),
+        "abs_kl_mean": float(abs_kl.mean()),
+        "abs_kl_std": float(abs_kl.std()),
+        "obs_kl_mean": float(obs_kl.mean()),
+        "obs_kl_std": float(obs_kl.std()),
         "abs_l2_mean": float(abs_l2.mean()),
         "obs_l2_mean": float(obs_l2.mean()),
         "abs_stoch_l2_mean": float(abs_stoch_l2.mean()),
@@ -259,6 +385,7 @@ def evaluate_one(inputs: EvalInputs):
                 "ckpt": str(inputs.ckpt_path),
                 "episode": str(inputs.episode_path),
                 "seed": int(inputs.seed),
+                "boundary_source": inputs.boundary_source,
                 "window_start": int(start),
                 "window_end": int(end),
                 "boundary_rate": float((bn > 0.5).mean()),
@@ -297,6 +424,12 @@ def main():
     parser.add_argument("--device", default=None)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--vta_boundary_force_scale", type=float, default=0.0)
+    parser.add_argument(
+        "--boundary_source",
+        choices=["posterior", "prior"],
+        default="posterior",
+        help="Boundary source used during observe rollout.",
+    )
     parser.add_argument("--dist_window", type=int, default=20)
     parser.add_argument("--dist_stride", type=int, default=5)
     parser.add_argument("--overwrite_csv", action="store_true")
@@ -305,6 +438,24 @@ def main():
         action="store_true",
         help="Include latest.pt when other checkpoints exist (default: true).",
         default=True,
+    )
+    parser.add_argument(
+        "--latest_only",
+        action="store_true",
+        help="Evaluate ONLY latest.pt, ignoring other checkpoints.",
+    )
+    parser.add_argument(
+        "--eval_every_k",
+        type=int,
+        default=None,
+        help="Evaluate only checkpoints at env-step multiples of this k interval (e.g., 100 -> 0k,100k,200k,...).",
+    )
+    parser.add_argument(
+        "--eval_steps_k",
+        nargs="+",
+        type=int,
+        default=None,
+        help="Evaluate only these env-step points in k (e.g., 0 100 200 300 400).",
     )
     args, overrides = parser.parse_known_args()
 
@@ -327,6 +478,7 @@ def main():
         "dist_window",
         "dist_stride",
         "vta_boundary_force_scale",
+        "boundary_source",
         "boundary_rate",
         "read_prob_mean",
         "read_prob_p99",
@@ -349,6 +501,7 @@ def main():
         "ckpt",
         "episode",
         "seed",
+        "boundary_source",
         "window_start",
         "window_end",
         "boundary_rate",
@@ -391,9 +544,22 @@ def main():
                 raise ValueError(
                     f"Could not infer task for {logdir}. Provide it via --tasks."
                 )
-            ckpts = list_checkpoints(logdir, include_latest=args.include_latest)
+            ckpts = list_checkpoints(
+                logdir, include_latest=args.include_latest, latest_only=args.latest_only
+            )
+            ckpts = filter_checkpoints(
+                ckpts, eval_every_k=args.eval_every_k, eval_steps_k=args.eval_steps_k
+            )
             if not ckpts:
-                raise FileNotFoundError(f"No checkpoints found under {logdir}")
+                raise FileNotFoundError(
+                    f"No checkpoints matched under {logdir} "
+                    f"(eval_every_k={args.eval_every_k}, eval_steps_k={args.eval_steps_k})"
+                )
+
+            logdir_overrides = _get_vta_overrides(logdir)
+            # Combine CLI overrides (from parse_known_args) with logdir config overrides.
+            # CLI overrides should take precedence, so put them last.
+            final_overrides = logdir_overrides + list(overrides)
 
             ep = Path(args.episode) if args.episode else pick_episode(
                 logdir / args.episodes_dir, None
@@ -410,7 +576,8 @@ def main():
                     vta_boundary_force_scale=args.vta_boundary_force_scale,
                     device=device,
                     configs=list(args.configs),
-                    overrides=list(overrides),
+                    overrides=final_overrides,
+                    boundary_source=args.boundary_source,
                 )
                 summary, windows = evaluate_one(inputs)
                 sw.writerow(summary)
@@ -423,4 +590,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
