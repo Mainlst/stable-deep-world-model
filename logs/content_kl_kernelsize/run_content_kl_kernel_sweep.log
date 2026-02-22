@@ -1,0 +1,621 @@
+nohup: ignoring input
+[INFO] Project root: /home/haselab/projects/stable-deep-world-model
+[INFO] Runs dir:     /home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820
+[INFO] Task:         atari_frostbite
+[INFO] Kernels:      1 3 5
+[INFO] Device:       cuda:0 (CUDA_VISIBLE_DEVICES=0)
+[INFO] Steps:        120000
+
+============================================================
+[RUN] kernel_size=1
+[RUN] logdir=/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0
+============================================================
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+A.L.E: Arcade Learning Environment (version 0.11.2+ecc1138)
+[Powered by Stella]
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/tools.py:747: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self._scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:146: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:216: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:448: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:479: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+Logdir /home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0
+Config saved to /home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0/config.yaml
+Create envs.
+Action Space Box(0.0, 1.0, (18,), float32)
+Prefill dataset (2500 steps).
+[0] dataset_size 461.0 / train_return 110.0 / train_length 461.0 / train_episodes 1.0
+[0] dataset_size 759.0 / train_return 30.0 / train_length 298.0 / train_episodes 2.0
+[0] dataset_size 1184.0 / train_return 60.0 / train_length 425.0 / train_episodes 3.0
+[0] dataset_size 1507.0 / train_return 20.0 / train_length 323.0 / train_episodes 4.0
+[0] dataset_size 1982.0 / train_return 70.0 / train_length 475.0 / train_episodes 5.0
+[0] dataset_size 2373.0 / train_return 130.0 / train_length 391.0 / train_episodes 6.0
+Logger: (10000 steps).
+Simulate agent.
+Encoder CNN shapes: {'image': (64, 64, 3)}
+Encoder MLP shapes: {}
+Decoder CNN shapes: {'image': (64, 64, 3)}
+Decoder MLP shapes: {}
+Optimizer model_opt has 18889095 variables.
+Optimizer actor_opt has 830482 variables.
+Optimizer value_opt has 952063 variables.
+[10000] 
+Start evaluation.
+[10000] eval_return 10.0 / eval_length 955.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[10000] model_loss 594.2 / model_grad_norm 1620.9 / image_loss 566.4 / reward_loss 2.8 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 41.6 / rep_loss 41.6 / kl 41.6 / prior_abs_ent 27.0 / post_abs_ent -1.4 / prior_obs_ent 27.1 / post_obs_ent 6.3 / boundary_ratio 0.5 / kl_mask 0.0 / normed_target_mean 0.2 / normed_target_std 0.1 / normed_target_min 0.0 / normed_target_max 0.3 / EMA_005 0.0 / EMA_095 0.1 / value_mean 0.0 / value_std 0.0 / value_min 0.0 / value_max 0.0 / target_mean 0.2 / target_std 0.1 / target_min 0.0 / target_max 0.3 / imag_reward_mean 0.0 / imag_reward_std 0.0 / imag_reward_min 0.0 / imag_reward_max 0.0 / imag_action_mean 7.6 / imag_action_std 5.3 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 2.6 / actor_loss 0.5 / actor_grad_norm 0.1 / value_loss 8.9 / value_grad_norm 15.2 / update_count 100.0 / fps 0.0
+add_video needs package moviepy
+add_video needs package moviepy
+[10764] dataset_size 2691.0 / train_return 50.0 / train_length 318.0 / train_episodes 7.0
+[12212] dataset_size 3053.0 / train_return 60.0 / train_length 362.0 / train_episodes 8.0
+[13292] dataset_size 3323.0 / train_return 20.0 / train_length 270.0 / train_episodes 9.0
+[14544] dataset_size 3636.0 / train_return 20.0 / train_length 313.0 / train_episodes 10.0
+[16716] dataset_size 4179.0 / train_return 10.0 / train_length 543.0 / train_episodes 11.0
+[18784] dataset_size 4696.0 / train_return 40.0 / train_length 517.0 / train_episodes 12.0
+[20712] dataset_size 5178.0 / train_return 10.0 / train_length 482.0 / train_episodes 13.0
+[22064] dataset_size 5516.0 / train_return 50.0 / train_length 338.0 / train_episodes 14.0
+[23048] dataset_size 5762.0 / train_return 0.0 / train_length 246.0 / train_episodes 15.0
+[24016] dataset_size 6004.0 / train_return 0.0 / train_length 242.0 / train_episodes 16.0
+[24980] dataset_size 6245.0 / train_return 0.0 / train_length 241.0 / train_episodes 17.0
+[25960] dataset_size 6490.0 / train_return 0.0 / train_length 245.0 / train_episodes 18.0
+[26924] dataset_size 6731.0 / train_return 0.0 / train_length 241.0 / train_episodes 19.0
+[27912] dataset_size 6978.0 / train_return 0.0 / train_length 247.0 / train_episodes 20.0
+[28896] dataset_size 7224.0 / train_return 0.0 / train_length 246.0 / train_episodes 21.0
+[29880] dataset_size 7470.0 / train_return 0.0 / train_length 246.0 / train_episodes 22.0
+[30000] 
+Start evaluation.
+[30000] eval_return 0.0 / eval_length 244.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[30000] model_loss 15.2 / model_grad_norm 52.9 / image_loss 8.4 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 11.1 / rep_loss 11.1 / kl 11.1 / prior_abs_ent 24.6 / post_abs_ent -7.1 / prior_obs_ent 25.6 / post_obs_ent 18.5 / boundary_ratio 0.2 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.4 / normed_target_min -0.1 / normed_target_max 5.0 / EMA_005 0.5 / EMA_095 3.3 / value_mean 1.6 / value_std 0.5 / value_min 0.4 / value_max 2.2 / target_mean 1.8 / target_std 1.2 / target_min 0.2 / target_max 16.0 / imag_reward_mean 0.0 / imag_reward_std 0.4 / imag_reward_min 0.0 / imag_reward_max 7.5 / imag_action_mean 7.4 / imag_action_std 2.7 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.8 / actor_loss 0.2 / actor_grad_norm 0.1 / value_loss 2.1 / value_grad_norm 2.3 / update_count 5100.0 / fps 16.5
+add_video needs package moviepy
+add_video needs package moviepy
+[30848] dataset_size 7712.0 / train_return 0.0 / train_length 242.0 / train_episodes 23.0
+[31936] dataset_size 7984.0 / train_return 30.0 / train_length 272.0 / train_episodes 24.0
+[33956] dataset_size 8489.0 / train_return 200.0 / train_length 505.0 / train_episodes 25.0
+[36744] dataset_size 9186.0 / train_return 180.0 / train_length 697.0 / train_episodes 26.0
+[38344] dataset_size 9586.0 / train_return 120.0 / train_length 400.0 / train_episodes 27.0
+[39900] dataset_size 9975.0 / train_return 140.0 / train_length 389.0 / train_episodes 28.0
+[41580] dataset_size 10395.0 / train_return 160.0 / train_length 420.0 / train_episodes 29.0
+[43080] dataset_size 10770.0 / train_return 140.0 / train_length 375.0 / train_episodes 30.0
+[44624] dataset_size 11156.0 / train_return 160.0 / train_length 386.0 / train_episodes 31.0
+[46100] dataset_size 11525.0 / train_return 140.0 / train_length 369.0 / train_episodes 32.0
+[47604] dataset_size 11901.0 / train_return 160.0 / train_length 376.0 / train_episodes 33.0
+[49284] dataset_size 12321.0 / train_return 140.0 / train_length 420.0 / train_episodes 34.0
+[50000] 
+Start evaluation.
+[50000] eval_return 130.0 / eval_length 542.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[50000] model_loss 9.2 / model_grad_norm 20.3 / image_loss 2.9 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 10.4 / rep_loss 10.4 / kl 10.4 / prior_abs_ent 36.6 / post_abs_ent -0.2 / prior_obs_ent 39.3 / post_obs_ent 30.0 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.6 / normed_target_std 0.4 / normed_target_min -0.3 / normed_target_max 4.5 / EMA_005 1.7 / EMA_095 6.9 / value_mean 4.5 / value_std 1.3 / value_min 0.6 / value_max 7.0 / target_mean 4.6 / target_std 1.9 / target_min 0.1 / target_max 25.4 / imag_reward_mean 0.0 / imag_reward_std 0.5 / imag_reward_min -0.0 / imag_reward_max 9.9 / imag_action_mean 6.0 / imag_action_std 2.8 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.3 / actor_loss 0.0 / actor_grad_norm 0.1 / value_loss 1.9 / value_grad_norm 1.0 / update_count 10100.0 / fps 16.4
+add_video needs package moviepy
+add_video needs package moviepy
+[51024] dataset_size 12756.0 / train_return 90.0 / train_length 435.0 / train_episodes 35.0
+[53000] dataset_size 13250.0 / train_return 140.0 / train_length 494.0 / train_episodes 36.0
+[54936] dataset_size 13734.0 / train_return 140.0 / train_length 484.0 / train_episodes 37.0
+[56652] dataset_size 14163.0 / train_return 150.0 / train_length 429.0 / train_episodes 38.0
+[58164] dataset_size 14541.0 / train_return 160.0 / train_length 378.0 / train_episodes 39.0
+[59724] dataset_size 14931.0 / train_return 160.0 / train_length 390.0 / train_episodes 40.0
+[61168] dataset_size 15292.0 / train_return 140.0 / train_length 361.0 / train_episodes 41.0
+[62632] dataset_size 15658.0 / train_return 160.0 / train_length 366.0 / train_episodes 42.0
+[64084] dataset_size 16021.0 / train_return 150.0 / train_length 363.0 / train_episodes 43.0
+[65524] dataset_size 16381.0 / train_return 160.0 / train_length 360.0 / train_episodes 44.0
+[66948] dataset_size 16737.0 / train_return 160.0 / train_length 356.0 / train_episodes 45.0
+[68300] dataset_size 17075.0 / train_return 110.0 / train_length 338.0 / train_episodes 46.0
+[69700] dataset_size 17425.0 / train_return 160.0 / train_length 350.0 / train_episodes 47.0
+[70000] 
+Start evaluation.
+[70000] eval_return 160.0 / eval_length 362.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[70000] model_loss 7.7 / model_grad_norm 14.0 / image_loss 1.6 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 10.2 / rep_loss 10.2 / kl 10.2 / prior_abs_ent 37.8 / post_abs_ent -4.8 / prior_obs_ent 37.9 / post_obs_ent 28.4 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.2 / normed_target_max 3.8 / EMA_005 1.6 / EMA_095 8.5 / value_mean 4.6 / value_std 1.8 / value_min 0.5 / value_max 9.4 / target_mean 4.8 / target_std 2.4 / target_min 0.0 / target_max 27.1 / imag_reward_mean 0.1 / imag_reward_std 0.7 / imag_reward_min -0.0 / imag_reward_max 10.0 / imag_action_mean 4.7 / imag_action_std 2.9 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.2 / actor_loss 0.0 / actor_grad_norm 0.2 / value_loss 1.9 / value_grad_norm 0.9 / update_count 15100.0 / fps 16.4
+add_video needs package moviepy
+add_video needs package moviepy
+[71056] dataset_size 17764.0 / train_return 120.0 / train_length 339.0 / train_episodes 48.0
+[72532] dataset_size 18133.0 / train_return 160.0 / train_length 369.0 / train_episodes 49.0
+[74036] dataset_size 18509.0 / train_return 160.0 / train_length 376.0 / train_episodes 50.0
+[75540] dataset_size 18885.0 / train_return 150.0 / train_length 376.0 / train_episodes 51.0
+[77052] dataset_size 19263.0 / train_return 150.0 / train_length 378.0 / train_episodes 52.0
+[78444] dataset_size 19611.0 / train_return 120.0 / train_length 348.0 / train_episodes 53.0
+[80004] dataset_size 20001.0 / train_return 170.0 / train_length 390.0 / train_episodes 54.0
+[81556] dataset_size 20389.0 / train_return 160.0 / train_length 388.0 / train_episodes 55.0
+[83152] dataset_size 20788.0 / train_return 160.0 / train_length 399.0 / train_episodes 56.0
+[84908] dataset_size 21227.0 / train_return 180.0 / train_length 439.0 / train_episodes 57.0
+[86512] dataset_size 21628.0 / train_return 160.0 / train_length 401.0 / train_episodes 58.0
+[88104] dataset_size 22026.0 / train_return 160.0 / train_length 398.0 / train_episodes 59.0
+[89760] dataset_size 22440.0 / train_return 180.0 / train_length 414.0 / train_episodes 60.0
+[90000] 
+Start evaluation.
+[90000] eval_return 160.0 / eval_length 404.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[90000] model_loss 6.5 / model_grad_norm 11.5 / image_loss 1.0 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 9.1 / rep_loss 9.1 / kl 9.1 / prior_abs_ent 37.9 / post_abs_ent -12.2 / prior_obs_ent 33.7 / post_obs_ent 25.3 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.1 / normed_target_max 2.2 / EMA_005 1.5 / EMA_095 17.6 / value_mean 6.8 / value_std 4.6 / value_min 0.2 / value_max 18.3 / target_mean 7.2 / target_std 5.6 / target_min 0.0 / target_max 34.3 / imag_reward_mean 0.1 / imag_reward_std 1.1 / imag_reward_min -0.0 / imag_reward_max 10.0 / imag_action_mean 4.9 / imag_action_std 2.9 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.2 / actor_loss 0.1 / actor_grad_norm 0.3 / value_loss 2.2 / value_grad_norm 1.1 / update_count 20100.0 / fps 16.3
+add_video needs package moviepy
+add_video needs package moviepy
+[91436] dataset_size 22859.0 / train_return 180.0 / train_length 419.0 / train_episodes 61.0
+[93048] dataset_size 23262.0 / train_return 160.0 / train_length 403.0 / train_episodes 62.0
+[94808] dataset_size 23702.0 / train_return 170.0 / train_length 440.0 / train_episodes 63.0
+[96548] dataset_size 24137.0 / train_return 170.0 / train_length 435.0 / train_episodes 64.0
+[98252] dataset_size 24563.0 / train_return 160.0 / train_length 426.0 / train_episodes 65.0
+[99884] dataset_size 24971.0 / train_return 160.0 / train_length 408.0 / train_episodes 66.0
+[101476] dataset_size 25369.0 / train_return 160.0 / train_length 398.0 / train_episodes 67.0
+[103184] dataset_size 25796.0 / train_return 160.0 / train_length 427.0 / train_episodes 68.0
+[104828] dataset_size 26207.0 / train_return 160.0 / train_length 411.0 / train_episodes 69.0
+[106460] dataset_size 26615.0 / train_return 160.0 / train_length 408.0 / train_episodes 70.0
+[108236] dataset_size 27059.0 / train_return 180.0 / train_length 444.0 / train_episodes 71.0
+[109932] dataset_size 27483.0 / train_return 160.0 / train_length 424.0 / train_episodes 72.0
+[110000] 
+Start evaluation.
+[110000] eval_return 160.0 / eval_length 398.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[110000] model_loss 5.8 / model_grad_norm 10.9 / image_loss 0.8 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 8.3 / rep_loss 8.3 / kl 8.3 / prior_abs_ent 37.8 / post_abs_ent -17.5 / prior_obs_ent 30.2 / post_obs_ent 22.7 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.3 / normed_target_std 0.3 / normed_target_min -0.1 / normed_target_max 1.4 / EMA_005 3.2 / EMA_095 38.6 / value_mean 14.9 / value_std 10.6 / value_min 0.1 / value_max 42.2 / target_mean 15.6 / target_std 11.6 / target_min 0.0 / target_max 52.7 / imag_reward_mean 0.3 / imag_reward_std 1.6 / imag_reward_min -0.0 / imag_reward_max 10.0 / imag_action_mean 5.6 / imag_action_std 3.6 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.3 / actor_loss 0.1 / actor_grad_norm 0.5 / value_loss 2.2 / value_grad_norm 1.3 / update_count 25100.0 / fps 16.2
+add_video needs package moviepy
+add_video needs package moviepy
+[111728] dataset_size 27932.0 / train_return 180.0 / train_length 449.0 / train_episodes 73.0
+[113744] dataset_size 28436.0 / train_return 230.0 / train_length 504.0 / train_episodes 74.0
+[115516] dataset_size 28879.0 / train_return 220.0 / train_length 443.0 / train_episodes 75.0
+[117488] dataset_size 29372.0 / train_return 200.0 / train_length 493.0 / train_episodes 76.0
+[119360] dataset_size 29840.0 / train_return 210.0 / train_length 468.0 / train_episodes 77.0
+[121160] dataset_size 30290.0 / train_return 200.0 / train_length 450.0 / train_episodes 78.0
+[122928] dataset_size 30732.0 / train_return 200.0 / train_length 442.0 / train_episodes 79.0
+[124708] dataset_size 31177.0 / train_return 210.0 / train_length 445.0 / train_episodes 80.0
+[126560] dataset_size 31640.0 / train_return 200.0 / train_length 463.0 / train_episodes 81.0
+[128652] dataset_size 32163.0 / train_return 250.0 / train_length 523.0 / train_episodes 82.0
+[130000] 
+Start evaluation.
+[130000] eval_return 200.0 / eval_length 426.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[130000] model_loss 5.4 / model_grad_norm 10.4 / image_loss 0.7 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 7.9 / rep_loss 7.9 / kl 7.9 / prior_abs_ent 37.7 / post_abs_ent -21.2 / prior_obs_ent 26.3 / post_obs_ent 19.3 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.2 / normed_target_max 1.3 / EMA_005 6.8 / EMA_095 51.5 / value_mean 24.7 / value_std 12.9 / value_min 0.2 / value_max 56.4 / target_mean 25.4 / target_std 13.8 / target_min 0.0 / target_max 64.5 / imag_reward_mean 0.3 / imag_reward_std 1.7 / imag_reward_min -0.0 / imag_reward_max 10.0 / imag_action_mean 6.2 / imag_action_std 3.6 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.3 / actor_loss 0.2 / actor_grad_norm 0.7 / value_loss 2.0 / value_grad_norm 1.4 / update_count 30100.0 / fps 16.1
+add_video needs package moviepy
+add_video needs package moviepy
+[130788] dataset_size 32697.0 / train_return 220.0 / train_length 534.0 / train_episodes 83.0
+[132864] dataset_size 33216.0 / train_return 220.0 / train_length 519.0 / train_episodes 84.0
+[135048] dataset_size 33762.0 / train_return 220.0 / train_length 546.0 / train_episodes 85.0
+[137044] dataset_size 34261.0 / train_return 200.0 / train_length 499.0 / train_episodes 86.0
+[139016] dataset_size 34754.0 / train_return 220.0 / train_length 493.0 / train_episodes 87.0
+[140836] dataset_size 35209.0 / train_return 200.0 / train_length 455.0 / train_episodes 88.0
+[142584] dataset_size 35646.0 / train_return 200.0 / train_length 437.0 / train_episodes 89.0
+[144548] dataset_size 36137.0 / train_return 220.0 / train_length 491.0 / train_episodes 90.0
+[146424] dataset_size 36606.0 / train_return 220.0 / train_length 469.0 / train_episodes 91.0
+[148516] dataset_size 37129.0 / train_return 220.0 / train_length 523.0 / train_episodes 92.0
+[EVAL] abs/context KL plot...
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/tools.py:747: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self._scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+Encoder CNN shapes: {'image': (64, 64, 3)}
+Encoder MLP shapes: {}
+Decoder CNN shapes: {'image': (64, 64, 3)}
+Decoder MLP shapes: {}
+Optimizer model_opt has 18889095 variables.
+{"out": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0/analysis/vta_abs_kl_plot.png", "csv": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0/analysis/vta_abs_ctx_kl_series.csv", "series_len": 698, "align": "min", "smooth": 5, "out_ctx": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0/analysis/vta_ctx_kl_plot.png", "items": [{"logdir": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0", "task": "atari_frostbite", "ckpt": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0/latest.pt", "episode": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0/train_eps/20260206T160257-36562a9e24f64db0b689542db8f965ff-698.npz", "vta_post_boundary_kernel_size": 1}]}
+[EVAL] z_t-z_t+1 distances + boundary stats (constraints off for eval)...
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/tools.py:747: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self._scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+/home/haselab/projects/stable-deep-world-model/scripts/dreamerv3/vta_boundary_viz.py:173: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+  fig.tight_layout()
+Encoder CNN shapes: {'image': (64, 64, 3)}
+Encoder MLP shapes: {}
+Decoder CNN shapes: {'image': (64, 64, 3)}
+Decoder MLP shapes: {}
+Optimizer model_opt has 18889095 variables.
+/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0/analysis/boundary_grid.png
+/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0/analysis/boundary_internal.png
+/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0/analysis/boundary_fired.png
+{"task": "atari_frostbite", "logdir": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0", "ckpt": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0/latest.pt", "episode": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k1_seed0/train_eps/20260206T160257-36562a9e24f64db0b689542db8f965ff-698.npz", "abs_kl_mean": 71.74880981445312, "abs_kl_std": 5.168568134307861, "obs_kl_mean": 6.3554158210754395, "obs_kl_std": 4.903997421264648, "boundary_rate": 0.0, "read_prob_mean": 2.056445638776161e-11, "read_prob_p99": 4.37409941600464e-10, "abs_l2_mean": 0.7484000325202942, "obs_l2_mean": 1.6953744888305664, "abs_stoch_l2_mean": 0.0, "obs_stoch_l2_mean": 3.6180739402770996, "abs_l2_read_mean": NaN, "obs_l2_read_mean": NaN, "abs_stoch_l2_read_mean": NaN, "obs_stoch_l2_read_mean": NaN}
+
+============================================================
+[RUN] kernel_size=3
+[RUN] logdir=/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0
+============================================================
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+A.L.E: Arcade Learning Environment (version 0.11.2+ecc1138)
+[Powered by Stella]
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/tools.py:747: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self._scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:146: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:216: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:448: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:479: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+Logdir /home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0
+Config saved to /home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0/config.yaml
+Create envs.
+Action Space Box(0.0, 1.0, (18,), float32)
+Prefill dataset (2500 steps).
+[0] dataset_size 461.0 / train_return 110.0 / train_length 461.0 / train_episodes 1.0
+[0] dataset_size 759.0 / train_return 30.0 / train_length 298.0 / train_episodes 2.0
+[0] dataset_size 1184.0 / train_return 60.0 / train_length 425.0 / train_episodes 3.0
+[0] dataset_size 1507.0 / train_return 20.0 / train_length 323.0 / train_episodes 4.0
+[0] dataset_size 1982.0 / train_return 70.0 / train_length 475.0 / train_episodes 5.0
+[0] dataset_size 2373.0 / train_return 130.0 / train_length 391.0 / train_episodes 6.0
+Logger: (10000 steps).
+Simulate agent.
+Encoder CNN shapes: {'image': (64, 64, 3)}
+Encoder MLP shapes: {}
+Decoder CNN shapes: {'image': (64, 64, 3)}
+Decoder MLP shapes: {}
+Optimizer model_opt has 23085447 variables.
+Optimizer actor_opt has 830482 variables.
+Optimizer value_opt has 952063 variables.
+[10000] 
+Start evaluation.
+[10000] eval_return 0.0 / eval_length 246.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[10000] model_loss 612.0 / model_grad_norm 1568.5 / image_loss 580.7 / reward_loss 2.8 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 47.4 / rep_loss 47.4 / kl 47.4 / prior_abs_ent 36.6 / post_abs_ent -5.9 / prior_obs_ent 26.0 / post_obs_ent 3.5 / boundary_ratio 0.3 / kl_mask 0.1 / normed_target_mean 0.2 / normed_target_std 0.1 / normed_target_min 0.0 / normed_target_max 0.3 / EMA_005 0.0 / EMA_095 0.1 / value_mean 0.0 / value_std 0.0 / value_min 0.0 / value_max 0.0 / target_mean 0.2 / target_std 0.1 / target_min 0.0 / target_max 0.3 / imag_reward_mean 0.0 / imag_reward_std 0.0 / imag_reward_min 0.0 / imag_reward_max 0.0 / imag_action_mean 8.9 / imag_action_std 5.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 2.5 / actor_loss 0.5 / actor_grad_norm 0.1 / value_loss 8.9 / value_grad_norm 15.5 / update_count 100.0 / fps 0.0
+add_video needs package moviepy
+add_video needs package moviepy
+[10968] dataset_size 2742.0 / train_return 100.0 / train_length 369.0 / train_episodes 7.0
+[13036] dataset_size 3259.0 / train_return 120.0 / train_length 517.0 / train_episodes 8.0
+[16064] dataset_size 4016.0 / train_return 170.0 / train_length 757.0 / train_episodes 9.0
+[18324] dataset_size 4581.0 / train_return 130.0 / train_length 565.0 / train_episodes 10.0
+[21724] dataset_size 5431.0 / train_return 180.0 / train_length 850.0 / train_episodes 11.0
+[24028] dataset_size 6007.0 / train_return 120.0 / train_length 576.0 / train_episodes 12.0
+[27152] dataset_size 6788.0 / train_return 220.0 / train_length 781.0 / train_episodes 13.0
+[30000] 
+Start evaluation.
+[30000] eval_return 200.0 / eval_length 869.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[30000] model_loss 16.4 / model_grad_norm 52.3 / image_loss 9.9 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 10.6 / rep_loss 10.6 / kl 10.6 / prior_abs_ent 30.1 / post_abs_ent -21.8 / prior_obs_ent 24.7 / post_obs_ent 16.3 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.4 / normed_target_min -0.3 / normed_target_max 5.3 / EMA_005 1.2 / EMA_095 4.1 / value_mean 2.1 / value_std 0.5 / value_min 0.9 / value_max 2.9 / target_mean 2.4 / target_std 1.2 / target_min 0.3 / target_max 17.7 / imag_reward_mean 0.1 / imag_reward_std 0.3 / imag_reward_min 0.0 / imag_reward_max 7.5 / imag_action_mean 6.1 / imag_action_std 3.0 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.6 / actor_loss 0.1 / actor_grad_norm 0.1 / value_loss 2.1 / value_grad_norm 2.3 / update_count 5100.0 / fps 16.3
+add_video needs package moviepy
+add_video needs package moviepy
+[30140] dataset_size 7535.0 / train_return 180.0 / train_length 747.0 / train_episodes 14.0
+[32272] dataset_size 8068.0 / train_return 230.0 / train_length 533.0 / train_episodes 15.0
+[34128] dataset_size 8532.0 / train_return 200.0 / train_length 464.0 / train_episodes 16.0
+[35704] dataset_size 8926.0 / train_return 160.0 / train_length 394.0 / train_episodes 17.0
+[37332] dataset_size 9333.0 / train_return 160.0 / train_length 407.0 / train_episodes 18.0
+[38740] dataset_size 9685.0 / train_return 100.0 / train_length 352.0 / train_episodes 19.0
+[40956] dataset_size 10239.0 / train_return 120.0 / train_length 554.0 / train_episodes 20.0
+[43040] dataset_size 10760.0 / train_return 90.0 / train_length 521.0 / train_episodes 21.0
+[45012] dataset_size 11253.0 / train_return 140.0 / train_length 493.0 / train_episodes 22.0
+[46620] dataset_size 11655.0 / train_return 110.0 / train_length 402.0 / train_episodes 23.0
+[48516] dataset_size 12129.0 / train_return 230.0 / train_length 474.0 / train_episodes 24.0
+[50000] 
+Start evaluation.
+[50000] eval_return 200.0 / eval_length 463.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[50000] model_loss 10.7 / model_grad_norm 21.5 / image_loss 3.5 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.0 / rep_loss 12.0 / kl 12.0 / prior_abs_ent 32.2 / post_abs_ent -19.2 / prior_obs_ent 33.7 / post_obs_ent 23.3 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.4 / normed_target_min -0.2 / normed_target_max 3.8 / EMA_005 1.5 / EMA_095 8.4 / value_mean 4.5 / value_std 2.0 / value_min 1.0 / value_max 8.7 / target_mean 4.6 / target_std 2.5 / target_min 0.1 / target_max 26.9 / imag_reward_mean 0.1 / imag_reward_std 0.6 / imag_reward_min -0.0 / imag_reward_max 9.9 / imag_action_mean 10.7 / imag_action_std 4.3 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 0.0 / actor_grad_norm 0.1 / value_loss 1.9 / value_grad_norm 1.0 / update_count 10100.0 / fps 16.3
+add_video needs package moviepy
+add_video needs package moviepy
+[50700] dataset_size 12675.0 / train_return 220.0 / train_length 546.0 / train_episodes 25.0
+[52584] dataset_size 13146.0 / train_return 220.0 / train_length 471.0 / train_episodes 26.0
+[54324] dataset_size 13581.0 / train_return 200.0 / train_length 435.0 / train_episodes 27.0
+[56588] dataset_size 14147.0 / train_return 190.0 / train_length 566.0 / train_episodes 28.0
+[58512] dataset_size 14628.0 / train_return 220.0 / train_length 481.0 / train_episodes 29.0
+[60208] dataset_size 15052.0 / train_return 160.0 / train_length 424.0 / train_episodes 30.0
+[62320] dataset_size 15580.0 / train_return 190.0 / train_length 528.0 / train_episodes 31.0
+[63988] dataset_size 15997.0 / train_return 130.0 / train_length 417.0 / train_episodes 32.0
+[65836] dataset_size 16459.0 / train_return 200.0 / train_length 462.0 / train_episodes 33.0
+[67456] dataset_size 16864.0 / train_return 140.0 / train_length 405.0 / train_episodes 34.0
+[69272] dataset_size 17318.0 / train_return 200.0 / train_length 454.0 / train_episodes 35.0
+[70000] 
+Start evaluation.
+[70000] eval_return 200.0 / eval_length 505.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[70000] model_loss 8.8 / model_grad_norm 15.9 / image_loss 1.8 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 11.6 / rep_loss 11.6 / kl 11.6 / prior_abs_ent 32.9 / post_abs_ent -17.4 / prior_obs_ent 33.3 / post_obs_ent 23.2 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.1 / normed_target_max 2.2 / EMA_005 2.2 / EMA_095 19.7 / value_mean 9.8 / value_std 4.9 / value_min 0.8 / value_max 20.5 / target_mean 10.2 / target_std 5.6 / target_min 0.1 / target_max 38.3 / imag_reward_mean 0.1 / imag_reward_std 1.0 / imag_reward_min -0.0 / imag_reward_max 10.0 / imag_action_mean 8.8 / imag_action_std 3.5 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 0.1 / actor_grad_norm 0.3 / value_loss 2.1 / value_grad_norm 1.4 / update_count 15100.0 / fps 16.2
+add_video needs package moviepy
+add_video needs package moviepy
+[71036] dataset_size 17759.0 / train_return 220.0 / train_length 441.0 / train_episodes 36.0
+[73088] dataset_size 18272.0 / train_return 220.0 / train_length 513.0 / train_episodes 37.0
+[75176] dataset_size 18794.0 / train_return 240.0 / train_length 522.0 / train_episodes 38.0
+[76988] dataset_size 19247.0 / train_return 210.0 / train_length 453.0 / train_episodes 39.0
+[79212] dataset_size 19803.0 / train_return 250.0 / train_length 556.0 / train_episodes 40.0
+[80984] dataset_size 20246.0 / train_return 210.0 / train_length 443.0 / train_episodes 41.0
+[83012] dataset_size 20753.0 / train_return 210.0 / train_length 507.0 / train_episodes 42.0
+[84808] dataset_size 21202.0 / train_return 200.0 / train_length 449.0 / train_episodes 43.0
+[86704] dataset_size 21676.0 / train_return 230.0 / train_length 474.0 / train_episodes 44.0
+[88484] dataset_size 22121.0 / train_return 210.0 / train_length 445.0 / train_episodes 45.0
+[90000] 
+Start evaluation.
+[90000] eval_return 200.0 / eval_length 453.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[90000] model_loss 7.6 / model_grad_norm 13.9 / image_loss 1.2 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 10.5 / rep_loss 10.5 / kl 10.5 / prior_abs_ent 31.4 / post_abs_ent -20.8 / prior_obs_ent 27.3 / post_obs_ent 18.4 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.1 / normed_target_max 1.4 / EMA_005 3.4 / EMA_095 44.7 / value_mean 23.8 / value_std 11.7 / value_min 0.4 / value_max 50.6 / target_mean 24.3 / target_std 12.2 / target_min 0.1 / target_max 61.3 / imag_reward_mean 0.2 / imag_reward_std 1.4 / imag_reward_min -0.0 / imag_reward_max 10.0 / imag_action_mean 8.0 / imag_action_std 3.3 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 0.1 / actor_grad_norm 0.3 / value_loss 1.9 / value_grad_norm 1.5 / update_count 20100.0 / fps 16.1
+add_video needs package moviepy
+add_video needs package moviepy
+[90272] dataset_size 22568.0 / train_return 220.0 / train_length 447.0 / train_episodes 46.0
+[92388] dataset_size 23097.0 / train_return 260.0 / train_length 529.0 / train_episodes 47.0
+[94280] dataset_size 23570.0 / train_return 200.0 / train_length 473.0 / train_episodes 48.0
+[96340] dataset_size 24085.0 / train_return 250.0 / train_length 515.0 / train_episodes 49.0
+[98208] dataset_size 24552.0 / train_return 200.0 / train_length 467.0 / train_episodes 50.0
+[100368] dataset_size 25092.0 / train_return 250.0 / train_length 540.0 / train_episodes 51.0
+[102504] dataset_size 25626.0 / train_return 240.0 / train_length 534.0 / train_episodes 52.0
+[104316] dataset_size 26079.0 / train_return 230.0 / train_length 453.0 / train_episodes 53.0
+[106284] dataset_size 26571.0 / train_return 240.0 / train_length 492.0 / train_episodes 54.0
+[108324] dataset_size 27081.0 / train_return 210.0 / train_length 510.0 / train_episodes 55.0
+[110000] 
+Start evaluation.
+[110000] eval_return 230.0 / eval_length 520.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[110000] model_loss 7.0 / model_grad_norm 13.6 / image_loss 1.0 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 9.8 / rep_loss 9.8 / kl 9.8 / prior_abs_ent 31.0 / post_abs_ent -22.7 / prior_obs_ent 24.3 / post_obs_ent 16.1 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.1 / normed_target_max 1.3 / EMA_005 3.9 / EMA_095 70.3 / value_mean 37.7 / value_std 19.3 / value_min 0.2 / value_max 82.2 / target_mean 38.0 / target_std 19.7 / target_min 0.1 / target_max 88.1 / imag_reward_mean 0.3 / imag_reward_std 1.6 / imag_reward_min -0.0 / imag_reward_max 10.0 / imag_action_mean 8.1 / imag_action_std 3.4 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.3 / actor_loss 0.1 / actor_grad_norm 0.4 / value_loss 1.6 / value_grad_norm 1.5 / update_count 25100.0 / fps 16.1
+add_video needs package moviepy
+add_video needs package moviepy
+[110212] dataset_size 27553.0 / train_return 210.0 / train_length 472.0 / train_episodes 56.0
+[112000] dataset_size 28000.0 / train_return 200.0 / train_length 447.0 / train_episodes 57.0
+[114080] dataset_size 28520.0 / train_return 250.0 / train_length 520.0 / train_episodes 58.0
+[115852] dataset_size 28963.0 / train_return 220.0 / train_length 443.0 / train_episodes 59.0
+[117920] dataset_size 29480.0 / train_return 230.0 / train_length 517.0 / train_episodes 60.0
+[120040] dataset_size 30010.0 / train_return 220.0 / train_length 530.0 / train_episodes 61.0
+[122080] dataset_size 30520.0 / train_return 210.0 / train_length 510.0 / train_episodes 62.0
+[124392] dataset_size 31098.0 / train_return 240.0 / train_length 578.0 / train_episodes 63.0
+[126540] dataset_size 31635.0 / train_return 210.0 / train_length 537.0 / train_episodes 64.0
+[128788] dataset_size 32197.0 / train_return 210.0 / train_length 562.0 / train_episodes 65.0
+[130000] 
+Start evaluation.
+[130000] eval_return 200.0 / eval_length 449.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[130000] model_loss 6.4 / model_grad_norm 12.9 / image_loss 0.9 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 9.1 / rep_loss 9.1 / kl 9.1 / prior_abs_ent 30.2 / post_abs_ent -24.1 / prior_obs_ent 21.6 / post_obs_ent 14.1 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.2 / EMA_005 3.9 / EMA_095 89.2 / value_mean 45.0 / value_std 25.3 / value_min 0.2 / value_max 104.5 / target_mean 45.2 / target_std 25.6 / target_min 0.1 / target_max 109.2 / imag_reward_mean 0.3 / imag_reward_std 1.7 / imag_reward_min -0.0 / imag_reward_max 10.0 / imag_action_mean 8.3 / imag_action_std 3.6 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.3 / actor_loss 0.0 / actor_grad_norm 0.5 / value_loss 1.5 / value_grad_norm 1.5 / update_count 30100.0 / fps 16.0
+add_video needs package moviepy
+add_video needs package moviepy
+[130860] dataset_size 32715.0 / train_return 230.0 / train_length 518.0 / train_episodes 66.0
+[132884] dataset_size 33221.0 / train_return 220.0 / train_length 506.0 / train_episodes 67.0
+[135344] dataset_size 33836.0 / train_return 260.0 / train_length 615.0 / train_episodes 68.0
+[137220] dataset_size 34305.0 / train_return 220.0 / train_length 469.0 / train_episodes 69.0
+[139204] dataset_size 34801.0 / train_return 240.0 / train_length 496.0 / train_episodes 70.0
+[141048] dataset_size 35262.0 / train_return 230.0 / train_length 461.0 / train_episodes 71.0
+[142960] dataset_size 35740.0 / train_return 230.0 / train_length 478.0 / train_episodes 72.0
+[145096] dataset_size 36274.0 / train_return 230.0 / train_length 534.0 / train_episodes 73.0
+[147368] dataset_size 36842.0 / train_return 260.0 / train_length 568.0 / train_episodes 74.0
+[149448] dataset_size 37362.0 / train_return 230.0 / train_length 520.0 / train_episodes 75.0
+[EVAL] abs/context KL plot...
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/tools.py:747: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self._scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+Encoder CNN shapes: {'image': (64, 64, 3)}
+Encoder MLP shapes: {}
+Decoder CNN shapes: {'image': (64, 64, 3)}
+Decoder MLP shapes: {}
+Optimizer model_opt has 23085447 variables.
+{"out": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0/analysis/vta_abs_kl_plot.png", "csv": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0/analysis/vta_abs_ctx_kl_series.csv", "series_len": 851, "align": "min", "smooth": 5, "out_ctx": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0/analysis/vta_ctx_kl_plot.png", "items": [{"logdir": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0", "task": "atari_frostbite", "ckpt": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0/latest.pt", "episode": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0/train_eps/20260206T181104-3056424133954c9f8283d2fdd22a1434-851.npz", "vta_post_boundary_kernel_size": 3}]}
+[EVAL] z_t-z_t+1 distances + boundary stats (constraints off for eval)...
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/tools.py:747: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self._scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+/home/haselab/projects/stable-deep-world-model/scripts/dreamerv3/vta_boundary_viz.py:173: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+  fig.tight_layout()
+/home/haselab/projects/stable-deep-world-model/scripts/dreamerv3/vta_boundary_viz.py:266: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+  fig.tight_layout()
+Encoder CNN shapes: {'image': (64, 64, 3)}
+Encoder MLP shapes: {}
+Decoder CNN shapes: {'image': (64, 64, 3)}
+Decoder MLP shapes: {}
+Optimizer model_opt has 23085447 variables.
+/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0/analysis/boundary_grid.png
+/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0/analysis/boundary_internal.png
+/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0/analysis/boundary_fired.png
+{"task": "atari_frostbite", "logdir": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0", "ckpt": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0/latest.pt", "episode": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k3_seed0/train_eps/20260206T181104-3056424133954c9f8283d2fdd22a1434-851.npz", "abs_kl_mean": 95.62847137451172, "abs_kl_std": 30.387752532958984, "obs_kl_mean": 8.192289352416992, "obs_kl_std": 4.776591777801514, "boundary_rate": 0.0035252643948296123, "read_prob_mean": 0.003525208681821823, "read_prob_p99": 3.288375296506274e-07, "abs_l2_mean": 0.4687293767929077, "obs_l2_mean": 1.512155294418335, "abs_stoch_l2_mean": 0.015874449163675308, "obs_stoch_l2_mean": 3.796462059020996, "abs_l2_read_mean": 6.07329797744751, "obs_l2_read_mean": 9.41445541381836, "abs_stoch_l2_read_mean": 4.497760772705078, "obs_stoch_l2_read_mean": 10.308284759521484}
+
+============================================================
+[RUN] kernel_size=5
+[RUN] logdir=/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0
+============================================================
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+A.L.E: Arcade Learning Environment (version 0.11.2+ecc1138)
+[Powered by Stella]
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/tools.py:747: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self._scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:146: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:216: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:448: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:479: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+Logdir /home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0
+Config saved to /home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0/config.yaml
+Create envs.
+Action Space Box(0.0, 1.0, (18,), float32)
+Prefill dataset (2500 steps).
+[0] dataset_size 461.0 / train_return 110.0 / train_length 461.0 / train_episodes 1.0
+[0] dataset_size 759.0 / train_return 30.0 / train_length 298.0 / train_episodes 2.0
+[0] dataset_size 1184.0 / train_return 60.0 / train_length 425.0 / train_episodes 3.0
+[0] dataset_size 1507.0 / train_return 20.0 / train_length 323.0 / train_episodes 4.0
+[0] dataset_size 1982.0 / train_return 70.0 / train_length 475.0 / train_episodes 5.0
+[0] dataset_size 2373.0 / train_return 130.0 / train_length 391.0 / train_episodes 6.0
+Logger: (10000 steps).
+Simulate agent.
+Encoder CNN shapes: {'image': (64, 64, 3)}
+Encoder MLP shapes: {}
+Decoder CNN shapes: {'image': (64, 64, 3)}
+Decoder MLP shapes: {}
+Optimizer model_opt has 27281799 variables.
+Optimizer actor_opt has 830482 variables.
+Optimizer value_opt has 952063 variables.
+[10000] 
+Start evaluation.
+[10000] eval_return 80.0 / eval_length 348.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[10000] model_loss 582.5 / model_grad_norm 1679.8 / image_loss 553.9 / reward_loss 2.7 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 42.8 / rep_loss 42.8 / kl 42.8 / prior_abs_ent 35.7 / post_abs_ent -4.9 / prior_obs_ent 26.1 / post_obs_ent 5.1 / boundary_ratio 0.4 / kl_mask 0.1 / normed_target_mean 0.2 / normed_target_std 0.1 / normed_target_min 0.0 / normed_target_max 0.3 / EMA_005 0.0 / EMA_095 0.1 / value_mean 0.0 / value_std 0.0 / value_min 0.0 / value_max 0.0 / target_mean 0.2 / target_std 0.1 / target_min 0.0 / target_max 0.3 / imag_reward_mean 0.0 / imag_reward_std 0.0 / imag_reward_min 0.0 / imag_reward_max 0.0 / imag_action_mean 8.9 / imag_action_std 5.3 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 2.5 / actor_loss 0.4 / actor_grad_norm 0.1 / value_loss 9.0 / value_grad_norm 15.6 / update_count 100.0 / fps 0.0
+add_video needs package moviepy
+add_video needs package moviepy
+[11016] dataset_size 2754.0 / train_return 80.0 / train_length 381.0 / train_episodes 7.0
+[12668] dataset_size 3167.0 / train_return 70.0 / train_length 413.0 / train_episodes 8.0
+[15308] dataset_size 3827.0 / train_return 60.0 / train_length 660.0 / train_episodes 9.0
+[17740] dataset_size 4435.0 / train_return 20.0 / train_length 608.0 / train_episodes 10.0
+[19780] dataset_size 4945.0 / train_return 50.0 / train_length 510.0 / train_episodes 11.0
+[21244] dataset_size 5311.0 / train_return 80.0 / train_length 366.0 / train_episodes 12.0
+[22532] dataset_size 5633.0 / train_return 80.0 / train_length 322.0 / train_episodes 13.0
+[23748] dataset_size 5937.0 / train_return 80.0 / train_length 304.0 / train_episodes 14.0
+[24976] dataset_size 6244.0 / train_return 80.0 / train_length 307.0 / train_episodes 15.0
+[26244] dataset_size 6561.0 / train_return 100.0 / train_length 317.0 / train_episodes 16.0
+[27948] dataset_size 6987.0 / train_return 110.0 / train_length 426.0 / train_episodes 17.0
+[29848] dataset_size 7462.0 / train_return 130.0 / train_length 475.0 / train_episodes 18.0
+[30000] 
+Start evaluation.
+[30000] eval_return 130.0 / eval_length 495.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[30000] model_loss 14.7 / model_grad_norm 45.0 / image_loss 8.6 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 10.0 / rep_loss 10.0 / kl 10.0 / prior_abs_ent 31.1 / post_abs_ent -18.8 / prior_obs_ent 28.0 / post_obs_ent 20.1 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.5 / normed_target_min -0.3 / normed_target_max 8.6 / EMA_005 0.7 / EMA_095 2.2 / value_mean 1.2 / value_std 0.3 / value_min 0.6 / value_max 1.7 / target_mean 1.4 / target_std 0.8 / target_min 0.2 / target_max 14.7 / imag_reward_mean 0.0 / imag_reward_std 0.3 / imag_reward_min 0.0 / imag_reward_max 7.7 / imag_action_mean 5.6 / imag_action_std 3.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 1.0 / actor_loss 0.1 / actor_grad_norm 0.1 / value_loss 1.9 / value_grad_norm 2.0 / update_count 5100.0 / fps 16.3
+add_video needs package moviepy
+add_video needs package moviepy
+[31100] dataset_size 7775.0 / train_return 50.0 / train_length 313.0 / train_episodes 19.0
+[32680] dataset_size 8170.0 / train_return 80.0 / train_length 395.0 / train_episodes 20.0
+[34684] dataset_size 8671.0 / train_return 110.0 / train_length 501.0 / train_episodes 21.0
+[36276] dataset_size 9069.0 / train_return 100.0 / train_length 398.0 / train_episodes 22.0
+[37864] dataset_size 9466.0 / train_return 100.0 / train_length 397.0 / train_episodes 23.0
+[38984] dataset_size 9746.0 / train_return 40.0 / train_length 280.0 / train_episodes 24.0
+[40380] dataset_size 10095.0 / train_return 70.0 / train_length 349.0 / train_episodes 25.0
+[41748] dataset_size 10437.0 / train_return 120.0 / train_length 342.0 / train_episodes 26.0
+[43368] dataset_size 10842.0 / train_return 130.0 / train_length 405.0 / train_episodes 27.0
+[45136] dataset_size 11284.0 / train_return 180.0 / train_length 442.0 / train_episodes 28.0
+[46828] dataset_size 11707.0 / train_return 160.0 / train_length 423.0 / train_episodes 29.0
+[48672] dataset_size 12168.0 / train_return 160.0 / train_length 461.0 / train_episodes 30.0
+[50000] 
+Start evaluation.
+[50000] eval_return 110.0 / eval_length 375.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[50000] model_loss 9.4 / model_grad_norm 18.9 / image_loss 3.0 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 10.5 / rep_loss 10.5 / kl 10.5 / prior_abs_ent 35.5 / post_abs_ent -9.0 / prior_obs_ent 37.8 / post_obs_ent 28.3 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.4 / normed_target_min -0.3 / normed_target_max 6.0 / EMA_005 1.2 / EMA_095 4.8 / value_mean 2.8 / value_std 0.9 / value_min 0.6 / value_max 5.3 / target_mean 3.0 / target_std 1.5 / target_min 0.1 / target_max 21.1 / imag_reward_mean 0.0 / imag_reward_std 0.5 / imag_reward_min -0.0 / imag_reward_max 10.0 / imag_action_mean 7.3 / imag_action_std 1.7 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 0.0 / actor_grad_norm 0.1 / value_loss 1.7 / value_grad_norm 0.8 / update_count 10100.0 / fps 16.2
+add_video needs package moviepy
+add_video needs package moviepy
+[50328] dataset_size 12582.0 / train_return 160.0 / train_length 414.0 / train_episodes 31.0
+[51760] dataset_size 12940.0 / train_return 110.0 / train_length 358.0 / train_episodes 32.0
+[53108] dataset_size 13277.0 / train_return 90.0 / train_length 337.0 / train_episodes 33.0
+[54408] dataset_size 13602.0 / train_return 80.0 / train_length 325.0 / train_episodes 34.0
+[55808] dataset_size 13952.0 / train_return 120.0 / train_length 350.0 / train_episodes 35.0
+[57552] dataset_size 14388.0 / train_return 180.0 / train_length 436.0 / train_episodes 36.0
+[58864] dataset_size 14716.0 / train_return 100.0 / train_length 328.0 / train_episodes 37.0
+[60052] dataset_size 15013.0 / train_return 80.0 / train_length 297.0 / train_episodes 38.0
+[61188] dataset_size 15297.0 / train_return 80.0 / train_length 284.0 / train_episodes 39.0
+[62452] dataset_size 15613.0 / train_return 110.0 / train_length 316.0 / train_episodes 40.0
+[63672] dataset_size 15918.0 / train_return 100.0 / train_length 305.0 / train_episodes 41.0
+[64892] dataset_size 16223.0 / train_return 80.0 / train_length 305.0 / train_episodes 42.0
+[66124] dataset_size 16531.0 / train_return 80.0 / train_length 308.0 / train_episodes 43.0
+[67432] dataset_size 16858.0 / train_return 100.0 / train_length 327.0 / train_episodes 44.0
+[68644] dataset_size 17161.0 / train_return 80.0 / train_length 303.0 / train_episodes 45.0
+[69880] dataset_size 17470.0 / train_return 80.0 / train_length 309.0 / train_episodes 46.0
+[70000] 
+Start evaluation.
+[70000] eval_return 100.0 / eval_length 337.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[70000] model_loss 7.7 / model_grad_norm 13.6 / image_loss 1.6 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 10.0 / rep_loss 10.0 / kl 10.0 / prior_abs_ent 36.2 / post_abs_ent -7.3 / prior_obs_ent 34.6 / post_obs_ent 25.3 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.2 / normed_target_max 2.3 / EMA_005 2.7 / EMA_095 16.2 / value_mean 8.7 / value_std 3.3 / value_min 0.7 / value_max 16.8 / target_mean 9.1 / target_std 4.0 / target_min 0.0 / target_max 31.3 / imag_reward_mean 0.1 / imag_reward_std 1.0 / imag_reward_min -0.0 / imag_reward_max 10.0 / imag_action_mean 7.7 / imag_action_std 1.4 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.2 / actor_loss 0.0 / actor_grad_norm 0.1 / value_loss 2.1 / value_grad_norm 0.9 / update_count 15100.0 / fps 16.2
+add_video needs package moviepy
+add_video needs package moviepy
+[71244] dataset_size 17811.0 / train_return 100.0 / train_length 341.0 / train_episodes 47.0
+[72616] dataset_size 18154.0 / train_return 100.0 / train_length 343.0 / train_episodes 48.0
+[73916] dataset_size 18479.0 / train_return 100.0 / train_length 325.0 / train_episodes 49.0
+[75260] dataset_size 18815.0 / train_return 90.0 / train_length 336.0 / train_episodes 50.0
+[76632] dataset_size 19158.0 / train_return 120.0 / train_length 343.0 / train_episodes 51.0
+[78040] dataset_size 19510.0 / train_return 120.0 / train_length 352.0 / train_episodes 52.0
+[79360] dataset_size 19840.0 / train_return 100.0 / train_length 330.0 / train_episodes 53.0
+[80720] dataset_size 20180.0 / train_return 100.0 / train_length 340.0 / train_episodes 54.0
+[82036] dataset_size 20509.0 / train_return 90.0 / train_length 329.0 / train_episodes 55.0
+[83300] dataset_size 20825.0 / train_return 80.0 / train_length 316.0 / train_episodes 56.0
+[84604] dataset_size 21151.0 / train_return 100.0 / train_length 326.0 / train_episodes 57.0
+[85952] dataset_size 21488.0 / train_return 110.0 / train_length 337.0 / train_episodes 58.0
+[87348] dataset_size 21837.0 / train_return 130.0 / train_length 349.0 / train_episodes 59.0
+[88724] dataset_size 22181.0 / train_return 100.0 / train_length 344.0 / train_episodes 60.0
+[90000] 
+Start evaluation.
+[90000] eval_return 90.0 / eval_length 329.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[90000] model_loss 6.5 / model_grad_norm 11.6 / image_loss 1.0 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 9.0 / rep_loss 9.0 / kl 9.0 / prior_abs_ent 36.2 / post_abs_ent -12.5 / prior_obs_ent 30.2 / post_obs_ent 21.9 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.1 / normed_target_max 1.5 / EMA_005 3.0 / EMA_095 27.0 / value_mean 14.8 / value_std 6.3 / value_min 0.4 / value_max 30.6 / target_mean 15.1 / target_std 6.7 / target_min 0.0 / target_max 38.8 / imag_reward_mean 0.2 / imag_reward_std 1.3 / imag_reward_min -0.0 / imag_reward_max 10.0 / imag_action_mean 9.3 / imag_action_std 2.3 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.2 / actor_loss 0.1 / actor_grad_norm 0.2 / value_loss 1.9 / value_grad_norm 1.1 / update_count 20100.0 / fps 16.2
+add_video needs package moviepy
+add_video needs package moviepy
+[90212] dataset_size 22553.0 / train_return 140.0 / train_length 372.0 / train_episodes 61.0
+[91636] dataset_size 22909.0 / train_return 100.0 / train_length 356.0 / train_episodes 62.0
+[93128] dataset_size 23282.0 / train_return 120.0 / train_length 373.0 / train_episodes 63.0
+[94520] dataset_size 23630.0 / train_return 110.0 / train_length 348.0 / train_episodes 64.0
+[96048] dataset_size 24012.0 / train_return 120.0 / train_length 382.0 / train_episodes 65.0
+[97636] dataset_size 24409.0 / train_return 140.0 / train_length 397.0 / train_episodes 66.0
+[99220] dataset_size 24805.0 / train_return 130.0 / train_length 396.0 / train_episodes 67.0
+[100776] dataset_size 25194.0 / train_return 140.0 / train_length 389.0 / train_episodes 68.0
+[102512] dataset_size 25628.0 / train_return 160.0 / train_length 434.0 / train_episodes 69.0
+[104180] dataset_size 26045.0 / train_return 160.0 / train_length 417.0 / train_episodes 70.0
+[105828] dataset_size 26457.0 / train_return 170.0 / train_length 412.0 / train_episodes 71.0
+[107348] dataset_size 26837.0 / train_return 140.0 / train_length 380.0 / train_episodes 72.0
+[108956] dataset_size 27239.0 / train_return 170.0 / train_length 402.0 / train_episodes 73.0
+[110000] 
+Start evaluation.
+[110000] eval_return 160.0 / eval_length 400.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[110000] model_loss 5.9 / model_grad_norm 10.6 / image_loss 0.8 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 8.5 / rep_loss 8.5 / kl 8.5 / prior_abs_ent 35.9 / post_abs_ent -18.0 / prior_obs_ent 26.8 / post_obs_ent 19.2 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.1 / normed_target_max 1.3 / EMA_005 4.2 / EMA_095 36.5 / value_mean 20.6 / value_std 8.5 / value_min 0.2 / value_max 41.3 / target_mean 20.9 / target_std 8.9 / target_min 0.0 / target_max 47.3 / imag_reward_mean 0.2 / imag_reward_std 1.4 / imag_reward_min -0.0 / imag_reward_max 10.0 / imag_action_mean 9.2 / imag_action_std 2.7 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.2 / actor_loss 0.1 / actor_grad_norm 0.3 / value_loss 1.9 / value_grad_norm 1.1 / update_count 25100.0 / fps 16.1
+add_video needs package moviepy
+add_video needs package moviepy
+[110580] dataset_size 27645.0 / train_return 160.0 / train_length 406.0 / train_episodes 74.0
+[112156] dataset_size 28039.0 / train_return 150.0 / train_length 394.0 / train_episodes 75.0
+[113756] dataset_size 28439.0 / train_return 180.0 / train_length 400.0 / train_episodes 76.0
+[115540] dataset_size 28885.0 / train_return 180.0 / train_length 446.0 / train_episodes 77.0
+[117144] dataset_size 29286.0 / train_return 160.0 / train_length 401.0 / train_episodes 78.0
+[118744] dataset_size 29686.0 / train_return 160.0 / train_length 400.0 / train_episodes 79.0
+[120384] dataset_size 30096.0 / train_return 160.0 / train_length 410.0 / train_episodes 80.0
+[121872] dataset_size 30468.0 / train_return 160.0 / train_length 372.0 / train_episodes 81.0
+[123536] dataset_size 30884.0 / train_return 160.0 / train_length 416.0 / train_episodes 82.0
+[125152] dataset_size 31288.0 / train_return 190.0 / train_length 404.0 / train_episodes 83.0
+[126632] dataset_size 31658.0 / train_return 140.0 / train_length 370.0 / train_episodes 84.0
+[128256] dataset_size 32064.0 / train_return 190.0 / train_length 406.0 / train_episodes 85.0
+[129808] dataset_size 32452.0 / train_return 170.0 / train_length 388.0 / train_episodes 86.0
+[130000] 
+Start evaluation.
+[130000] eval_return 160.0 / eval_length 409.0 / eval_episodes 1.0
+add_video needs package moviepy
+Start training.
+[130000] model_loss 5.6 / model_grad_norm 10.2 / image_loss 0.7 / reward_loss 0.0 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 8.1 / rep_loss 8.1 / kl 8.1 / prior_abs_ent 35.7 / post_abs_ent -22.4 / prior_obs_ent 22.9 / post_obs_ent 15.7 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.2 / normed_target_max 1.3 / EMA_005 8.1 / EMA_095 50.5 / value_mean 30.0 / value_std 11.3 / value_min 0.2 / value_max 56.9 / target_mean 30.4 / target_std 11.7 / target_min 0.0 / target_max 62.0 / imag_reward_mean 0.3 / imag_reward_std 1.6 / imag_reward_min -0.0 / imag_reward_max 10.0 / imag_action_mean 9.9 / imag_action_std 3.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.2 / actor_loss 0.1 / actor_grad_norm 0.4 / value_loss 1.8 / value_grad_norm 1.2 / update_count 30100.0 / fps 16.0
+add_video needs package moviepy
+add_video needs package moviepy
+[131356] dataset_size 32839.0 / train_return 150.0 / train_length 387.0 / train_episodes 87.0
+[133080] dataset_size 33270.0 / train_return 180.0 / train_length 431.0 / train_episodes 88.0
+[134608] dataset_size 33652.0 / train_return 140.0 / train_length 382.0 / train_episodes 89.0
+[136344] dataset_size 34086.0 / train_return 180.0 / train_length 434.0 / train_episodes 90.0
+[138224] dataset_size 34556.0 / train_return 200.0 / train_length 470.0 / train_episodes 91.0
+[140076] dataset_size 35019.0 / train_return 190.0 / train_length 463.0 / train_episodes 92.0
+[141860] dataset_size 35465.0 / train_return 160.0 / train_length 446.0 / train_episodes 93.0
+[143644] dataset_size 35911.0 / train_return 180.0 / train_length 446.0 / train_episodes 94.0
+[145276] dataset_size 36319.0 / train_return 180.0 / train_length 408.0 / train_episodes 95.0
+[146880] dataset_size 36720.0 / train_return 170.0 / train_length 401.0 / train_episodes 96.0
+[148612] dataset_size 37153.0 / train_return 200.0 / train_length 433.0 / train_episodes 97.0
+[EVAL] abs/context KL plot...
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/tools.py:747: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self._scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+Encoder CNN shapes: {'image': (64, 64, 3)}
+Encoder MLP shapes: {}
+Decoder CNN shapes: {'image': (64, 64, 3)}
+Decoder MLP shapes: {}
+Optimizer model_opt has 27281799 variables.
+{"out": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0/analysis/vta_abs_kl_plot.png", "csv": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0/analysis/vta_abs_ctx_kl_series.csv", "series_len": 661, "align": "min", "smooth": 5, "out_ctx": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0/analysis/vta_ctx_kl_plot.png", "items": [{"logdir": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0", "task": "atari_frostbite", "ckpt": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0/latest.pt", "episode": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0/train_eps/20260206T203021-d543ab843a8440dcbbd7cc94a4a8db26-661.npz", "vta_post_boundary_kernel_size": 5}]}
+[EVAL] z_t-z_t+1 distances + boundary stats (constraints off for eval)...
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/tools.py:747: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self._scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+/home/haselab/projects/stable-deep-world-model/scripts/dreamerv3/vta_boundary_viz.py:173: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+  fig.tight_layout()
+/home/haselab/projects/stable-deep-world-model/scripts/dreamerv3/vta_boundary_viz.py:266: UserWarning: This figure includes Axes that are not compatible with tight_layout, so results might be incorrect.
+  fig.tight_layout()
+Encoder CNN shapes: {'image': (64, 64, 3)}
+Encoder MLP shapes: {}
+Decoder CNN shapes: {'image': (64, 64, 3)}
+Decoder MLP shapes: {}
+Optimizer model_opt has 27281799 variables.
+/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0/analysis/boundary_grid.png
+/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0/analysis/boundary_internal.png
+/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0/analysis/boundary_fired.png
+{"task": "atari_frostbite", "logdir": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0", "ckpt": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0/latest.pt", "episode": "/home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/atari_frostbite_vta_k5_seed0/train_eps/20260206T203021-d543ab843a8440dcbbd7cc94a4a8db26-661.npz", "abs_kl_mean": 133.3861541748047, "abs_kl_std": 91.52999877929688, "obs_kl_mean": 7.5420308113098145, "obs_kl_std": 4.218905925750732, "boundary_rate": 0.0045385779122541605, "read_prob_mean": 0.004538578446954489, "read_prob_p99": 1.3803397536094053e-08, "abs_l2_mean": 0.6051011085510254, "obs_l2_mean": 1.4266209602355957, "abs_stoch_l2_mean": 0.019729604944586754, "obs_stoch_l2_mean": 3.3841161727905273, "abs_l2_read_mean": 7.900137424468994, "obs_l2_read_mean": 9.96385383605957, "abs_stoch_l2_read_mean": 4.340513229370117, "obs_stoch_l2_read_mean": 10.250988960266113}
+
+[SUMMARY] Aggregating kernel comparison table...
+Wrote /home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/summary.csv
+[DONE] /home/haselab/projects/stable-deep-world-model/logs/content_kl_kernelsize/runs/20260206_153820/summary.csv

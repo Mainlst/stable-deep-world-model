@@ -1,0 +1,616 @@
+Logdir /home/haselab/projects/stable-deep-world-model/logs/models/from_scratch_atari_krull_vta_3seed_to_400000_20260208_112207/atari_krull_seed1
+Config saved to /home/haselab/projects/stable-deep-world-model/logs/models/from_scratch_atari_krull_vta_3seed_to_400000_20260208_112207/atari_krull_seed1/config.yaml
+Create envs.
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+Users of this version of Gym should be able to simply replace 'import gym' with 'import gymnasium as gym' in the vast majority of cases.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+A.L.E: Arcade Learning Environment (version 0.11.2+ecc1138)
+[Powered by Stella]
+Action Space Box(0.0, 1.0, (18,), float32)
+Prefill dataset (2500 steps).
+[0] dataset_size 1470.0 / train_return 1620.0 / train_length 1470.0 / train_episodes 1.0
+Logger: (10000 steps).
+Simulate agent.
+Encoder CNN shapes: {'image': (64, 64, 3)}
+Encoder MLP shapes: {}
+Decoder CNN shapes: {'image': (64, 64, 3)}
+Decoder MLP shapes: {}
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/tools.py:747: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self._scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+Optimizer model_opt has 23085447 variables.
+Optimizer actor_opt has 830482 variables.
+Optimizer value_opt has 952063 variables.
+[10000] 
+Start evaluation.
+[10000] eval_return 1318.0 / eval_length 5425.8 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:146: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:216: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:448: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+/home/haselab/projects/stable-deep-world-model/src_dreamerv3/models.py:479: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(self._use_amp):
+[10000] model_loss 841.7 / model_grad_norm 3347.2 / image_loss 810.5 / reward_loss 2.9 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 47.1 / rep_loss 47.1 / kl 47.1 / prior_abs_ent 38.8 / post_abs_ent -2.3 / prior_obs_ent 29.7 / post_obs_ent 7.8 / boundary_ratio 0.3 / kl_mask 0.1 / normed_target_mean 0.9 / normed_target_std 0.5 / normed_target_min 0.1 / normed_target_max 1.6 / EMA_005 0.1 / EMA_095 0.5 / value_mean 0.0 / value_std 0.0 / value_min 0.0 / value_max 0.0 / target_mean 1.0 / target_std 0.5 / target_min 0.2 / target_max 1.7 / imag_reward_mean 0.2 / imag_reward_std 0.0 / imag_reward_min 0.1 / imag_reward_max 0.2 / imag_action_mean 8.7 / imag_action_std 4.0 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 2.4 / actor_loss 2.2 / actor_grad_norm 0.3 / value_loss 9.2 / value_grad_norm 12.9 / update_count 100.0 / fps 0.0
+add_video needs package moviepy
+add_video needs package moviepy
+[10624] 
+Start evaluation.
+[10624] eval_return 0.0 / eval_length 1400.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[10624] model_loss 122.4 / model_grad_norm 219.0 / image_loss 116.6 / reward_loss 0.5 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 8.9 / rep_loss 8.9 / kl 8.9 / prior_abs_ent 24.3 / post_abs_ent -11.6 / prior_obs_ent 4.9 / post_obs_ent 1.1 / boundary_ratio 0.3 / kl_mask 0.0 / normed_target_mean 0.9 / normed_target_std 0.4 / normed_target_min 0.1 / normed_target_max 1.5 / EMA_005 0.2 / EMA_095 1.7 / value_mean 0.2 / value_std 0.0 / value_min 0.2 / value_max 0.2 / target_mean 1.5 / target_std 0.6 / target_min 0.4 / target_max 2.3 / imag_reward_mean 0.2 / imag_reward_std 0.0 / imag_reward_min 0.2 / imag_reward_max 0.2 / imag_action_mean 8.4 / imag_action_std 4.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 2.0 / actor_loss 2.5 / actor_grad_norm 0.3 / value_loss 6.2 / value_grad_norm 11.1 / update_count 256.0 / fps 13.0
+add_video needs package moviepy
+add_video needs package moviepy
+[11248] 
+Start evaluation.
+[11248] eval_return 12.0 / eval_length 1322.4 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[11248] model_loss 86.4 / model_grad_norm 143.2 / image_loss 81.4 / reward_loss 0.4 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 7.4 / rep_loss 7.4 / kl 7.4 / prior_abs_ent 18.3 / post_abs_ent -15.6 / prior_obs_ent -1.9 / post_obs_ent -4.2 / boundary_ratio 0.3 / kl_mask 0.1 / normed_target_mean 0.7 / normed_target_std 0.4 / normed_target_min 0.1 / normed_target_max 1.5 / EMA_005 0.6 / EMA_095 2.7 / value_mean 0.6 / value_std 0.0 / value_min 0.5 / value_max 0.6 / target_mean 2.1 / target_std 0.8 / target_min 0.7 / target_max 3.8 / imag_reward_mean 0.3 / imag_reward_std 0.1 / imag_reward_min 0.2 / imag_reward_max 0.3 / imag_action_mean 8.5 / imag_action_std 3.9 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 1.8 / actor_loss 2.9 / actor_grad_norm 0.4 / value_loss 5.2 / value_grad_norm 11.1 / update_count 412.0 / fps 13.1
+add_video needs package moviepy
+add_video needs package moviepy
+[11772] dataset_size 2943.0 / train_return 1930.0 / train_length 1473.0 / train_episodes 2.0
+[11872] 
+Start evaluation.
+[11872] eval_return 0.0 / eval_length 1375.8 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[11872] model_loss 79.3 / model_grad_norm 98.1 / image_loss 75.0 / reward_loss 0.4 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 6.4 / rep_loss 6.4 / kl 6.4 / prior_abs_ent 11.4 / post_abs_ent -16.2 / prior_obs_ent -3.6 / post_obs_ent -5.6 / boundary_ratio 0.3 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.4 / normed_target_min 0.0 / normed_target_max 1.6 / EMA_005 0.9 / EMA_095 4.2 / value_mean 0.9 / value_std 0.0 / value_min 0.8 / value_max 0.9 / target_mean 2.5 / target_std 1.3 / target_min 0.9 / target_max 6.0 / imag_reward_mean 0.3 / imag_reward_std 0.1 / imag_reward_min 0.1 / imag_reward_max 0.5 / imag_action_mean 10.6 / imag_action_std 1.6 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 0.8 / actor_grad_norm 0.2 / value_loss 4.6 / value_grad_norm 7.9 / update_count 568.0 / fps 13.1
+add_video needs package moviepy
+add_video needs package moviepy
+[12496] 
+Start evaluation.
+[12496] eval_return 0.0 / eval_length 1203.4 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[12496] model_loss 74.3 / model_grad_norm 102.6 / image_loss 70.3 / reward_loss 0.4 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 6.0 / rep_loss 6.0 / kl 6.0 / prior_abs_ent 7.9 / post_abs_ent -17.4 / prior_obs_ent -3.3 / post_obs_ent -5.3 / boundary_ratio 0.3 / kl_mask 0.1 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.4 / EMA_005 1.1 / EMA_095 5.1 / value_mean 1.2 / value_std 0.1 / value_min 1.1 / value_max 1.3 / target_mean 2.8 / target_std 1.4 / target_min 1.1 / target_max 6.7 / imag_reward_mean 0.3 / imag_reward_std 0.2 / imag_reward_min 0.0 / imag_reward_max 0.6 / imag_action_mean 10.6 / imag_action_std 1.4 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 0.6 / actor_grad_norm 0.1 / value_loss 4.0 / value_grad_norm 7.1 / update_count 724.0 / fps 13.4
+add_video needs package moviepy
+add_video needs package moviepy
+[13120] 
+Start evaluation.
+[13120] eval_return 122.0 / eval_length 1461.8 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[13120] model_loss 71.9 / model_grad_norm 111.3 / image_loss 67.8 / reward_loss 0.4 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 6.0 / rep_loss 6.0 / kl 6.0 / prior_abs_ent 8.4 / post_abs_ent -17.4 / prior_obs_ent -0.3 / post_obs_ent -2.4 / boundary_ratio 0.2 / kl_mask 0.1 / normed_target_mean 0.4 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 1.4 / EMA_005 1.3 / EMA_095 5.8 / value_mean 1.6 / value_std 0.2 / value_min 1.2 / value_max 1.8 / target_mean 3.2 / target_std 1.6 / target_min 1.2 / target_max 7.8 / imag_reward_mean 0.3 / imag_reward_std 0.2 / imag_reward_min 0.0 / imag_reward_max 0.6 / imag_action_mean 10.4 / imag_action_std 1.8 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.6 / actor_loss 0.9 / actor_grad_norm 0.2 / value_loss 3.8 / value_grad_norm 7.5 / update_count 880.0 / fps 13.0
+add_video needs package moviepy
+add_video needs package moviepy
+[13744] 
+Start evaluation.
+[13744] eval_return 0.0 / eval_length 1467.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[13744] model_loss 70.5 / model_grad_norm 94.5 / image_loss 66.8 / reward_loss 0.4 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 5.3 / rep_loss 5.3 / kl 5.3 / prior_abs_ent 8.7 / post_abs_ent -17.2 / prior_obs_ent 0.2 / post_obs_ent -1.9 / boundary_ratio 0.2 / kl_mask 0.1 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.1 / normed_target_max 1.3 / EMA_005 1.3 / EMA_095 6.5 / value_mean 2.0 / value_std 0.5 / value_min 1.2 / value_max 2.3 / target_mean 3.5 / target_std 1.8 / target_min 1.0 / target_max 8.2 / imag_reward_mean 0.3 / imag_reward_std 0.2 / imag_reward_min 0.0 / imag_reward_max 0.6 / imag_action_mean 7.9 / imag_action_std 2.4 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.7 / actor_loss 0.9 / actor_grad_norm 0.2 / value_loss 3.4 / value_grad_norm 6.9 / update_count 1036.0 / fps 12.7
+add_video needs package moviepy
+add_video needs package moviepy
+[14368] 
+Start evaluation.
+[14368] eval_return 0.0 / eval_length 1467.2 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[14368] model_loss 70.0 / model_grad_norm 72.4 / image_loss 66.7 / reward_loss 0.4 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 4.9 / rep_loss 4.9 / kl 4.8 / prior_abs_ent 11.1 / post_abs_ent -16.8 / prior_obs_ent 2.4 / post_obs_ent 0.2 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.1 / normed_target_max 1.3 / EMA_005 1.2 / EMA_095 7.0 / value_mean 2.4 / value_std 0.7 / value_min 1.2 / value_max 3.0 / target_mean 4.0 / target_std 2.0 / target_min 0.9 / target_max 8.9 / imag_reward_mean 0.3 / imag_reward_std 0.2 / imag_reward_min 0.0 / imag_reward_max 0.7 / imag_action_mean 7.0 / imag_action_std 2.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 0.3 / actor_grad_norm 0.1 / value_loss 3.1 / value_grad_norm 5.4 / update_count 1192.0 / fps 12.7
+add_video needs package moviepy
+add_video needs package moviepy
+[14992] 
+Start evaluation.
+[14992] eval_return 0.0 / eval_length 1299.2 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[14992] model_loss 70.5 / model_grad_norm 73.9 / image_loss 67.3 / reward_loss 0.4 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 4.6 / rep_loss 4.6 / kl 4.6 / prior_abs_ent 14.2 / post_abs_ent -18.2 / prior_obs_ent 2.8 / post_obs_ent 0.6 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.4 / EMA_005 1.2 / EMA_095 7.6 / value_mean 3.0 / value_std 1.0 / value_min 1.2 / value_max 3.7 / target_mean 4.5 / target_std 2.1 / target_min 1.0 / target_max 9.9 / imag_reward_mean 0.3 / imag_reward_std 0.2 / imag_reward_min 0.0 / imag_reward_max 0.7 / imag_action_mean 7.4 / imag_action_std 2.9 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.8 / actor_loss 0.8 / actor_grad_norm 0.2 / value_loss 2.9 / value_grad_norm 4.5 / update_count 1348.0 / fps 13.0
+add_video needs package moviepy
+add_video needs package moviepy
+[15616] 
+Start evaluation.
+[15616] eval_return 0.0 / eval_length 1350.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[15616] model_loss 69.6 / model_grad_norm 62.4 / image_loss 66.5 / reward_loss 0.4 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 4.5 / rep_loss 4.5 / kl 4.5 / prior_abs_ent 16.3 / post_abs_ent -19.2 / prior_obs_ent 3.4 / post_obs_ent 1.1 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.6 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 1.5 / EMA_005 1.3 / EMA_095 8.4 / value_mean 3.7 / value_std 1.3 / value_min 1.2 / value_max 4.6 / target_mean 5.2 / target_std 2.5 / target_min 1.1 / target_max 12.0 / imag_reward_mean 0.3 / imag_reward_std 0.2 / imag_reward_min 0.0 / imag_reward_max 0.9 / imag_action_mean 7.0 / imag_action_std 2.5 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.7 / actor_loss 0.5 / actor_grad_norm 0.1 / value_loss 2.7 / value_grad_norm 4.0 / update_count 1504.0 / fps 13.0
+add_video needs package moviepy
+add_video needs package moviepy
+[15948] dataset_size 3987.0 / train_return 820.0 / train_length 1044.0 / train_episodes 3.0
+[16240] 
+Start evaluation.
+[16240] eval_return 0.0 / eval_length 1345.2 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[16240] model_loss 72.1 / model_grad_norm 101.1 / image_loss 67.8 / reward_loss 0.4 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 6.6 / rep_loss 6.6 / kl 6.6 / prior_abs_ent 17.2 / post_abs_ent -20.0 / prior_obs_ent 10.1 / post_obs_ent 6.2 / boundary_ratio 0.1 / kl_mask 0.1 / normed_target_mean 0.6 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 1.3 / EMA_095 9.5 / value_mean 4.5 / value_std 1.7 / value_min 1.2 / value_max 5.6 / target_mean 6.1 / target_std 2.8 / target_min 1.1 / target_max 15.2 / imag_reward_mean 0.3 / imag_reward_std 0.2 / imag_reward_min 0.0 / imag_reward_max 1.6 / imag_action_mean 6.7 / imag_action_std 2.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.6 / actor_loss 0.3 / actor_grad_norm 0.1 / value_loss 2.6 / value_grad_norm 3.5 / update_count 1660.0 / fps 12.9
+add_video needs package moviepy
+add_video needs package moviepy
+[16864] 
+Start evaluation.
+[16864] eval_return 10.0 / eval_length 1470.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[16864] model_loss 70.4 / model_grad_norm 111.5 / image_loss 64.8 / reward_loss 0.3 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 8.7 / rep_loss 8.7 / kl 8.7 / prior_abs_ent 20.8 / post_abs_ent -16.7 / prior_obs_ent 22.3 / post_obs_ent 16.3 / boundary_ratio 0.1 / kl_mask 0.1 / normed_target_mean 0.6 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 1.3 / EMA_095 10.5 / value_mean 5.0 / value_std 2.1 / value_min 1.1 / value_max 6.4 / target_mean 6.4 / target_std 3.2 / target_min 1.1 / target_max 16.5 / imag_reward_mean 0.3 / imag_reward_std 0.2 / imag_reward_min 0.0 / imag_reward_max 1.7 / imag_action_mean 6.8 / imag_action_std 2.3 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.6 / actor_loss 0.2 / actor_grad_norm 0.1 / value_loss 2.4 / value_grad_norm 2.6 / update_count 1816.0 / fps 12.6
+add_video needs package moviepy
+add_video needs package moviepy
+[17488] 
+Start evaluation.
+[17488] eval_return 0.0 / eval_length 1379.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[17488] model_loss 66.2 / model_grad_norm 55.2 / image_loss 61.3 / reward_loss 0.3 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 7.7 / rep_loss 7.7 / kl 7.7 / prior_abs_ent 22.6 / post_abs_ent -16.1 / prior_obs_ent 20.1 / post_obs_ent 14.0 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.6 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 1.3 / EMA_095 11.4 / value_mean 5.4 / value_std 2.4 / value_min 1.1 / value_max 7.2 / target_mean 6.9 / target_std 3.6 / target_min 1.2 / target_max 19.7 / imag_reward_mean 0.3 / imag_reward_std 0.3 / imag_reward_min 0.0 / imag_reward_max 3.0 / imag_action_mean 6.9 / imag_action_std 2.3 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.6 / actor_loss 0.2 / actor_grad_norm 0.1 / value_loss 2.1 / value_grad_norm 2.1 / update_count 1972.0 / fps 12.9
+add_video needs package moviepy
+add_video needs package moviepy
+[18112] 
+Start evaluation.
+[18112] eval_return 1128.0 / eval_length 1470.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[18112] model_loss 63.9 / model_grad_norm 76.5 / image_loss 57.6 / reward_loss 0.3 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 9.8 / rep_loss 9.8 / kl 9.8 / prior_abs_ent 22.9 / post_abs_ent -19.5 / prior_obs_ent 20.0 / post_obs_ent 12.1 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.6 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 2.1 / EMA_005 1.3 / EMA_095 12.8 / value_mean 6.0 / value_std 2.9 / value_min 0.9 / value_max 8.2 / target_mean 7.7 / target_std 4.4 / target_min 1.2 / target_max 25.0 / imag_reward_mean 0.3 / imag_reward_std 0.4 / imag_reward_min 0.0 / imag_reward_max 3.8 / imag_action_mean 5.8 / imag_action_std 3.5 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.9 / actor_loss 0.7 / actor_grad_norm 0.2 / value_loss 2.2 / value_grad_norm 1.6 / update_count 2128.0 / fps 12.6
+add_video needs package moviepy
+add_video needs package moviepy
+[18736] 
+Start evaluation.
+[18736] eval_return 0.0 / eval_length 1468.8 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[18736] model_loss 61.6 / model_grad_norm 87.2 / image_loss 53.7 / reward_loss 0.3 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.6 / rep_loss 12.6 / kl 12.6 / prior_abs_ent 21.8 / post_abs_ent -22.2 / prior_obs_ent 19.5 / post_obs_ent 8.6 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.6 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 2.3 / EMA_005 1.3 / EMA_095 15.3 / value_mean 7.1 / value_std 3.2 / value_min 1.0 / value_max 9.4 / target_mean 9.1 / target_std 5.2 / target_min 1.2 / target_max 33.0 / imag_reward_mean 0.3 / imag_reward_std 0.6 / imag_reward_min 0.0 / imag_reward_max 5.1 / imag_action_mean 3.6 / imag_action_std 4.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.7 / actor_loss 0.4 / actor_grad_norm 0.2 / value_loss 2.3 / value_grad_norm 1.7 / update_count 2284.0 / fps 12.6
+add_video needs package moviepy
+add_video needs package moviepy
+[19360] 
+Start evaluation.
+[19360] eval_return 0.0 / eval_length 1328.4 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[19360] model_loss 55.1 / model_grad_norm 85.5 / image_loss 45.9 / reward_loss 0.3 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.8 / rep_loss 14.8 / kl 14.8 / prior_abs_ent 19.3 / post_abs_ent -24.4 / prior_obs_ent 15.9 / post_obs_ent 2.6 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 2.4 / EMA_005 1.3 / EMA_095 19.0 / value_mean 8.2 / value_std 4.0 / value_min 1.0 / value_max 11.1 / target_mean 10.6 / target_std 6.5 / target_min 1.1 / target_max 44.4 / imag_reward_mean 0.4 / imag_reward_std 0.8 / imag_reward_min 0.0 / imag_reward_max 7.0 / imag_action_mean 3.2 / imag_action_std 4.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.6 / actor_loss 0.3 / actor_grad_norm 0.1 / value_loss 2.3 / value_grad_norm 1.7 / update_count 2440.0 / fps 13.0
+add_video needs package moviepy
+add_video needs package moviepy
+[19984] 
+Start evaluation.
+[19984] eval_return 0.0 / eval_length 1429.2 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[19984] model_loss 48.5 / model_grad_norm 89.2 / image_loss 39.0 / reward_loss 0.2 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 15.5 / rep_loss 15.5 / kl 15.5 / prior_abs_ent 18.5 / post_abs_ent -25.8 / prior_obs_ent 11.8 / post_obs_ent -2.2 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 2.6 / EMA_005 1.4 / EMA_095 23.9 / value_mean 9.9 / value_std 4.7 / value_min 1.1 / value_max 13.2 / target_mean 12.8 / target_std 8.2 / target_min 1.2 / target_max 59.0 / imag_reward_mean 0.5 / imag_reward_std 1.1 / imag_reward_min 0.0 / imag_reward_max 10.2 / imag_action_mean 3.1 / imag_action_std 4.0 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 0.4 / actor_grad_norm 0.1 / value_loss 2.3 / value_grad_norm 1.4 / update_count 2596.0 / fps 12.7
+add_video needs package moviepy
+add_video needs package moviepy
+[20608] 
+Start evaluation.
+[20608] eval_return 36.0 / eval_length 1404.4 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[20608] model_loss 43.3 / model_grad_norm 92.9 / image_loss 33.5 / reward_loss 0.2 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 15.8 / rep_loss 15.8 / kl 15.8 / prior_abs_ent 18.6 / post_abs_ent -26.5 / prior_obs_ent 10.3 / post_obs_ent -3.8 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 2.4 / EMA_005 1.3 / EMA_095 28.3 / value_mean 11.7 / value_std 5.6 / value_min 1.3 / value_max 15.5 / target_mean 15.0 / target_std 9.5 / target_min 1.1 / target_max 67.2 / imag_reward_mean 0.5 / imag_reward_std 1.2 / imag_reward_min 0.0 / imag_reward_max 12.9 / imag_action_mean 4.2 / imag_action_std 3.9 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.8 / actor_loss 1.1 / actor_grad_norm 0.5 / value_loss 2.3 / value_grad_norm 1.5 / update_count 2752.0 / fps 12.7
+add_video needs package moviepy
+add_video needs package moviepy
+[21232] 
+Start evaluation.
+[21232] eval_return 26.0 / eval_length 1273.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[21232] model_loss 43.9 / model_grad_norm 172.7 / image_loss 32.7 / reward_loss 0.2 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 18.2 / rep_loss 18.2 / kl 18.2 / prior_abs_ent 22.9 / post_abs_ent -25.7 / prior_obs_ent 15.0 / post_obs_ent -0.5 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 2.2 / EMA_005 1.8 / EMA_095 32.9 / value_mean 14.4 / value_std 6.6 / value_min 1.3 / value_max 18.8 / target_mean 17.7 / target_std 10.2 / target_min 0.8 / target_max 69.5 / imag_reward_mean 0.5 / imag_reward_std 1.2 / imag_reward_min 0.0 / imag_reward_max 13.6 / imag_action_mean 5.1 / imag_action_std 4.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.2 / actor_loss 0.4 / actor_grad_norm 0.2 / value_loss 2.5 / value_grad_norm 2.0 / update_count 2908.0 / fps 13.1
+add_video needs package moviepy
+add_video needs package moviepy
+[21776] dataset_size 5444.0 / train_return 360.0 / train_length 1457.0 / train_episodes 4.0
+[21856] 
+Start evaluation.
+[21856] eval_return 0.0 / eval_length 1301.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[21856] model_loss 37.2 / model_grad_norm 64.7 / image_loss 27.8 / reward_loss 0.2 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 15.4 / rep_loss 15.4 / kl 15.4 / prior_abs_ent 20.3 / post_abs_ent -25.7 / prior_obs_ent 10.4 / post_obs_ent -3.4 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 2.2 / EMA_005 1.8 / EMA_095 35.5 / value_mean 16.5 / value_std 7.5 / value_min 1.5 / value_max 21.6 / target_mean 19.7 / target_std 11.2 / target_min 1.1 / target_max 74.5 / imag_reward_mean 0.5 / imag_reward_std 1.2 / imag_reward_min 0.0 / imag_reward_max 14.2 / imag_action_mean 5.3 / imag_action_std 4.4 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.2 / actor_loss 0.3 / actor_grad_norm 0.1 / value_loss 2.1 / value_grad_norm 1.4 / update_count 3064.0 / fps 12.9
+add_video needs package moviepy
+add_video needs package moviepy
+[22480] 
+Start evaluation.
+[22480] eval_return 32.0 / eval_length 1273.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[22480] model_loss 34.5 / model_grad_norm 65.3 / image_loss 25.6 / reward_loss 0.2 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.5 / rep_loss 14.5 / kl 14.5 / prior_abs_ent 20.1 / post_abs_ent -26.5 / prior_obs_ent 8.3 / post_obs_ent -4.6 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 2.2 / EMA_005 1.7 / EMA_095 40.5 / value_mean 17.9 / value_std 8.8 / value_min 1.2 / value_max 24.7 / target_mean 21.3 / target_std 13.3 / target_min 0.7 / target_max 85.4 / imag_reward_mean 0.6 / imag_reward_std 1.5 / imag_reward_min 0.0 / imag_reward_max 15.2 / imag_action_mean 5.5 / imag_action_std 4.6 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.2 / actor_loss 0.3 / actor_grad_norm 0.1 / value_loss 2.0 / value_grad_norm 1.2 / update_count 3220.0 / fps 13.1
+add_video needs package moviepy
+add_video needs package moviepy
+[23104] 
+Start evaluation.
+[23104] eval_return 216.0 / eval_length 1307.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[23104] model_loss 32.3 / model_grad_norm 54.0 / image_loss 23.9 / reward_loss 0.2 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.7 / rep_loss 13.7 / kl 13.7 / prior_abs_ent 20.8 / post_abs_ent -26.6 / prior_obs_ent 7.7 / post_obs_ent -4.5 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 2.1 / EMA_005 1.4 / EMA_095 44.0 / value_mean 18.9 / value_std 10.0 / value_min 1.1 / value_max 27.9 / target_mean 22.2 / target_std 14.6 / target_min 0.8 / target_max 92.2 / imag_reward_mean 0.6 / imag_reward_std 1.6 / imag_reward_min 0.0 / imag_reward_max 15.8 / imag_action_mean 7.6 / imag_action_std 4.8 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.3 / actor_loss 0.8 / actor_grad_norm 0.5 / value_loss 2.1 / value_grad_norm 1.0 / update_count 3376.0 / fps 13.0
+add_video needs package moviepy
+add_video needs package moviepy
+[23728] 
+Start evaluation.
+[23728] eval_return 12.0 / eval_length 1473.8 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[23728] model_loss 30.7 / model_grad_norm 50.5 / image_loss 22.5 / reward_loss 0.2 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.3 / rep_loss 13.3 / kl 13.3 / prior_abs_ent 20.8 / post_abs_ent -26.7 / prior_obs_ent 7.4 / post_obs_ent -4.2 / boundary_ratio 0.1 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 2.0 / EMA_005 1.2 / EMA_095 51.4 / value_mean 20.4 / value_std 11.9 / value_min 1.1 / value_max 32.1 / target_mean 24.7 / target_std 17.6 / target_min 1.0 / target_max 103.1 / imag_reward_mean 0.7 / imag_reward_std 1.8 / imag_reward_min 0.0 / imag_reward_max 17.2 / imag_action_mean 15.2 / imag_action_std 2.3 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.2 / actor_loss 0.6 / actor_grad_norm 0.3 / value_loss 2.2 / value_grad_norm 1.0 / update_count 3532.0 / fps 12.6
+add_video needs package moviepy
+add_video needs package moviepy
+[24352] 
+Start evaluation.
+[24352] eval_return 0.0 / eval_length 1451.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[24352] model_loss 30.2 / model_grad_norm 50.6 / image_loss 22.0 / reward_loss 0.2 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.3 / rep_loss 13.3 / kl 13.3 / prior_abs_ent 21.2 / post_abs_ent -27.0 / prior_obs_ent 6.7 / post_obs_ent -4.9 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.9 / EMA_005 1.1 / EMA_095 56.0 / value_mean 22.9 / value_std 12.9 / value_min 1.1 / value_max 36.1 / target_mean 26.8 / target_std 18.1 / target_min 1.0 / target_max 107.1 / imag_reward_mean 0.7 / imag_reward_std 1.8 / imag_reward_min 0.0 / imag_reward_max 17.3 / imag_action_mean 15.4 / imag_action_std 1.9 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.2 / actor_loss 0.4 / actor_grad_norm 0.2 / value_loss 2.2 / value_grad_norm 1.0 / update_count 3688.0 / fps 12.6
+add_video needs package moviepy
+add_video needs package moviepy
+[24976] 
+Start evaluation.
+[24976] eval_return 1440.0 / eval_length 1467.8 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[24976] model_loss 29.1 / model_grad_norm 50.9 / image_loss 21.2 / reward_loss 0.2 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.9 / rep_loss 12.9 / kl 12.9 / prior_abs_ent 21.3 / post_abs_ent -27.1 / prior_obs_ent 6.4 / post_obs_ent -4.9 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 2.0 / EMA_005 1.2 / EMA_095 56.3 / value_mean 23.4 / value_std 13.8 / value_min 1.1 / value_max 38.9 / target_mean 26.5 / target_std 18.3 / target_min 1.0 / target_max 112.4 / imag_reward_mean 0.6 / imag_reward_std 1.7 / imag_reward_min 0.0 / imag_reward_max 17.5 / imag_action_mean 15.4 / imag_action_std 2.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.2 / actor_loss 0.4 / actor_grad_norm 0.3 / value_loss 2.2 / value_grad_norm 1.0 / update_count 3844.0 / fps 12.5
+add_video needs package moviepy
+add_video needs package moviepy
+[25600] 
+Start evaluation.
+[25600] eval_return 1238.0 / eval_length 1264.2 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[25600] model_loss 28.5 / model_grad_norm 50.9 / image_loss 20.6 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.9 / rep_loss 12.9 / kl 12.9 / prior_abs_ent 21.8 / post_abs_ent -27.3 / prior_obs_ent 5.6 / post_obs_ent -5.6 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 2.1 / EMA_005 1.2 / EMA_095 57.7 / value_mean 24.9 / value_std 14.6 / value_min 1.1 / value_max 42.0 / target_mean 28.1 / target_std 19.1 / target_min 1.1 / target_max 122.0 / imag_reward_mean 0.6 / imag_reward_std 1.8 / imag_reward_min 0.0 / imag_reward_max 18.1 / imag_action_mean 13.2 / imag_action_std 4.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.3 / actor_loss 0.6 / actor_grad_norm 0.6 / value_loss 2.2 / value_grad_norm 1.0 / update_count 4000.0 / fps 13.0
+add_video needs package moviepy
+add_video needs package moviepy
+[25932] dataset_size 6483.0 / train_return 500.0 / train_length 1039.0 / train_episodes 5.0
+[26224] 
+Start evaluation.
+[26224] eval_return 1474.0 / eval_length 1309.8 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[26224] model_loss 28.3 / model_grad_norm 52.1 / image_loss 20.2 / reward_loss 0.2 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.1 / rep_loss 13.1 / kl 13.1 / prior_abs_ent 22.5 / post_abs_ent -27.4 / prior_obs_ent 7.2 / post_obs_ent -4.3 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 2.1 / EMA_005 1.3 / EMA_095 59.1 / value_mean 25.8 / value_std 15.2 / value_min 1.2 / value_max 44.6 / target_mean 28.6 / target_std 19.2 / target_min 1.0 / target_max 121.9 / imag_reward_mean 0.5 / imag_reward_std 1.7 / imag_reward_min 0.0 / imag_reward_max 18.1 / imag_action_mean 12.1 / imag_action_std 4.7 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.3 / actor_loss 0.6 / actor_grad_norm 0.7 / value_loss 2.2 / value_grad_norm 1.2 / update_count 4156.0 / fps 12.9
+add_video needs package moviepy
+add_video needs package moviepy
+[26848] 
+Start evaluation.
+[26848] eval_return 1316.0 / eval_length 1250.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[26848] model_loss 27.3 / model_grad_norm 55.3 / image_loss 19.6 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.6 / rep_loss 12.6 / kl 12.6 / prior_abs_ent 22.5 / post_abs_ent -27.4 / prior_obs_ent 7.4 / post_obs_ent -3.6 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 2.1 / EMA_005 1.3 / EMA_095 58.4 / value_mean 25.9 / value_std 16.1 / value_min 1.1 / value_max 46.9 / target_mean 28.6 / target_std 19.8 / target_min 1.1 / target_max 120.9 / imag_reward_mean 0.5 / imag_reward_std 1.6 / imag_reward_min 0.0 / imag_reward_max 18.3 / imag_action_mean 12.2 / imag_action_std 4.7 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.3 / actor_loss 0.6 / actor_grad_norm 0.7 / value_loss 2.2 / value_grad_norm 1.4 / update_count 4312.0 / fps 13.2
+add_video needs package moviepy
+add_video needs package moviepy
+[27472] 
+Start evaluation.
+[27472] eval_return 1412.0 / eval_length 1450.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[27472] model_loss 26.8 / model_grad_norm 56.7 / image_loss 19.0 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.7 / rep_loss 12.7 / kl 12.7 / prior_abs_ent 22.3 / post_abs_ent -27.3 / prior_obs_ent 8.1 / post_obs_ent -2.9 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 2.1 / EMA_005 1.3 / EMA_095 61.1 / value_mean 26.0 / value_std 17.0 / value_min 1.2 / value_max 50.2 / target_mean 28.9 / target_std 21.1 / target_min 1.1 / target_max 127.2 / imag_reward_mean 0.5 / imag_reward_std 1.8 / imag_reward_min 0.0 / imag_reward_max 18.7 / imag_action_mean 11.6 / imag_action_std 4.8 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 0.6 / actor_grad_norm 0.7 / value_loss 2.2 / value_grad_norm 1.0 / update_count 4468.0 / fps 12.7
+add_video needs package moviepy
+add_video needs package moviepy
+[28096] 
+Start evaluation.
+[28096] eval_return 2622.0 / eval_length 1844.4 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[28096] model_loss 26.0 / model_grad_norm 58.2 / image_loss 18.6 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.1 / rep_loss 12.1 / kl 12.1 / prior_abs_ent 23.2 / post_abs_ent -27.4 / prior_obs_ent 7.1 / post_obs_ent -3.4 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 2.1 / EMA_005 1.3 / EMA_095 63.6 / value_mean 27.0 / value_std 17.8 / value_min 1.2 / value_max 52.3 / target_mean 29.8 / target_std 22.0 / target_min 1.1 / target_max 132.1 / imag_reward_mean 0.6 / imag_reward_std 1.8 / imag_reward_min 0.0 / imag_reward_max 18.9 / imag_action_mean 10.5 / imag_action_std 4.7 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 0.7 / actor_grad_norm 0.9 / value_loss 2.2 / value_grad_norm 1.1 / update_count 4624.0 / fps 11.7
+add_video needs package moviepy
+add_video needs package moviepy
+[28720] 
+Start evaluation.
+[28720] eval_return 1894.0 / eval_length 1377.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[28720] model_loss 26.2 / model_grad_norm 49.4 / image_loss 18.4 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.7 / rep_loss 12.7 / kl 12.7 / prior_abs_ent 23.9 / post_abs_ent -27.5 / prior_obs_ent 8.8 / post_obs_ent -2.3 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 2.1 / EMA_005 1.3 / EMA_095 67.3 / value_mean 28.4 / value_std 18.7 / value_min 1.2 / value_max 55.2 / target_mean 31.5 / target_std 23.4 / target_min 0.8 / target_max 142.8 / imag_reward_mean 0.6 / imag_reward_std 2.0 / imag_reward_min 0.0 / imag_reward_max 19.0 / imag_action_mean 8.7 / imag_action_std 4.5 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.7 / actor_loss 1.6 / actor_grad_norm 1.5 / value_loss 2.4 / value_grad_norm 1.2 / update_count 4780.0 / fps 12.8
+add_video needs package moviepy
+add_video needs package moviepy
+[29344] 
+Start evaluation.
+[29344] eval_return 28.0 / eval_length 1441.2 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[29344] model_loss 25.8 / model_grad_norm 46.6 / image_loss 18.0 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.7 / rep_loss 12.7 / kl 12.7 / prior_abs_ent 23.2 / post_abs_ent -27.5 / prior_obs_ent 8.6 / post_obs_ent -2.3 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 2.0 / EMA_005 1.3 / EMA_095 76.0 / value_mean 31.8 / value_std 20.9 / value_min 1.2 / value_max 61.5 / target_mean 37.0 / target_std 27.6 / target_min 1.1 / target_max 154.1 / imag_reward_mean 0.9 / imag_reward_std 2.3 / imag_reward_min 0.0 / imag_reward_max 19.1 / imag_action_mean 5.3 / imag_action_std 3.9 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.6 / actor_loss 1.9 / actor_grad_norm 1.3 / value_loss 2.6 / value_grad_norm 1.2 / update_count 4936.0 / fps 12.5
+add_video needs package moviepy
+add_video needs package moviepy
+[29968] 
+Start evaluation.
+[29968] eval_return 8.0 / eval_length 1427.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[29968] model_loss 26.3 / model_grad_norm 78.5 / image_loss 18.3 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.9 / rep_loss 12.9 / kl 12.9 / prior_abs_ent 24.1 / post_abs_ent -27.4 / prior_obs_ent 11.3 / post_obs_ent -0.1 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 1.9 / EMA_005 1.4 / EMA_095 85.6 / value_mean 34.8 / value_std 23.5 / value_min 1.2 / value_max 67.4 / target_mean 39.6 / target_std 29.6 / target_min 1.1 / target_max 158.1 / imag_reward_mean 0.8 / imag_reward_std 2.2 / imag_reward_min 0.0 / imag_reward_max 19.0 / imag_action_mean 4.0 / imag_action_std 4.0 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 0.6 / actor_grad_norm 0.5 / value_loss 2.6 / value_grad_norm 1.4 / update_count 5092.0 / fps 12.6
+add_video needs package moviepy
+add_video needs package moviepy
+[30592] 
+Start evaluation.
+[30592] eval_return 0.0 / eval_length 1478.2 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[30592] model_loss 25.8 / model_grad_norm 62.4 / image_loss 18.0 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.8 / rep_loss 12.8 / kl 12.8 / prior_abs_ent 25.4 / post_abs_ent -27.6 / prior_obs_ent 10.8 / post_obs_ent -0.5 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 1.9 / EMA_005 1.5 / EMA_095 90.6 / value_mean 37.4 / value_std 25.0 / value_min 1.2 / value_max 73.1 / target_mean 42.5 / target_std 31.5 / target_min 1.2 / target_max 166.8 / imag_reward_mean 0.9 / imag_reward_std 2.4 / imag_reward_min 0.0 / imag_reward_max 19.4 / imag_action_mean 4.4 / imag_action_std 4.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 0.5 / actor_grad_norm 0.4 / value_loss 2.6 / value_grad_norm 1.4 / update_count 5248.0 / fps 12.5
+add_video needs package moviepy
+add_video needs package moviepy
+[31216] 
+Start evaluation.
+[31216] eval_return 0.0 / eval_length 1504.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[31216] model_loss 25.1 / model_grad_norm 42.8 / image_loss 17.4 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.7 / rep_loss 12.7 / kl 12.7 / prior_abs_ent 25.6 / post_abs_ent -27.6 / prior_obs_ent 10.6 / post_obs_ent -0.5 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.5 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 1.6 / EMA_095 97.9 / value_mean 40.2 / value_std 27.8 / value_min 1.3 / value_max 80.4 / target_mean 45.5 / target_std 34.7 / target_min 1.2 / target_max 179.7 / imag_reward_mean 0.9 / imag_reward_std 2.5 / imag_reward_min 0.0 / imag_reward_max 19.6 / imag_action_mean 4.5 / imag_action_std 4.3 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.3 / actor_loss 0.5 / actor_grad_norm 0.3 / value_loss 2.6 / value_grad_norm 1.2 / update_count 5404.0 / fps 12.3
+add_video needs package moviepy
+add_video needs package moviepy
+[31808] dataset_size 7952.0 / train_return 910.0 / train_length 1469.0 / train_episodes 6.0
+[31840] 
+Start evaluation.
+[31840] eval_return 0.0 / eval_length 1414.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[31840] model_loss 25.2 / model_grad_norm 49.2 / image_loss 17.3 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.9 / rep_loss 12.9 / kl 12.9 / prior_abs_ent 25.7 / post_abs_ent -27.7 / prior_obs_ent 11.4 / post_obs_ent 0.0 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 1.7 / EMA_095 100.1 / value_mean 39.8 / value_std 28.3 / value_min 1.3 / value_max 84.5 / target_mean 43.2 / target_std 33.7 / target_min 1.3 / target_max 182.3 / imag_reward_mean 0.7 / imag_reward_std 2.2 / imag_reward_min 0.0 / imag_reward_max 19.6 / imag_action_mean 4.5 / imag_action_std 4.3 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.3 / actor_loss 0.3 / actor_grad_norm 0.4 / value_loss 2.5 / value_grad_norm 1.2 / update_count 5560.0 / fps 12.6
+add_video needs package moviepy
+add_video needs package moviepy
+[32464] 
+Start evaluation.
+[32464] eval_return 562.0 / eval_length 1467.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[32464] model_loss 24.7 / model_grad_norm 45.8 / image_loss 16.9 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 12.9 / rep_loss 12.9 / kl 12.9 / prior_abs_ent 26.0 / post_abs_ent -27.7 / prior_obs_ent 11.8 / post_obs_ent 0.5 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 1.6 / EMA_095 101.2 / value_mean 39.9 / value_std 28.8 / value_min 1.3 / value_max 89.1 / target_mean 43.0 / target_std 33.9 / target_min 1.3 / target_max 183.6 / imag_reward_mean 0.7 / imag_reward_std 2.2 / imag_reward_min 0.0 / imag_reward_max 19.6 / imag_action_mean 4.7 / imag_action_std 4.3 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 0.5 / actor_grad_norm 0.8 / value_loss 2.5 / value_grad_norm 1.2 / update_count 5716.0 / fps 11.8
+add_video needs package moviepy
+add_video needs package moviepy
+[33088] 
+Start evaluation.
+[33088] eval_return 748.0 / eval_length 1323.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[33088] model_loss 24.9 / model_grad_norm 52.4 / image_loss 16.8 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.4 / rep_loss 13.4 / kl 13.4 / prior_abs_ent 26.3 / post_abs_ent -27.7 / prior_obs_ent 13.5 / post_obs_ent 1.9 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 1.9 / EMA_005 1.6 / EMA_095 103.2 / value_mean 40.0 / value_std 30.2 / value_min 1.3 / value_max 94.7 / target_mean 44.1 / target_std 36.2 / target_min 1.3 / target_max 191.5 / imag_reward_mean 0.7 / imag_reward_std 2.3 / imag_reward_min 0.0 / imag_reward_max 19.7 / imag_action_mean 6.6 / imag_action_std 3.8 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.6 / actor_loss 1.7 / actor_grad_norm 2.0 / value_loss 2.5 / value_grad_norm 1.2 / update_count 5872.0 / fps 11.0
+add_video needs package moviepy
+add_video needs package moviepy
+[33712] 
+Start evaluation.
+[33712] eval_return 1324.0 / eval_length 1336.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[33712] model_loss 24.8 / model_grad_norm 65.6 / image_loss 16.8 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.2 / rep_loss 13.2 / kl 13.2 / prior_abs_ent 25.7 / post_abs_ent -27.8 / prior_obs_ent 14.4 / post_obs_ent 2.7 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 1.8 / EMA_095 108.6 / value_mean 40.8 / value_std 31.0 / value_min 1.4 / value_max 99.6 / target_mean 44.7 / target_std 36.8 / target_min 1.4 / target_max 189.2 / imag_reward_mean 0.7 / imag_reward_std 2.3 / imag_reward_min 0.0 / imag_reward_max 19.7 / imag_action_mean 7.7 / imag_action_std 3.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.5 / actor_grad_norm 1.9 / value_loss 2.7 / value_grad_norm 1.3 / update_count 6028.0 / fps 11.0
+add_video needs package moviepy
+add_video needs package moviepy
+[34336] 
+Start evaluation.
+[34336] eval_return 1524.0 / eval_length 1395.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[34336] model_loss 25.2 / model_grad_norm 50.4 / image_loss 17.0 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.5 / rep_loss 13.5 / kl 13.5 / prior_abs_ent 26.5 / post_abs_ent -27.9 / prior_obs_ent 14.7 / post_obs_ent 2.8 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 1.9 / EMA_095 110.8 / value_mean 44.0 / value_std 31.7 / value_min 1.4 / value_max 103.5 / target_mean 47.8 / target_std 37.1 / target_min 1.4 / target_max 193.9 / imag_reward_mean 0.7 / imag_reward_std 2.2 / imag_reward_min 0.0 / imag_reward_max 19.6 / imag_action_mean 7.8 / imag_action_std 3.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 1.3 / actor_grad_norm 1.9 / value_loss 2.8 / value_grad_norm 1.2 / update_count 6184.0 / fps 10.8
+add_video needs package moviepy
+add_video needs package moviepy
+[34960] 
+Start evaluation.
+[34960] eval_return 1402.0 / eval_length 1400.4 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[34960] model_loss 24.3 / model_grad_norm 41.9 / image_loss 16.3 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.2 / rep_loss 13.2 / kl 13.2 / prior_abs_ent 26.5 / post_abs_ent -27.9 / prior_obs_ent 14.1 / post_obs_ent 2.6 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 2.1 / EMA_095 108.1 / value_mean 43.2 / value_std 31.6 / value_min 1.6 / value_max 104.6 / target_mean 46.4 / target_std 36.4 / target_min 1.6 / target_max 192.3 / imag_reward_mean 0.6 / imag_reward_std 2.0 / imag_reward_min 0.0 / imag_reward_max 19.6 / imag_action_mean 7.9 / imag_action_std 3.4 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.3 / actor_grad_norm 1.8 / value_loss 2.7 / value_grad_norm 1.4 / update_count 6340.0 / fps 10.8
+add_video needs package moviepy
+add_video needs package moviepy
+[35584] 
+Start evaluation.
+[35584] eval_return 1870.0 / eval_length 1547.4 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[35584] model_loss 24.1 / model_grad_norm 42.9 / image_loss 16.2 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.0 / rep_loss 13.0 / kl 13.0 / prior_abs_ent 26.7 / post_abs_ent -27.8 / prior_obs_ent 14.3 / post_obs_ent 2.9 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 2.2 / EMA_095 109.1 / value_mean 43.3 / value_std 31.7 / value_min 1.6 / value_max 107.6 / target_mean 45.9 / target_std 36.4 / target_min 1.4 / target_max 193.4 / imag_reward_mean 0.6 / imag_reward_std 2.0 / imag_reward_min 0.0 / imag_reward_max 19.5 / imag_action_mean 8.3 / imag_action_std 3.7 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.3 / actor_grad_norm 2.0 / value_loss 2.6 / value_grad_norm 1.2 / update_count 6496.0 / fps 10.4
+add_video needs package moviepy
+add_video needs package moviepy
+[36208] 
+Start evaluation.
+[36208] eval_return 1548.0 / eval_length 1451.2 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[36208] model_loss 24.1 / model_grad_norm 47.0 / image_loss 16.0 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.3 / rep_loss 13.3 / kl 13.3 / prior_abs_ent 26.6 / post_abs_ent -27.8 / prior_obs_ent 14.9 / post_obs_ent 3.3 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.4 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 2.2 / EMA_095 116.2 / value_mean 44.3 / value_std 33.8 / value_min 1.6 / value_max 115.1 / target_mean 48.0 / target_std 40.0 / target_min 0.9 / target_max 205.8 / imag_reward_mean 0.7 / imag_reward_std 2.3 / imag_reward_min 0.0 / imag_reward_max 19.7 / imag_action_mean 8.7 / imag_action_std 3.8 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.7 / actor_grad_norm 2.3 / value_loss 2.6 / value_grad_norm 1.3 / update_count 6652.0 / fps 10.3
+add_video needs package moviepy
+add_video needs package moviepy
+[36832] 
+Start evaluation.
+[36832] eval_return 2082.0 / eval_length 1864.4 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[36832] model_loss 23.9 / model_grad_norm 43.8 / image_loss 15.8 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.4 / rep_loss 13.4 / kl 13.4 / prior_abs_ent 27.2 / post_abs_ent -27.8 / prior_obs_ent 15.9 / post_obs_ent 4.1 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 2.3 / EMA_095 120.1 / value_mean 43.9 / value_std 34.0 / value_min 1.7 / value_max 118.7 / target_mean 47.1 / target_std 39.9 / target_min 1.0 / target_max 215.5 / imag_reward_mean 0.7 / imag_reward_std 2.3 / imag_reward_min 0.0 / imag_reward_max 19.7 / imag_action_mean 8.6 / imag_action_std 3.8 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.3 / actor_grad_norm 2.1 / value_loss 2.6 / value_grad_norm 1.1 / update_count 6808.0 / fps 8.8
+add_video needs package moviepy
+add_video needs package moviepy
+[37456] 
+Start evaluation.
+[37456] eval_return 1810.0 / eval_length 1598.2 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[37456] model_loss 23.9 / model_grad_norm 40.8 / image_loss 15.7 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.4 / rep_loss 13.4 / kl 13.4 / prior_abs_ent 27.1 / post_abs_ent -27.8 / prior_obs_ent 15.4 / post_obs_ent 3.7 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 2.6 / EMA_095 122.5 / value_mean 43.7 / value_std 34.1 / value_min 2.2 / value_max 123.3 / target_mean 46.7 / target_std 40.0 / target_min 1.3 / target_max 216.7 / imag_reward_mean 0.7 / imag_reward_std 2.3 / imag_reward_min 0.0 / imag_reward_max 19.8 / imag_action_mean 8.9 / imag_action_std 4.0 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 1.2 / actor_grad_norm 2.1 / value_loss 2.6 / value_grad_norm 1.1 / update_count 6964.0 / fps 9.4
+add_video needs package moviepy
+add_video needs package moviepy
+[38080] 
+Start evaluation.
+[38080] eval_return 1948.0 / eval_length 1607.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[38080] model_loss 23.6 / model_grad_norm 44.8 / image_loss 15.4 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.4 / rep_loss 13.4 / kl 13.4 / prior_abs_ent 27.2 / post_abs_ent -27.8 / prior_obs_ent 15.3 / post_obs_ent 3.6 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 3.0 / EMA_095 126.2 / value_mean 43.9 / value_std 34.4 / value_min 2.2 / value_max 129.1 / target_mean 46.9 / target_std 40.1 / target_min 1.7 / target_max 219.7 / imag_reward_mean 0.7 / imag_reward_std 2.3 / imag_reward_min 0.0 / imag_reward_max 19.7 / imag_action_mean 9.1 / imag_action_std 4.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 1.0 / actor_grad_norm 2.0 / value_loss 2.6 / value_grad_norm 1.2 / update_count 7120.0 / fps 9.3
+add_video needs package moviepy
+add_video needs package moviepy
+[38704] 
+Start evaluation.
+[38704] eval_return 1508.0 / eval_length 1404.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[38704] model_loss 24.5 / model_grad_norm 67.2 / image_loss 15.9 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.1 / rep_loss 14.1 / kl 14.1 / prior_abs_ent 27.5 / post_abs_ent -27.9 / prior_obs_ent 17.2 / post_obs_ent 4.8 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 3.2 / EMA_095 129.1 / value_mean 44.0 / value_std 35.2 / value_min 2.0 / value_max 134.2 / target_mean 47.5 / target_std 41.8 / target_min 1.9 / target_max 231.1 / imag_reward_mean 0.8 / imag_reward_std 2.5 / imag_reward_min 0.0 / imag_reward_max 19.8 / imag_action_mean 8.5 / imag_action_std 4.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.3 / actor_grad_norm 2.3 / value_loss 2.7 / value_grad_norm 1.3 / update_count 7276.0 / fps 9.7
+add_video needs package moviepy
+add_video needs package moviepy
+[39328] 
+Start evaluation.
+[39328] eval_return 1982.0 / eval_length 1502.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[39328] model_loss 23.6 / model_grad_norm 40.8 / image_loss 15.3 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.7 / rep_loss 13.7 / kl 13.7 / prior_abs_ent 27.4 / post_abs_ent -27.9 / prior_obs_ent 16.6 / post_obs_ent 4.5 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 2.9 / EMA_095 133.8 / value_mean 47.2 / value_std 37.2 / value_min 2.2 / value_max 138.5 / target_mean 51.5 / target_std 44.2 / target_min 2.2 / target_max 235.3 / imag_reward_mean 0.9 / imag_reward_std 2.6 / imag_reward_min 0.0 / imag_reward_max 19.8 / imag_action_mean 8.5 / imag_action_std 4.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.6 / actor_grad_norm 2.4 / value_loss 2.6 / value_grad_norm 1.2 / update_count 7432.0 / fps 9.7
+add_video needs package moviepy
+add_video needs package moviepy
+[39952] 
+Start evaluation.
+[39952] eval_return 1508.0 / eval_length 1380.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[39952] model_loss 23.6 / model_grad_norm 38.9 / image_loss 15.3 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.7 / rep_loss 13.7 / kl 13.7 / prior_abs_ent 27.5 / post_abs_ent -27.8 / prior_obs_ent 16.5 / post_obs_ent 4.3 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 3.1 / EMA_095 139.4 / value_mean 49.3 / value_std 38.0 / value_min 2.2 / value_max 143.0 / target_mean 53.2 / target_std 44.9 / target_min 2.2 / target_max 244.1 / imag_reward_mean 0.9 / imag_reward_std 2.6 / imag_reward_min 0.0 / imag_reward_max 20.0 / imag_action_mean 8.3 / imag_action_std 4.3 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.5 / actor_grad_norm 2.5 / value_loss 2.6 / value_grad_norm 1.1 / update_count 7588.0 / fps 10.7
+add_video needs package moviepy
+add_video needs package moviepy
+[40352] dataset_size 10088.0 / train_return 2420.0 / train_length 2136.0 / train_episodes 7.0
+[40576] 
+Start evaluation.
+[40576] eval_return 1860.0 / eval_length 1614.2 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[40576] model_loss 23.6 / model_grad_norm 41.0 / image_loss 15.2 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.8 / rep_loss 13.8 / kl 13.8 / prior_abs_ent 27.5 / post_abs_ent -27.8 / prior_obs_ent 16.4 / post_obs_ent 4.4 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 3.4 / EMA_095 141.3 / value_mean 51.0 / value_std 39.1 / value_min 2.4 / value_max 146.6 / target_mean 55.0 / target_std 46.0 / target_min 2.2 / target_max 248.0 / imag_reward_mean 0.8 / imag_reward_std 2.6 / imag_reward_min 0.0 / imag_reward_max 21.4 / imag_action_mean 8.0 / imag_action_std 4.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 1.4 / actor_grad_norm 2.4 / value_loss 2.6 / value_grad_norm 1.1 / update_count 7744.0 / fps 11.2
+add_video needs package moviepy
+add_video needs package moviepy
+[41200] 
+Start evaluation.
+[41200] eval_return 1504.0 / eval_length 1361.2 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[41200] model_loss 24.0 / model_grad_norm 50.8 / image_loss 15.4 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.0 / rep_loss 14.0 / kl 14.0 / prior_abs_ent 27.9 / post_abs_ent -27.8 / prior_obs_ent 18.1 / post_obs_ent 5.7 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 3.5 / EMA_095 143.1 / value_mean 50.6 / value_std 38.6 / value_min 2.3 / value_max 150.1 / target_mean 54.1 / target_std 45.3 / target_min 2.1 / target_max 252.0 / imag_reward_mean 0.8 / imag_reward_std 2.6 / imag_reward_min 0.0 / imag_reward_max 21.9 / imag_action_mean 7.7 / imag_action_std 4.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 1.2 / actor_grad_norm 2.5 / value_loss 2.6 / value_grad_norm 1.2 / update_count 7900.0 / fps 12.5
+add_video needs package moviepy
+add_video needs package moviepy
+[41824] 
+Start evaluation.
+[41824] eval_return 1534.0 / eval_length 1264.2 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[41824] model_loss 23.6 / model_grad_norm 40.9 / image_loss 15.0 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.1 / rep_loss 14.1 / kl 14.1 / prior_abs_ent 27.8 / post_abs_ent -27.7 / prior_obs_ent 18.8 / post_obs_ent 6.5 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 3.1 / EMA_095 145.3 / value_mean 51.1 / value_std 41.2 / value_min 2.2 / value_max 154.3 / target_mean 54.9 / target_std 48.0 / target_min 2.1 / target_max 256.1 / imag_reward_mean 0.8 / imag_reward_std 2.5 / imag_reward_min 0.0 / imag_reward_max 24.4 / imag_action_mean 8.0 / imag_action_std 4.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.2 / actor_grad_norm 2.4 / value_loss 2.5 / value_grad_norm 1.2 / update_count 8056.0 / fps 12.9
+add_video needs package moviepy
+add_video needs package moviepy
+[42448] 
+Start evaluation.
+[42448] eval_return 2314.0 / eval_length 1539.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[42448] model_loss 23.4 / model_grad_norm 42.1 / image_loss 14.9 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.0 / rep_loss 14.0 / kl 14.0 / prior_abs_ent 28.5 / post_abs_ent -27.7 / prior_obs_ent 17.8 / post_obs_ent 5.5 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.8 / EMA_005 3.9 / EMA_095 153.6 / value_mean 57.0 / value_std 43.8 / value_min 2.7 / value_max 158.3 / target_mean 61.6 / target_std 51.2 / target_min 2.4 / target_max 269.2 / imag_reward_mean 0.9 / imag_reward_std 2.7 / imag_reward_min 0.0 / imag_reward_max 25.9 / imag_action_mean 7.9 / imag_action_std 4.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 1.5 / actor_grad_norm 2.6 / value_loss 2.6 / value_grad_norm 1.3 / update_count 8212.0 / fps 12.1
+add_video needs package moviepy
+add_video needs package moviepy
+[43072] 
+Start evaluation.
+[43072] eval_return 1674.0 / eval_length 1461.4 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[43072] model_loss 23.4 / model_grad_norm 40.1 / image_loss 14.9 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.0 / rep_loss 14.0 / kl 14.0 / prior_abs_ent 28.2 / post_abs_ent -27.8 / prior_obs_ent 18.2 / post_obs_ent 5.9 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 4.1 / EMA_095 158.0 / value_mean 58.5 / value_std 44.1 / value_min 2.6 / value_max 161.5 / target_mean 62.5 / target_std 50.9 / target_min 2.4 / target_max 264.8 / imag_reward_mean 0.9 / imag_reward_std 2.8 / imag_reward_min 0.0 / imag_reward_max 29.0 / imag_action_mean 8.0 / imag_action_std 4.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.4 / actor_grad_norm 2.6 / value_loss 2.6 / value_grad_norm 1.2 / update_count 8368.0 / fps 12.2
+add_video needs package moviepy
+add_video needs package moviepy
+[43696] 
+Start evaluation.
+[43696] eval_return 1902.0 / eval_length 1503.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[43696] model_loss 24.2 / model_grad_norm 49.5 / image_loss 15.2 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.7 / rep_loss 14.7 / kl 14.7 / prior_abs_ent 27.9 / post_abs_ent -27.8 / prior_obs_ent 19.8 / post_obs_ent 6.7 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 4.2 / EMA_095 161.6 / value_mean 58.4 / value_std 44.4 / value_min 2.7 / value_max 167.3 / target_mean 62.8 / target_std 52.0 / target_min 2.4 / target_max 269.0 / imag_reward_mean 0.9 / imag_reward_std 2.7 / imag_reward_min 0.0 / imag_reward_max 26.4 / imag_action_mean 7.8 / imag_action_std 4.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.4 / actor_grad_norm 2.7 / value_loss 2.7 / value_grad_norm 1.3 / update_count 8524.0 / fps 12.2
+add_video needs package moviepy
+add_video needs package moviepy
+[44320] 
+Start evaluation.
+[44320] eval_return 1566.0 / eval_length 1277.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[44320] model_loss 23.3 / model_grad_norm 36.3 / image_loss 14.9 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.9 / rep_loss 13.9 / kl 13.9 / prior_abs_ent 28.3 / post_abs_ent -27.8 / prior_obs_ent 18.3 / post_obs_ent 6.0 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 4.4 / EMA_095 165.9 / value_mean 64.2 / value_std 47.1 / value_min 2.9 / value_max 170.5 / target_mean 68.6 / target_std 54.3 / target_min 2.6 / target_max 279.8 / imag_reward_mean 0.9 / imag_reward_std 2.8 / imag_reward_min 0.0 / imag_reward_max 31.1 / imag_action_mean 8.1 / imag_action_std 4.2 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 1.4 / actor_grad_norm 2.6 / value_loss 2.6 / value_grad_norm 1.2 / update_count 8680.0 / fps 12.7
+add_video needs package moviepy
+add_video needs package moviepy
+[44944] 
+Start evaluation.
+[44944] eval_return 1568.0 / eval_length 1370.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[44944] model_loss 23.5 / model_grad_norm 37.5 / image_loss 15.0 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.0 / rep_loss 14.0 / kl 14.0 / prior_abs_ent 28.4 / post_abs_ent -27.6 / prior_obs_ent 19.0 / post_obs_ent 6.6 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 5.0 / EMA_095 173.4 / value_mean 67.3 / value_std 49.2 / value_min 3.2 / value_max 177.1 / target_mean 71.7 / target_std 56.5 / target_min 2.8 / target_max 282.9 / imag_reward_mean 0.9 / imag_reward_std 2.8 / imag_reward_min 0.0 / imag_reward_max 40.1 / imag_action_mean 7.8 / imag_action_std 4.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 1.4 / actor_grad_norm 2.6 / value_loss 2.6 / value_grad_norm 1.1 / update_count 8836.0 / fps 12.5
+add_video needs package moviepy
+add_video needs package moviepy
+[45568] 
+Start evaluation.
+[45568] eval_return 2008.0 / eval_length 1514.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[45568] model_loss 23.2 / model_grad_norm 34.6 / image_loss 14.9 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.7 / rep_loss 13.7 / kl 13.7 / prior_abs_ent 28.5 / post_abs_ent -27.7 / prior_obs_ent 17.5 / post_obs_ent 5.5 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.6 / EMA_005 5.1 / EMA_095 176.4 / value_mean 69.2 / value_std 49.4 / value_min 3.2 / value_max 182.4 / target_mean 73.0 / target_std 56.3 / target_min 2.9 / target_max 286.7 / imag_reward_mean 0.9 / imag_reward_std 2.8 / imag_reward_min 0.0 / imag_reward_max 24.8 / imag_action_mean 8.0 / imag_action_std 4.0 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 1.2 / actor_grad_norm 2.6 / value_loss 2.6 / value_grad_norm 1.2 / update_count 8992.0 / fps 12.3
+add_video needs package moviepy
+add_video needs package moviepy
+[46180] dataset_size 11545.0 / train_return 1980.0 / train_length 1457.0 / train_episodes 8.0
+[46192] 
+Start evaluation.
+[46192] eval_return 1948.0 / eval_length 1576.2 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[46192] model_loss 23.3 / model_grad_norm 40.9 / image_loss 14.7 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.1 / rep_loss 14.1 / kl 14.1 / prior_abs_ent 28.4 / post_abs_ent -27.8 / prior_obs_ent 18.7 / post_obs_ent 6.3 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 5.6 / EMA_095 179.2 / value_mean 71.9 / value_std 49.4 / value_min 3.7 / value_max 186.8 / target_mean 75.9 / target_std 56.3 / target_min 3.5 / target_max 295.8 / imag_reward_mean 0.9 / imag_reward_std 2.9 / imag_reward_min 0.0 / imag_reward_max 47.8 / imag_action_mean 8.2 / imag_action_std 4.0 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.4 / actor_loss 1.3 / actor_grad_norm 2.6 / value_loss 2.5 / value_grad_norm 1.1 / update_count 9148.0 / fps 12.0
+add_video needs package moviepy
+add_video needs package moviepy
+[46816] 
+Start evaluation.
+[46816] eval_return 1764.0 / eval_length 1520.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[46816] model_loss 23.2 / model_grad_norm 41.0 / image_loss 14.7 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.1 / rep_loss 14.1 / kl 14.1 / prior_abs_ent 28.3 / post_abs_ent -27.7 / prior_obs_ent 19.1 / post_obs_ent 6.8 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.6 / EMA_005 5.9 / EMA_095 179.8 / value_mean 68.1 / value_std 49.2 / value_min 3.3 / value_max 189.8 / target_mean 70.9 / target_std 55.1 / target_min 2.8 / target_max 291.1 / imag_reward_mean 0.8 / imag_reward_std 2.7 / imag_reward_min 0.0 / imag_reward_max 29.5 / imag_action_mean 8.4 / imag_action_std 4.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.0 / actor_grad_norm 2.5 / value_loss 2.4 / value_grad_norm 1.1 / update_count 9304.0 / fps 12.1
+add_video needs package moviepy
+add_video needs package moviepy
+[47440] 
+Start evaluation.
+[47440] eval_return 1664.0 / eval_length 1374.8 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[47440] model_loss 23.2 / model_grad_norm 43.2 / image_loss 14.5 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.3 / rep_loss 14.3 / kl 14.3 / prior_abs_ent 28.1 / post_abs_ent -27.9 / prior_obs_ent 20.2 / post_obs_ent 7.5 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 5.7 / EMA_095 177.9 / value_mean 68.5 / value_std 49.5 / value_min 3.7 / value_max 192.9 / target_mean 72.1 / target_std 55.8 / target_min 3.1 / target_max 297.5 / imag_reward_mean 0.8 / imag_reward_std 2.7 / imag_reward_min 0.0 / imag_reward_max 28.1 / imag_action_mean 8.4 / imag_action_std 4.0 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.3 / actor_grad_norm 2.7 / value_loss 2.5 / value_grad_norm 1.2 / update_count 9460.0 / fps 12.5
+add_video needs package moviepy
+add_video needs package moviepy
+[48064] 
+Start evaluation.
+[48064] eval_return 2554.0 / eval_length 1565.4 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[48064] model_loss 22.9 / model_grad_norm 37.6 / image_loss 14.4 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.9 / rep_loss 13.9 / kl 13.9 / prior_abs_ent 28.6 / post_abs_ent -27.8 / prior_obs_ent 19.0 / post_obs_ent 6.8 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 6.0 / EMA_095 178.4 / value_mean 70.8 / value_std 49.6 / value_min 3.8 / value_max 195.7 / target_mean 73.9 / target_std 55.6 / target_min 2.8 / target_max 292.9 / imag_reward_mean 0.9 / imag_reward_std 2.8 / imag_reward_min 0.0 / imag_reward_max 34.0 / imag_action_mean 8.6 / imag_action_std 4.0 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.2 / actor_grad_norm 2.8 / value_loss 2.4 / value_grad_norm 1.2 / update_count 9616.0 / fps 12.0
+add_video needs package moviepy
+add_video needs package moviepy
+[48688] 
+Start evaluation.
+[48688] eval_return 2600.0 / eval_length 1779.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[48688] model_loss 22.6 / model_grad_norm 35.7 / image_loss 14.3 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 13.6 / rep_loss 13.6 / kl 13.6 / prior_abs_ent 28.3 / post_abs_ent -27.6 / prior_obs_ent 18.5 / post_obs_ent 6.5 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 6.6 / EMA_095 177.3 / value_mean 68.9 / value_std 48.1 / value_min 4.3 / value_max 197.2 / target_mean 71.8 / target_std 53.7 / target_min 3.4 / target_max 296.0 / imag_reward_mean 0.8 / imag_reward_std 2.7 / imag_reward_min 0.0 / imag_reward_max 25.3 / imag_action_mean 8.9 / imag_action_std 3.9 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.2 / actor_grad_norm 2.8 / value_loss 2.4 / value_grad_norm 1.1 / update_count 9772.0 / fps 11.5
+add_video needs package moviepy
+add_video needs package moviepy
+[49312] 
+Start evaluation.
+[49312] eval_return 2688.0 / eval_length 1654.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[49312] model_loss 23.0 / model_grad_norm 39.3 / image_loss 14.3 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.2 / rep_loss 14.2 / kl 14.2 / prior_abs_ent 28.9 / post_abs_ent -27.5 / prior_obs_ent 19.8 / post_obs_ent 7.4 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 6.8 / EMA_095 179.7 / value_mean 74.4 / value_std 51.4 / value_min 4.7 / value_max 201.2 / target_mean 77.6 / target_std 57.4 / target_min 3.8 / target_max 297.2 / imag_reward_mean 0.9 / imag_reward_std 2.7 / imag_reward_min 0.0 / imag_reward_max 26.1 / imag_action_mean 9.3 / imag_action_std 3.9 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.5 / actor_grad_norm 3.1 / value_loss 2.4 / value_grad_norm 1.1 / update_count 9928.0 / fps 11.9
+add_video needs package moviepy
+add_video needs package moviepy
+[49936] 
+Start evaluation.
+[49936] eval_return 2308.0 / eval_length 1529.8 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[49936] model_loss 22.8 / model_grad_norm 39.6 / image_loss 14.2 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.2 / rep_loss 14.2 / kl 14.2 / prior_abs_ent 29.0 / post_abs_ent -27.4 / prior_obs_ent 20.6 / post_obs_ent 8.2 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.6 / EMA_005 7.4 / EMA_095 184.1 / value_mean 74.8 / value_std 52.5 / value_min 5.0 / value_max 204.5 / target_mean 78.2 / target_std 58.2 / target_min 4.0 / target_max 297.6 / imag_reward_mean 0.8 / imag_reward_std 2.7 / imag_reward_min 0.0 / imag_reward_max 38.3 / imag_action_mean 9.4 / imag_action_std 3.8 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.6 / actor_grad_norm 3.1 / value_loss 2.3 / value_grad_norm 1.1 / update_count 10084.0 / fps 12.1
+add_video needs package moviepy
+add_video needs package moviepy
+[50560] 
+Start evaluation.
+[50560] eval_return 3988.0 / eval_length 2275.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[50560] model_loss 23.1 / model_grad_norm 45.6 / image_loss 14.3 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.4 / rep_loss 14.4 / kl 14.4 / prior_abs_ent 29.1 / post_abs_ent -27.5 / prior_obs_ent 21.0 / post_obs_ent 8.2 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 7.7 / EMA_095 185.7 / value_mean 76.1 / value_std 53.2 / value_min 5.1 / value_max 207.1 / target_mean 79.4 / target_std 59.1 / target_min 4.0 / target_max 305.8 / imag_reward_mean 0.8 / imag_reward_std 2.8 / imag_reward_min 0.0 / imag_reward_max 69.2 / imag_action_mean 9.6 / imag_action_std 3.8 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.5 / actor_grad_norm 3.2 / value_loss 2.3 / value_grad_norm 1.1 / update_count 10240.0 / fps 10.6
+add_video needs package moviepy
+add_video needs package moviepy
+[51184] 
+Start evaluation.
+[51184] eval_return 1760.0 / eval_length 1386.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[51184] model_loss 22.8 / model_grad_norm 39.7 / image_loss 14.1 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.2 / rep_loss 14.2 / kl 14.2 / prior_abs_ent 29.3 / post_abs_ent -27.5 / prior_obs_ent 20.1 / post_obs_ent 7.6 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.6 / EMA_005 8.0 / EMA_095 187.7 / value_mean 78.2 / value_std 51.8 / value_min 5.4 / value_max 208.9 / target_mean 81.0 / target_std 56.9 / target_min 3.5 / target_max 299.7 / imag_reward_mean 0.8 / imag_reward_std 2.7 / imag_reward_min 0.0 / imag_reward_max 45.8 / imag_action_mean 9.7 / imag_action_std 3.8 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.2 / actor_grad_norm 2.9 / value_loss 2.3 / value_grad_norm 1.2 / update_count 10396.0 / fps 12.4
+add_video needs package moviepy
+add_video needs package moviepy
+[51808] 
+Start evaluation.
+[51808] eval_return 2452.0 / eval_length 1439.6 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[51808] model_loss 22.6 / model_grad_norm 33.5 / image_loss 14.0 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.2 / rep_loss 14.2 / kl 14.2 / prior_abs_ent 29.3 / post_abs_ent -27.2 / prior_obs_ent 20.3 / post_obs_ent 7.7 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.6 / EMA_005 8.3 / EMA_095 182.7 / value_mean 77.5 / value_std 51.3 / value_min 5.5 / value_max 206.9 / target_mean 79.7 / target_std 56.0 / target_min 3.6 / target_max 290.5 / imag_reward_mean 0.8 / imag_reward_std 2.6 / imag_reward_min 0.0 / imag_reward_max 53.8 / imag_action_mean 9.5 / imag_action_std 3.9 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 0.9 / actor_grad_norm 2.8 / value_loss 2.3 / value_grad_norm 1.1 / update_count 10552.0 / fps 12.4
+add_video needs package moviepy
+add_video needs package moviepy
+[52432] 
+Start evaluation.
+[52432] eval_return 2062.0 / eval_length 1358.8 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[52432] model_loss 22.6 / model_grad_norm 34.4 / image_loss 14.0 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.1 / rep_loss 14.1 / kl 14.1 / prior_abs_ent 29.6 / post_abs_ent -27.3 / prior_obs_ent 19.9 / post_obs_ent 7.3 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 9.0 / EMA_095 180.1 / value_mean 76.9 / value_std 49.3 / value_min 5.7 / value_max 208.1 / target_mean 79.1 / target_std 53.8 / target_min 3.5 / target_max 301.4 / imag_reward_mean 0.8 / imag_reward_std 2.9 / imag_reward_min 0.0 / imag_reward_max 86.6 / imag_action_mean 9.3 / imag_action_std 4.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 0.9 / actor_grad_norm 2.7 / value_loss 2.2 / value_grad_norm 1.1 / update_count 10708.0 / fps 12.8
+add_video needs package moviepy
+add_video needs package moviepy
+[53056] 
+Start evaluation.
+[53056] eval_return 2562.0 / eval_length 1798.8 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[53056] model_loss 22.6 / model_grad_norm 33.2 / image_loss 13.9 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.2 / rep_loss 14.2 / kl 14.2 / prior_abs_ent 29.6 / post_abs_ent -27.3 / prior_obs_ent 20.1 / post_obs_ent 7.6 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 9.3 / EMA_095 179.6 / value_mean 77.1 / value_std 49.7 / value_min 5.7 / value_max 209.2 / target_mean 79.3 / target_std 53.9 / target_min 3.9 / target_max 292.9 / imag_reward_mean 0.7 / imag_reward_std 2.7 / imag_reward_min 0.0 / imag_reward_max 52.0 / imag_action_mean 9.4 / imag_action_std 4.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 0.9 / actor_grad_norm 2.7 / value_loss 2.2 / value_grad_norm 1.1 / update_count 10864.0 / fps 11.5
+add_video needs package moviepy
+add_video needs package moviepy
+[53680] 
+Start evaluation.
+[53680] eval_return 2662.0 / eval_length 1637.0 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[53680] model_loss 22.7 / model_grad_norm 37.0 / image_loss 13.9 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.3 / rep_loss 14.3 / kl 14.3 / prior_abs_ent 29.7 / post_abs_ent -27.2 / prior_obs_ent 20.7 / post_obs_ent 8.1 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 9.7 / EMA_095 180.7 / value_mean 78.5 / value_std 50.0 / value_min 6.2 / value_max 210.1 / target_mean 80.9 / target_std 54.5 / target_min 3.7 / target_max 291.8 / imag_reward_mean 0.8 / imag_reward_std 2.8 / imag_reward_min 0.0 / imag_reward_max 70.8 / imag_action_mean 9.2 / imag_action_std 4.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.0 / actor_grad_norm 2.7 / value_loss 2.2 / value_grad_norm 1.1 / update_count 11020.0 / fps 11.9
+add_video needs package moviepy
+add_video needs package moviepy
+[54304] 
+Start evaluation.
+[54304] eval_return 2186.0 / eval_length 1334.4 / eval_episodes 5.0
+add_video needs package moviepy
+Start training.
+[54304] model_loss 22.6 / model_grad_norm 38.1 / image_loss 13.8 / reward_loss 0.1 / cont_loss 0.0 / kl_free 1.0 / dyn_scale 0.5 / rep_scale 0.1 / dyn_loss 14.6 / rep_loss 14.6 / kl 14.6 / prior_abs_ent 29.8 / post_abs_ent -27.0 / prior_obs_ent 21.3 / post_obs_ent 8.4 / boundary_ratio 0.0 / kl_mask 0.0 / normed_target_mean 0.4 / normed_target_std 0.3 / normed_target_min -0.0 / normed_target_max 1.7 / EMA_005 10.3 / EMA_095 179.1 / value_mean 75.6 / value_std 47.6 / value_min 6.7 / value_max 209.9 / target_mean 77.9 / target_std 51.9 / target_min 4.7 / target_max 295.3 / imag_reward_mean 0.8 / imag_reward_std 2.8 / imag_reward_min 0.0 / imag_reward_max 76.3 / imag_action_mean 9.1 / imag_action_std 4.1 / imag_action_min 0.0 / imag_action_max 17.0 / actor_entropy 0.5 / actor_loss 1.0 / actor_grad_norm 2.7 / value_loss 2.2 / value_grad_norm 1.2 / update_count 11176.0 / fps 12.5
+add_video needs package moviepy
+add_video needs package moviepy
+/home/haselab/.local/share/uv/python/cpython-3.13.7-linux-x86_64-gnu/lib/python3.13/multiprocessing/resource_tracker.py:324: UserWarning: resource_tracker: There appear to be 2 leaked semaphore objects to clean up at shutdown: {'/mp-oci_lsct', '/mp-4cf4u6i1'}
+  warnings.warn(

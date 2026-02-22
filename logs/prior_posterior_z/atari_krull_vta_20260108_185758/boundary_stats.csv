@@ -1,0 +1,2 @@
+task,logdir,episode,abs_kl_mean,abs_kl_std,obs_kl_mean,obs_kl_std,boundary_rate
+atari_krull,/home/haselab/murakawa/stable-deep-world-model/logdir/atari_krull_vta_20260108_185758,/home/haselab/murakawa/stable-deep-world-model/logdir/atari_krull_vta_20260108_185758/train_eps/20260108T185800-14244353464149009d9c3966bf30a82b-2661.npz,320.21978759765625,204.46324157714844,15.391958236694336,17.9118709564209,0.005261180007515971
