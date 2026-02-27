@@ -333,7 +333,7 @@ class WorldModel(nn.Module):
         org_states = cached_states.reshape(B * L, D)
         if not flow_grad_to_wm:
             org_states = org_states.detach()
-            
+        
         with tools.RequiresGrad(self):
             with torch.cuda.amp.autocast(self._use_amp):
                 # Encode
@@ -346,7 +346,8 @@ class WorldModel(nn.Module):
                 rec_states = dec_dist.mean() # (B*L, D)
                 
                 # Compute reconstruction loss & prior kl loss
-                rec_loss = torch.mean((rec_states - org_states) ** 2)
+                # rec_loss = torch.mean((rec_states - org_states) ** 2)
+                rec_loss = torch.sum((rec_states - org_states) ** 2, dim=-1).mean()
                 pred_probs = enc_dist.probs  # (B*L, num_codebook, num_categorical)
                 prior_dist = torch.ones_like(pred_probs) / pred_probs.size(-1)
                 kl_loss = torch.sum(
@@ -634,6 +635,24 @@ class ImagBehavior(nn.Module):
                 "mgr_ema_vals", torch.zeros((2,), device=self._config.device)
             )
             self.reward_ema = RewardEMA(device=self._config.device)
+        
+        # ★ 公式 Director 準拠: Entropy AutoAdapt + Advantage Normalize
+        # 公式: actent: {impl: mult, scale: 3e-3, target: 0.5, min: 1e-5, max: 1e2}
+        # inverse=True: entropy を最大化する方向に損失を生成
+        self.wkr_actent = tools.AutoAdapt(
+            shape=(), impl='mult', scale=3e-3, target=0.5,
+            min=1e-5, max=1e2, vel=0.1, thres=0.1, inverse=True,
+        )
+        self.mgr_actent = tools.AutoAdapt(
+            shape=(), impl='mult', scale=3e-3, target=0.5,
+            min=1e-5, max=1e2, vel=0.1, thres=0.1, inverse=True,
+        )
+        # 公式: advnorm: {impl: mean_std, decay: 0.99, max: 1e8}
+        self.wkr_advnorm = tools.Normalize(impl='mean_std', decay=0.99, max=1e8)
+        self.mgr_advnorm = tools.Normalize(impl='mean_std', decay=0.99, max=1e8)
+        # 公式: retnorm: {impl: std, decay: 0.999, max: 1e2}
+        self.wkr_retnorm = tools.Normalize(impl='std', decay=0.999, max=1e2)
+        self.mgr_retnorm = tools.Normalize(impl='std', decay=0.999, max=1e2)
             
     def _cosine_max_similarity(self, pred, target):
         """"Cosine Max Similarity between pred and target.
@@ -658,7 +677,9 @@ class ImagBehavior(nn.Module):
         self._update_slow_target()
         metrics = {}
 
-        # Actorの更新
+        # Step 1: Imagination - 共通の trajectory を生成
+        import time
+        s_time = time.time()
         with tools.RequiresGrad(self.manager_actor), tools.RequiresGrad(self.worker_actor):
             with torch.cuda.amp.autocast(self._use_amp):
                 imag_feat, imag_state, imag_action, goal_states, goal_latents = self._imagine(
@@ -674,95 +695,225 @@ class ImagBehavior(nn.Module):
                 extr_reward = objective(imag_feat, imag_state, imag_action)[1:]
                 # extr_reward: (time-1, batch, 1)
                 
-                # Exploration Rewardの計算, Eq. (6) in https://arxiv.org/pdf/2206.04114
-                # Goal AEはReplay Bufferより訓練し，その再構成誤差によって状態の新規性を評価する．
-                # 初期状態はManagerのGoal推定に依存しないため，計算から省く.
-                # image_state['deter']: (time, batch, deter_dim)
+                # Exploration Rewardの計算
                 deter_states = imag_state['deter'][1:]
                 L, B, D = deter_states.shape
                 flat_states = deter_states.reshape(L * B, D)
-                rec_states = self._world_model.reconstruct_goal_ae(flat_states)  # (L*B, D)
+                rec_states = self._world_model.reconstruct_goal_ae(flat_states)
                 rec_states = rec_states.reshape(L, B, D)
-                expl_reward = torch.sum((rec_states - deter_states) ** 2, dim=-1, keepdim=True) 
-                # expl_reward: (time-1, batch, 1)
+                expl_reward = torch.mean((rec_states - deter_states) ** 2, dim=-1, keepdim=True) 
                 
-                # Goal Rewardの計算
-                flatten_goal_states = goal_states[1:].reshape(L*B, -1)
+                # Goal Rewardの計算 (Worker 用なので goal_states を detach)
+                flatten_goal_states = goal_states[1:].detach().reshape(L*B, -1)
                 goal_reward = self._cosine_max_similarity(
-                    flat_states,
+                    flat_states, 
                     flatten_goal_states,
                 ).reshape(L, B, 1)
-                # goal_reward: (time-1, batch, 1)
                 
-                # 方策のエントロピー計算
-                manager_inp = imag_feat
-                worker_inp = torch.cat([imag_feat, goal_states.detach()], dim=-1)
-                manager_ent = self.manager_actor(manager_inp).entropy()  # (time, batch, num_codebook)
-                worker_ent = self.worker_actor(worker_inp).entropy()  # (time, batch)
+                # ★ 公式実装に合わせて trajectory を構築
+                # 参照: director/embodied/agents/director/hierarchy.py train_jointly (L144-162)
+                # cont は全タイムステップ（horizon+1）に対して定義
+                discount = self._config.discount * torch.ones(
+                    imag_feat.shape[0], imag_feat.shape[1], 1,
+                    device=imag_feat.device, dtype=imag_feat.dtype)
                 
-                # Get state entropy (VTA returns different structure)
-                dynamics_type = getattr(self._config, 'dynamics_type', 'rssm')
-                if dynamics_type == 'vta':
-                    # For VTA, use observation level distribution
-                    state_ent = self._world_model.dynamics.get_dist(imag_state, level="obs").entropy()
+                # 共通 trajectory
+                # ★ goal_states と goal_latents を detach して Worker と Manager の勾配グラフを分離
+                traj = {
+                    'feat': imag_feat,
+                    'goal': goal_states.detach(),  # Worker はこれを使う（Manager から切り離す）
+                    'skill': goal_latents.detach(),  # 同様に detach
+                    'action': imag_action,
+                    'reward_extr': extr_reward,
+                    'reward_expl': expl_reward,
+                    'reward_goal': goal_reward,
+                    'cont': discount,
+                }
+                
+                # ★ Worker 用: split_traj を適用
+                k = self._config.train_skill_duration
+                
+                wtraj = self._split_traj(traj, k)
+                # ★ Manager 用: abstract_traj を適用
+                mtraj = self._abstract_traj(traj, k)
+                # Manager は goal_latents からの勾配が必要なので、抽象化した skill を直接設定
+                T = goal_latents.shape[0]
+                n_abstract = (T - 1) // k
+                if n_abstract > 0:
+                    # 抽象化: K ステップごとに最初の状態のみ使用
+                    indices = [i * k for i in range(n_abstract + 1)]
+                    mtraj['skill'] = goal_latents[indices]
+                
+                # ========== Worker の訓練 ==========
+                # Worker の報酬: goal reward のみ
+                wkr_reward = (self.worker_rews["extr"] * wtraj['reward_extr'] + 
+                              self.worker_rews["expl"] * wtraj['reward_expl'] + 
+                              self.worker_rews["goal"] * wtraj['reward_goal'])
+                
+                # Worker の value 入力: [feat, goal]
+                wkr_value_inp = torch.cat([wtraj['feat'], wtraj['goal']], dim=-1)
+                # ★ value は slow target net で計算（勾配不要）
+                with torch.no_grad():
+                    wkr_value = self._slow_value_wkr(wkr_value_inp).mode()
+                
+                # ★ lambda_return と advantage は no_grad の外で計算
+                # dynamics/backprop モードでは reward→traj→action→actor の勾配パスが必要
+                # REINFORCE モードでは adv.detach() するため影響なし
+                wkr_target = tools.lambda_return(
+                    wkr_reward,           # (k, N*B, 1) - r_0...r_{k-1}
+                    wkr_value[:-1],       # (k, N*B, 1) - V(s_0)...V(s_{k-1}) (no_grad済み)
+                    wtraj['cont'][1:],    # (k, N*B, 1) - next-state cont
+                    bootstrap=wkr_value[-1],
+                    lambda_=self._config.discount_lambda,
+                    axis=0,
+                )
+                
+                # ★ 公式実装に合わせた Weight 計算
+                discount = self._config.discount
+                wkr_weights = (torch.cumprod(wtraj['cont'], dim=0) / discount).detach()
+                
+                # ★ 公式 Director 準拠: return を std 正規化 → advantage を mean_std 正規化
+                wkr_target_tensor = torch.stack(wkr_target, dim=1) if isinstance(wkr_target, (list, tuple)) else wkr_target
+                normed_target_wkr = self.wkr_retnorm(wkr_target_tensor)
+                normed_base_wkr = self.wkr_retnorm(wkr_value[:-1], update=False)
+                adv_wkr = self.wkr_advnorm(normed_target_wkr - normed_base_wkr)
+                
+                wkr_policy = self.worker_actor(wkr_value_inp.detach())
+                
+                # log_prob: (k+1, N*B) → [:-1] → (k, N*B) to match adv_wkr
+                wkr_logprob = wkr_policy.log_prob(wtraj['action'].detach())[:-1].unsqueeze(-1)
+                
+                # ★ Worker はconfigに従う（Atari=reinforce, DMC=dynamics/backprop）
+                if self._config.imag_gradient == 'reinforce':
+                    wkr_actor_target = wkr_logprob * adv_wkr.detach()
+                elif self._config.imag_gradient == 'dynamics':
+                    wkr_actor_target = adv_wkr
                 else:
-                    state_ent = self._world_model.dynamics.get_dist(imag_state).entropy()
-                    
-                # this target is not scaled by ema or sym_log.
-                wkr_target, mgr_target, weights, wkr_value, mgr_value = self._compute_target(
-                    imag_feat, imag_state, goal_states, extr_reward, expl_reward, goal_reward
+                    raise NotImplementedError(self._config.imag_gradient)
+
+                wkr_actor_loss = -wkr_weights[:-1] * wkr_actor_target
+                # ★ 公式 Director 準拠: entropy 正規化 (連続/離散で分岐)
+                if self._config.imag_gradient == 'dynamics':
+                    # 連続行動 (Normal分布): per-dimension entropy を [0,1] に正規化
+                    # wkr_policy._dist.base_dist は Normal(mean, std) — std ∈ [min_std, max_std]
+                    import math
+                    base_dist = wkr_policy._dist.base_dist  # Normal per-dim
+                    wkr_ent = base_dist.entropy()[:-1]  # (T, B, act_dim)
+                    # Normal entropy = 0.5 * log(2*pi*e * std^2)
+                    min_std = self.worker_actor._min_std
+                    max_std = self.worker_actor._max_std
+                    lo = 0.5 * math.log(2 * math.pi * math.e * min_std ** 2)
+                    hi = 0.5 * math.log(2 * math.pi * math.e * max_std ** 2)
+                    wkr_ent_normed = (wkr_ent - lo) / (hi - lo)  # per-dim [0, 1]
+                    wkr_ent_loss, wkr_ent_mets = self.wkr_actent(wkr_ent_normed)
+                    wkr_ent_loss = wkr_ent_loss.sum(-1)  # 次元ごとに合計
+                else:
+                    # 離散行動 (OneHot分布): scalar entropy を [0,1] に正規化
+                    wkr_ent = wkr_policy.entropy()[:-1]
+                    wkr_maxent = torch.log(torch.tensor(float(self._config.num_actions), device=wkr_ent.device))
+                    wkr_ent_normed = wkr_ent / wkr_maxent
+                    wkr_ent_loss, wkr_ent_mets = self.wkr_actent(wkr_ent_normed)
+                # ★ 公式準拠: (REINFORCE_loss + entropy_loss) * weight
+                wkr_actor_loss = (-wkr_actor_target + wkr_ent_loss.unsqueeze(-1)) * wkr_weights[:-1]
+                wkr_actor_loss = torch.mean(wkr_actor_loss)
+                
+                # ========== Manager の訓練 ==========
+                # Manager の報酬: extr + expl
+                mgr_reward = (self.manager_rews["extr"] * mtraj['reward_extr'] + 
+                              self.manager_rews["expl"] * mtraj['reward_expl'] + 
+                              self.manager_rews["goal"] * mtraj['reward_goal'])
+                
+                # Manager の value 入力: feat のみ
+                mgr_value_inp = mtraj['feat']
+                # ★ value は slow target net で計算（勾配不要）
+                with torch.no_grad():
+                    mgr_value = self._slow_value_mgr(mgr_value_inp).mode()
+                
+                # ★ Manager も同様に lambda_return と advantage は no_grad 外
+                mgr_target = tools.lambda_return(
+                    mgr_reward,            # (n_abstract, B, 1)
+                    mgr_value[:-1],        # (n_abstract, B, 1) - no_grad済み
+                    mtraj['cont'][1:],     # (n_abstract, B, 1)
+                    bootstrap=mgr_value[-1],
+                    lambda_=self._config.discount_lambda,
+                    axis=0,
                 )
                 
-                # TODO: 損失の計算
-                wkr_actor_loss, mgr_actor_loss, mets = self._compute_actor_loss(
-                    imag_feat,
-                    imag_action,
-                    goal_states,
-                    goal_latents,
-                    wkr_target,
-                    mgr_target,
-                    weights,
-                    wkr_value,
-                    mgr_value,
-                )
-                wkr_actor_loss = wkr_actor_loss - self._config.actor["entropy"] * worker_ent[1:-1, ..., None]
-                wkr_actor_loss = torch.mean(wkr_actor_loss)
+                # Weight 計算
+                mgr_weights = (torch.cumprod(mtraj['cont'], dim=0) / discount).detach()
+                
+                # 正規化
+                mgr_target_tensor = torch.stack(mgr_target, dim=1) if isinstance(mgr_target, (list, tuple)) else mgr_target
+                normed_target_mgr = self.mgr_retnorm(mgr_target_tensor)
+                normed_base_mgr = self.mgr_retnorm(mgr_value[:-1], update=False)
+                adv_mgr = self.mgr_advnorm(normed_target_mgr - normed_base_mgr)
+                    
+                mgr_policy = self.manager_actor(mgr_value_inp.detach())
+                
+                # Reshape skill for log_prob calculation
+                skill_flat = mtraj['skill']
+                L, B = skill_flat.shape[:2]
+                skill_reshaped = skill_flat.reshape(L, B, self._config.goal_enc_num_codebook, self._config.goal_enc_num_categorical)
+                
+                # log_prob: (L, B, 8) → sum(-1) → (L, B). [:-1] to match adv_mgr
+                mgr_logprob = mgr_policy.log_prob(skill_reshaped.detach()).sum(-1, keepdim=True)[:-1]
 
-                mgr_actor_loss = mgr_actor_loss - self._config.actor["entropy"] * manager_ent[1:-1].sum(dim=-1, keepdim=True)
+                # ★ Manager は常に reinforce（公式準拠: 離散ポリシー）
+                mgr_actor_target = mgr_logprob * adv_mgr.detach()
+
+                mgr_actor_loss = -mgr_weights[:-1] * mgr_actor_target
+                
+                # ★ 公式 Director 準拠: entropy を [0,1] に正規化し AutoAdapt
+                mgr_ent = mgr_policy.entropy()[:-1]  # (n_abstract+1-1, B, num_codebook)
+                mgr_maxent = torch.log(torch.tensor(float(self._config.goal_enc_num_categorical), device=mgr_ent.device))
+                mgr_ent_normed = mgr_ent / mgr_maxent
+                mgr_ent_loss, mgr_ent_mets = self.mgr_actent(mgr_ent_normed)
+                mgr_ent_loss = mgr_ent_loss.sum(-1, keepdim=True)
+                # ★ 公式準拠: (REINFORCE_loss + entropy_loss) * weight
+                mgr_actor_loss = (-mgr_actor_target + mgr_ent_loss) * mgr_weights[:-1]
                 mgr_actor_loss = torch.mean(mgr_actor_loss)
                 
-                wkr_value_inp = torch.cat([imag_feat, goal_states], dim=-1)
-                mgr_value_inp = imag_feat
+                # エントロピー計算（メトリクス用）- 既存の policy を使用
+                manager_ent = mgr_policy.entropy()
+                worker_ent = wkr_policy.entropy()
+        e_time = time.time()
+        # print(f"Imagination and policy loss time: {e_time - s_time:.3f} sec")
         
-        # Valueの更新
+        s_time = time.time()
+        # ========== Value の更新 ==========
         with tools.RequiresGrad(self.worker_value), tools.RequiresGrad(self.manager_value):
             with torch.cuda.amp.autocast(self._use_amp):
-                # value = self.value(value_input[:-1].detach())
-                wkr_value = self.worker_value(wkr_value_inp[1:-1].detach())
-                mgr_value = self.manager_value(mgr_value_inp[1:-1].detach())
+                # Worker value loss
+                # ★ 公式 VFunction.train 準拠: loss = -log_prob(target) * weight
+                wkr_value_for_loss = self.worker_value(wkr_value_inp[:-1].detach())
+                wkr_value_loss = -1 * wkr_value_for_loss.log_prob(wkr_target_tensor.detach())
+                wkr_value_loss = torch.mean(wkr_weights[:-1] * wkr_value_loss[:, :, None])
                 
-                wkr_target = torch.stack(wkr_target, dim=1)
-                mgr_target = torch.stack(mgr_target, dim=1)
-                
-                # (time, batch, 1), (time, batch, 1) -> (time, batch)
-                wkr_value_loss = -1 * wkr_value.log_prob(wkr_target.detach())
-                mgr_value_loss = -1 * mgr_value.log_prob(mgr_target.detach())
-                wkr_slow_target = self._slow_value_wkr(wkr_value_inp[1:-1].detach())
-                mgr_slow_target = self._slow_value_mgr(mgr_value_inp[1:-1].detach())
-                if self._config.critic["slow_target"]:
-                    wkr_value_loss = wkr_value_loss - wkr_value.log_prob(wkr_slow_target.mode().detach())
-                    mgr_value_loss = mgr_value_loss - mgr_value.log_prob(mgr_slow_target.mode().detach())
-
-                # (time, batch, 1), (time, batch, 1) -> (1,)
-                wkr_value_loss = torch.mean(weights[:-1] * wkr_value_loss[:, :, None])
-                mgr_value_loss = torch.mean(weights[:-1] * mgr_value_loss[:, :, None])
-
-        metrics.update(tools.tensorstats(wkr_value.mode(), "worker_value"))
-        metrics.update(tools.tensorstats(mgr_value.mode(), "manager_value"))
+                # Manager value loss
+                # ★ 公式 VFunction.train 準拠: loss = -log_prob(target) * weight
+                mgr_value_for_loss = self.manager_value(mgr_value_inp[:-1].detach())
+                mgr_value_loss = -1 * mgr_value_for_loss.log_prob(mgr_target_tensor.detach())
+                mgr_value_loss = torch.mean(mgr_weights[:-1] * mgr_value_loss[:, :, None])
+        e_time = time.time()
+        # print(f"Value loss time: {e_time - s_time:.3f} sec")
+        
+        s_time = time.time()
+        # Metrics
+        metrics.update(tools.tensorstats(wkr_value_for_loss.mode(), "worker_value"))
+        metrics.update(tools.tensorstats(mgr_value_for_loss.mode(), "manager_value"))
         metrics.update(tools.tensorstats(extr_reward, "imag_reward"))
         metrics.update(tools.tensorstats(expl_reward, "imag_expl_reward"))
         metrics.update(tools.tensorstats(goal_reward, "imag_goal_reward"))
-        metrics.update(mets)
+        metrics["EMA_005_wkr"] = to_np(self.wkr_ema_vals[0])
+        metrics["EMA_095_wkr"] = to_np(self.wkr_ema_vals[1])
+        metrics["EMA_005_mgr"] = to_np(self.mgr_ema_vals[0])
+        metrics["EMA_095_mgr"] = to_np(self.mgr_ema_vals[1])
+        
+        # ★ AutoAdapt / Normalize 内部状態の監視
+        metrics["wkr_actent_scale"] = to_np(self.wkr_actent.scale())
+        metrics["mgr_actent_scale"] = to_np(self.mgr_actent.scale())
+        metrics["wkr_ent_normed_mean"] = to_np(wkr_ent_mets["mean"])
+        metrics["mgr_ent_normed_mean"] = to_np(mgr_ent_mets["mean"])
         
         if self._config.actor["dist"] in ["onehot"]:
             metrics.update(
@@ -779,12 +930,23 @@ class ImagBehavior(nn.Module):
         metrics["wkr_value_loss"] = to_np(wkr_value_loss)
         metrics["mgr_value_loss"] = to_np(mgr_value_loss)
 
-        with tools.RequiresGrad(self):
+        # Optimizer 更新
+        # Optimizer 更新（self 全体を RequiresGrad しない）
+        with tools.RequiresGrad(self.manager_actor):
             metrics.update(self.mgr_actor_opt(mgr_actor_loss, self.manager_actor.parameters()))
+
+        with tools.RequiresGrad(self.worker_actor):
             metrics.update(self.wkr_actor_opt(wkr_actor_loss, self.worker_actor.parameters()))
+
+        with tools.RequiresGrad(self.manager_value):
             metrics.update(self.mgr_value_opt(mgr_value_loss, self.manager_value.parameters()))
+
+        with tools.RequiresGrad(self.worker_value):
             metrics.update(self.wkr_value_opt(wkr_value_loss, self.worker_value.parameters()))
-        return imag_feat, imag_state, imag_action, weights, metrics
+        
+        # weights は wkr_weights を返す（既に正しく計算済み）
+        e_time = time.time()
+        return imag_feat, imag_state, imag_action, wkr_weights, metrics
 
     def _imagine(self, start, horizon):
         dynamics = self._world_model.dynamics
@@ -799,41 +961,82 @@ class ImagBehavior(nn.Module):
             return self._imagine_rssm(start, horizon, dynamics)
     
     def _imagine_rssm(self, start, horizon, dynamics):
-        """RSSM imagination with Manager & Actor"""
-        def step(prev, state_idx):
-            
-            # 今の状態の取得
-            state, _, _, prev_goal_state, prev_goal_latent = prev
-            feat = dynamics.get_feat(state)  # concat [stoch, deter]
+        """RSSM imagination with Manager & Worker.
+        
+        ★ 公式 imagine_carry (agent.py L227-255) に準拠:
+        T = horizon + 1 のタイムステップを生成する。
+        最後のステップはbootstrap用（遷移なし）。
+        
+        Returns:
+            feats: (horizon+1, B, feat_size)
+            states: dict of (horizon+1, B, ...)
+            actions: (horizon+1, B, act_dim)
+            goal_states: (horizon+1, B, deter_dim)
+            goal_latents: (horizon+1, B, skill_dim)
+        """
+        B = list(start.values())[0].shape[0]
+        k = self._config.train_skill_duration
+        
+        # Collect trajectory
+        all_states = [start]
+        all_feats = []
+        all_actions = []
+        all_goal_states = []
+        all_goal_latents = []
+        
+        state = start
+        prev_goal_state = None
+        prev_goal_latent = None
+        
+        for t in range(horizon + 1):
+            feat = dynamics.get_feat(state)
             inp = feat.detach()
             
-            # Manager PolicyによるGoalの推定
-            # use_manager: Managerを用いるかどうか，Kステップに一度Goalを更新する
-            if state_idx % self._config.train_skill_duration == 0:
-                B = inp.size(0)
-                goal_dist = self.manager_actor(inp)  # (batch, num_codebook, num_categorical)
-                goal_sample = goal_dist.sample()  # (batch, num_codebook, num_categorical)
-                # Goal DecoderによるGoal状態の再構成
-                goal_sample = goal_sample.reshape(B, -1)  # flatten to (batch, num_codebook * num_categorical)
-                goal_state = self._world_model.decode_goal_ae_latent(goal_sample)  # (batch, dim_deter)
-                goal_latents = goal_sample
+            # Manager: generate goal every k steps
+            if t % k == 0:
+                goal_dist = self.manager_actor(inp)
+                goal_sample = goal_dist.sample().reshape(B, -1)
+                goal_state = self._world_model.decode_goal_ae_latent(goal_sample)
+                goal_latent = goal_sample
             else:
-                goal_state = prev_goal_state  # 前回のGoal状態を使用
-                goal_latents = prev_goal_latent
+                goal_state = prev_goal_state
+                goal_latent = prev_goal_latent
             
-            # Worker PolicyによるActionの推定
-            worker_inp = torch.cat([inp, goal_state.detach()], dim=-1)  # (batch, feat_size + goal_size)
+            # Worker: generate action
+            worker_inp = torch.cat([inp, goal_state.detach()], dim=-1)
             action_dist = self.worker_actor(worker_inp)
-            action = action_dist.sample()  # (batch, action_dim)
-
-            # 世界モデルによる状態遷移
-            succ = dynamics.img_step(state, action)
-            return succ, feat, action, goal_state, goal_latents
-
-        succ, feats, actions, goal_states, goal_latents = tools.static_scan(
-            step, [torch.arange(horizon)], (start, None, None, None, None)
-        )
-        states = {k: torch.cat([start[k][None], v[:-1]], 0) for k, v in succ.items()}
+            # ★ dynamics/backprop モードでは rsample() で再パラメータ化勾配を有効化
+            # REINFORCE モード（離散行動）では sample() を使用（rsample非対応）
+            if self._config.imag_gradient == 'dynamics' and hasattr(action_dist, 'rsample'):
+                action = action_dist.rsample()
+            else:
+                action = action_dist.sample()
+            
+            # Collect
+            all_feats.append(feat)
+            all_actions.append(action)
+            all_goal_states.append(goal_state)
+            all_goal_latents.append(goal_latent)
+            
+            # Transition (except for the last step - bootstrap only)
+            if t < horizon:
+                state = dynamics.img_step(state, action)
+                all_states.append(state)
+            
+            prev_goal_state = goal_state
+            prev_goal_latent = goal_latent
+        
+        # Stack tensors: all have horizon+1 elements
+        feats = torch.stack(all_feats, dim=0)
+        actions = torch.stack(all_actions, dim=0)
+        goal_states = torch.stack(all_goal_states, dim=0)
+        goal_latents = torch.stack(all_goal_latents, dim=0)
+        
+        # Stack state dicts: horizon+1 elements [start, s1, ..., s_horizon]
+        states = {}
+        for key in all_states[0].keys():
+            states[key] = torch.stack([s[key] for s in all_states], dim=0)
+        
         return feats, states, actions, goal_states, goal_latents
     
     def _imagine_vta(self, start, horizon, dynamics):
@@ -885,6 +1088,8 @@ class ImagBehavior(nn.Module):
         worker_value = self.worker_value(wkr_value_inp).mode()[1:]
         manager_value = self.manager_value(mgr_value_inp).mode()[1:]
         
+        # ★ split_traj は Actor/Value の計算全体に影響するため、
+        # 現在は元の実装を使用。完全な実装には大幅なリファクタリングが必要。
         wkr_target = tools.lambda_return(
             worker_reward[1:],
             worker_value[:-1],
@@ -893,6 +1098,27 @@ class ImagBehavior(nn.Module):
             lambda_=self._config.discount_lambda,
             axis=0,
         )
+        
+        # ★ split_traj を使用した実装（Actor loss 側も含めて調整が必要）
+        # k = self._config.train_skill_duration
+        # traj = {
+        #     'feat': imag_feat,
+        #     'goal': goal_state,
+        #     'reward_worker': worker_reward,
+        #     'cont': discount,
+        # }
+        # wtraj = self._split_traj(traj, k)
+        # wkr_value_inp_split = torch.cat([wtraj['feat'], wtraj['goal']], dim=-1)
+        # wkr_value_split = self.worker_value(wkr_value_inp_split).mode()
+        # wkr_target = tools.lambda_return(
+        #     wtraj['reward_worker'][1:],
+        #     wkr_value_split[1:-1],
+        #     wtraj['cont'][1:],
+        #     bootstrap=wkr_value_split[-1],
+        #     lambda_=self._config.discount_lambda,
+        #     axis=0,
+        # )
+        
         mgr_target = tools.lambda_return(
             manager_reward[1:],
             manager_value[:-1],
@@ -901,6 +1127,7 @@ class ImagBehavior(nn.Module):
             lambda_=self._config.discount_lambda,
             axis=0,
         )
+        
         weights = torch.cumprod(
             torch.cat([torch.ones_like(discount[:1]), discount[:-1]], 0), 0
         ).detach()
@@ -1020,6 +1247,158 @@ class ImagBehavior(nn.Module):
                 for s, d in zip(mgr_value.parameters(), slow_mgr_value.parameters()):
                     d.data = mix * s.data + (1 - mix) * d.data
             self._updates += 1
+    
+    # ★ 公式実装に合わせて split_traj を追加
+    # 参照: director/embodied/agents/director/hierarchy.py L410-429
+    def _split_traj(self, traj, k):
+        """Worker 用: trajectory を K ステップのセグメントに分割
+        
+        公式実装の動作:
+        - (1 2 3 4 5 6 7 8 9 10...) -> ((1 2 3 4) (4 5 6 7) (7 8 9 10)...)
+        - 各セグメントで同じ goal を追うように変換
+        - Worker は各セグメント内で goal に到達することを学習
+        
+        Args:
+            traj: trajectory dict with keys like 'feat', 'action', 'goal', 'reward_*', etc.
+                  shapes: (time, batch, ...)
+            k: skill_duration (segment length)
+        Returns:
+            split trajectory for worker training
+        """
+        new_traj = {}
+        T = traj['feat'].shape[0]  # time dimension
+        B = traj['feat'].shape[1]  # batch dimension
+        
+        # 公式実装: len(traj['action']) % k == 1 を前提
+        # つまり T = N*k + 1 (例: 17 = 2*8 + 1) の形式
+        # ★ 公式: (1 2 3 4 5 6 7 8 9) -> ((1 2 3 4) (4 5 6 7) (7 8 9))
+        # stride = k-1 でオーバーラップするセグメントを作成
+        
+        n_segments = (T - 1) // k  # 完全なセグメント数
+        if n_segments == 0:
+            # k より短い場合はそのまま返す
+            return traj
+        
+        for key, val in traj.items():
+            if 'reward' in key:
+                # reward は先頭に 0 を追加してから reshape
+                # 公式: val = tf.concat([0 * val[:1], val], 0) if 'reward' in key else val
+                val_padded = torch.cat([torch.zeros_like(val[:1]), val], dim=0)
+                # ★ 公式: オーバーラップするセグメント化
+                # stride = k-1 を使用して、境界要素が重複するセグメントを作成
+                segments = []
+                for i in range(n_segments):
+                    # オーバーラップ: i=0: [0,k+1), i=1: [k-1, 2k), i=2: [2k-2, 3k-1)...
+                    # 簡易版: 各セグメントは k+1 要素（reward 用にパディング済み）
+                    start_idx = i * k
+                    end_idx = start_idx + k + 1
+                    seg = val_padded[start_idx:end_idx]
+                    segments.append(seg)
+                # Stack and reshape: (n_seg, k+1, B, ...) -> (k+1, n_seg*B, ...)
+                stacked = torch.stack(segments, dim=0)  # (n_seg, k+1, B, ...)
+                stacked = stacked.transpose(0, 1)  # (k+1, n_seg, B, ...)
+                stacked = stacked.reshape(stacked.shape[0], -1, *stacked.shape[3:])  # (k+1, n_seg*B, ...)
+                new_traj[key] = stacked[1:]  # remove padded zero: (k, n_seg*B, ...)
+            else:
+                # state/feat 等は直接セグメント化
+                segments = []
+                for i in range(n_segments):
+                    start_idx = i * k
+                    end_idx = start_idx + k + 1  # +1 for bootstrap state
+                    seg = val[start_idx:end_idx]
+                    segments.append(seg)
+                stacked = torch.stack(segments, dim=0)  # (n_seg, k+1, B, ...)
+                stacked = stacked.transpose(0, 1)  # (k+1, n_seg, B, ...)
+                stacked = stacked.reshape(stacked.shape[0], -1, *stacked.shape[3:])  # (k+1, n_seg*B, ...)
+                new_traj[key] = stacked  # (k+1, n_seg*B, ...)
+        
+        # ★ goal の bootstrap 処理
+        # 公式: traj['goal'] = tf.concat([traj['goal'][:-1], traj['goal'][:1]], 0)
+        # 各セグメントの最後の goal を最初の goal で置き換え（同じ goal を追い続けるため）
+        if 'goal' in new_traj:
+            goal = new_traj['goal']
+            new_traj['goal'] = torch.cat([goal[:-1], goal[:1]], dim=0)
+        
+        return new_traj
+
+    # ★ 公式実装に合わせて abstract_traj を追加
+    # 参照: director/embodied/agents/director/hierarchy.py L431-446
+    def _abstract_traj(self, traj, k):
+        """Manager 用: K ステップを抽象化して 1 ステップに集約
+        
+        公式実装の動作:
+        - action を skill に置き換え
+        - reward は K ステップの加重平均
+        - cont は K ステップの積
+        - state は K ステップごとに最初の状態のみ
+        
+        Args:
+            traj: trajectory dict
+            k: skill_duration
+        Returns:
+            abstracted trajectory for manager training
+        """
+        new_traj = {}
+        T = traj['feat'].shape[0]
+        n_abstract = (T - 1) // k  # 抽象化後のステップ数
+        
+        if n_abstract == 0:
+            return traj
+        
+        # ★ action を skill に置き換え
+        # 公式: traj['action'] = traj.pop('skill')
+        if 'skill' in traj:
+            new_traj['action'] = traj['skill']
+        
+        for key, val in traj.items():
+            if key == 'skill':
+                continue  # already handled
+            elif 'reward' in key:
+                # ★ 公式実装: reward は cont による重み付け平均
+                # 公式: weights = tf.math.cumprod(reshape(traj['cont'][:-1]), 1)
+                #       traj[key] = (reshape(value) * weights).mean(1)
+                segments = []
+                for i in range(n_abstract):
+                    start_idx = i * k
+                    end_idx = start_idx + k
+                    seg = val[start_idx:end_idx]  # (k, B, 1)
+                    # cont による重み付け: cumprod(cont[:-1]) で時間方向の割引
+                    cont_seg = traj['cont'][start_idx:end_idx]
+                    if cont_seg.shape[0] > 1:
+                        weights = torch.cumprod(cont_seg[:-1], dim=0)  # (k-1, B, 1)
+                        # 最初のステップの重みを1にする
+                        weights = torch.cat([torch.ones_like(cont_seg[:1]), weights], dim=0)  # (k, B, 1)
+                    else:
+                        weights = torch.ones_like(seg)
+                    weighted_sum = (seg * weights).sum(dim=0, keepdim=True)  # (1, B, 1)
+                    weight_sum = weights.sum(dim=0, keepdim=True)  # (1, B, 1)
+                    seg_mean = weighted_sum / weight_sum.clamp(min=1e-8)  # (1, B, 1)
+                    segments.append(seg_mean)
+                new_traj[key] = torch.cat(segments, dim=0)  # (n_abstract, B, 1) ★公式準拠: val[-1:]は追加しない
+            elif key == 'cont':
+                # cont は K ステップの積
+                # 公式: traj[key] = tf.concat([value[:1], reshape(value[1:]).prod(1)], 0)
+                segments = []
+                for i in range(n_abstract):
+                    start_idx = i * k + 1  # skip first
+                    end_idx = start_idx + k
+                    if end_idx <= T:
+                        seg = val[start_idx:end_idx]
+                        seg_prod = seg.prod(dim=0, keepdim=True)
+                    else:
+                        seg_prod = val[-1:]
+                    segments.append(seg_prod)
+                new_traj[key] = torch.cat([val[:1]] + segments, dim=0)
+            else:
+                # state/feat 等は K ステップごとに最初の状態のみ
+                # 公式: traj[key] = tf.concat([reshape(value[:-1])[:, 0], value[-1:]], 0)
+                segments = []
+                for i in range(n_abstract):
+                    start_idx = i * k
+                    segments.append(val[start_idx:start_idx+1])
+                new_traj[key] = torch.cat(segments + [val[-1:]], dim=0)  # (n_abstract+1, B, ...)
+        
+        return new_traj
             
     def take_action(self, feat, director_carry, training=False):
         """現在の状態から行動を選択する.

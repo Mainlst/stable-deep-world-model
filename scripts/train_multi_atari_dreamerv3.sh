@@ -5,7 +5,7 @@ set -e  # Exit on error
 
 # Configuration
 CONFIGS="atari100k"
-DYNAMICS_TYPE="vta"
+DYNAMICS_TYPE="rssm"
 BASE_LOGDIR="logdir"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 SEED=80
@@ -13,7 +13,7 @@ SEED=80
 # List of Atari environments to train
 TASKS=(
     "atari_frostbite"
-    "atari_private_eye"
+    # "atari_private_eye"
 )
 
 # VTA hyperparameters: using config defaults (no overrides)

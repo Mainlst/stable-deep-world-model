@@ -156,7 +156,11 @@ class Dreamer(nn.Module):
         metrics = {}
         
         # 1. 世界モデルの訓練
+        import time
+        s_time = time.time()
         post, context, mets = self._wm._train(data)
+        e_time = time.time()
+        # print(f"world model train time: {e_time - s_time:.4f}) sec")
         metrics.update(mets)
         start = post
         reward = lambda f, s, a: self._wm.heads["reward"](
@@ -174,7 +178,10 @@ class Dreamer(nn.Module):
         #      # Director needs replay data for GoalAE training
         #      metrics.update(self._task_behavior._train(start, reward, data)[-1])
         # else:
+        s_time = time.time()
         metrics.update(self._task_behavior._train(start, reward)[-1])
+        e_time = time.time()
+        # print(f"policy train time: {e_time - s_time:.4f} sec")
         if self._config.expl_behavior != "greedy":
             mets = self._expl_behavior.train(start, context, data)[-1]
             metrics.update({"expl_" + key: value for key, value in mets.items()})

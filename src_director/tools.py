@@ -1004,6 +1004,59 @@ def recursively_load_optim_state_dict(obj, optimizers_state_dicts):
         obj_now.load_state_dict(state_dict)
 
 
+class Normalize(nn.Module):
+    """
+    PyTorch port of the official Director's tfutils.Normalize.
+    
+    Running mean/std normalization with bias correction.
+    impl: 'mean_std' | 'std' | 'off'
+    """
+    def __init__(self, impl='mean_std', decay=0.99, max=1e8, vareps=0.0, stdeps=0.0):
+        super().__init__()
+        self._impl = impl
+        self._decay = decay
+        self._max = max
+        self._stdeps = stdeps
+        self._vareps = vareps
+        self.register_buffer('_mean', torch.zeros(1, dtype=torch.float64))
+        self.register_buffer('_sqrs', torch.zeros(1, dtype=torch.float64))
+        self.register_buffer('_step', torch.zeros(1, dtype=torch.int64))
+
+    def forward(self, values, update=True):
+        if update:
+            self._update(values)
+        return self._transform(values)
+
+    @torch.no_grad()
+    def _update(self, values):
+        x = values.to(torch.float64)
+        m = self._decay
+        self._step += 1
+        self._mean.copy_(m * self._mean + (1 - m) * x.mean())
+        self._sqrs.copy_(m * self._sqrs + (1 - m) * (x ** 2).mean())
+
+    def _transform(self, values):
+        correction = 1 - self._decay ** self._step.to(torch.float64)
+        mean = self._mean / correction
+        var = (self._sqrs / correction) - mean ** 2
+        if self._max > 0.0:
+            scale = torch.rsqrt(
+                torch.maximum(var, torch.tensor(1.0 / self._max ** 2 + self._vareps, dtype=torch.float64)) + self._stdeps
+            )
+        else:
+            scale = torch.rsqrt(var + self._vareps) + self._stdeps
+        if self._impl == 'off':
+            pass
+        elif self._impl == 'mean_std':
+            values = values - mean.to(values.dtype)
+            values = values * scale.to(values.dtype)
+        elif self._impl == 'std':
+            values = values * scale.to(values.dtype)
+        else:
+            raise NotImplementedError(self._impl)
+        return values
+
+
 class AutoAdapt(nn.Module):
     """
     PyTorch port of the given TensorFlow AutoAdapt.

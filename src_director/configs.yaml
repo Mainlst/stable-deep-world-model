@@ -49,7 +49,7 @@ defaults:
   actor:
     {layers: 2, dist: 'normal', entropy: 3e-4, unimix_ratio: 0.01, std: 'learned', min_std: 0.1, max_std: 1.0, temp: 0.1, lr: 3e-5, eps: 1e-5, grad_clip: 100.0, outscale: 1.0}
   critic:
-    {layers: 2, dist: 'symlog_disc', slow_target: True, slow_target_update: 1, slow_target_fraction: 0.02, lr: 3e-5, eps: 1e-5, grad_clip: 100.0, outscale: 0.0}
+    {layers: 2, dist: 'symlog_disc', slow_target: True, slow_target_update: 100, slow_target_fraction: 1.0, lr: 3e-5, eps: 1e-5, grad_clip: 100.0, outscale: 0.0}
   reward_head:
     {layers: 2, dist: 'symlog_disc', loss_scale: 1.0, outscale: 0.0}
   cont_head:
@@ -109,8 +109,8 @@ defaults:
   train_skill_duration: 8
 
   # Actor Critic (Manager and Worker)
-  manager_rews: {extr: 1.0, expl: 0.0, goal: 0.0}
-  worker_rews: {extr: 1.0, expl: 0.0, goal: 0.0}
+  manager_rews: {extr: 1.0, expl: 0.1, goal: 0.0}
+  worker_rews: {extr: 0.0, expl: 0.0, goal: 1.0}
   worker_critic: 
     dist_type: 'symlog_mse'
     num_layers: 4
@@ -195,6 +195,11 @@ dmc_vision:
   video_pred_log: true
   encoder: {mlp_keys: '$^', cnn_keys: 'image'}
   decoder: {mlp_keys: '$^', cnn_keys: 'image'}
+  # 公式準拠: 連続行動 → normal分布 + backprop勾配
+  worker_actor:
+    dist_type: 'normal'
+    std: 'learned'
+  imag_gradient: 'dynamics'
 
 crafter:
   task: crafter_reward
