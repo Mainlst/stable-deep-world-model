@@ -100,7 +100,7 @@ defaults:
   goal_dec_outscale: 0.1  # GoalAEの出力スケール, default: 0.1
   goal_dec_unimix_ratio: 0.0  # GoalAEのunimix比率, default: 0.0
 
-  goal_ae_kl_scale: 1.0 # GoalAEのKL損失のスケール, default: 1.0
+  # goal_ae_kl_scale: 1.0 # 削除: 公式同様にAutoAdaptによるスケーリングに変更
 
 
 

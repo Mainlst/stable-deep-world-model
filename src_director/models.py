@@ -355,12 +355,14 @@ class WorldModel(nn.Module):
                 ).mean()
                 
                 # total loss
-                metrics = {}
-                total_loss = rec_loss + self.kl_scaler(kl_loss)[0] * self._config.goal_ae_kl_scale
+                # ★修正: 余分に掛けられていた固定scaleを外し、公式のAutoAdaptだけによるスケーリングを適用する
+                kl_scaled_loss, kl_mets = self.kl_scaler(kl_loss)
+                total_loss = rec_loss + kl_scaled_loss
             
             metrics = self._goal_ae_opt(torch.mean(total_loss), self.goal_ae_params)
         metrics["goal_ae_rec_loss"] = to_np(rec_loss)
         metrics["goal_ae_kl_loss"] = to_np(kl_loss)
+        metrics["goal_ae_kl_scale"] = to_np(self.kl_scaler.scale()) # スケール監視用
         return metrics
     
     def decode_goal_ae_latent(self, goal_latent):
@@ -521,22 +523,26 @@ class ImagBehavior(nn.Module):
             outscale=config.manager_actor.get("outscale", 0.1),
             name="ManagerActor",
         )
-        self.manager_value = networks.MLP(
-            inp_dim=feat_size,
-            shape=(255,) if config.manager_critic.get("dist_type", "symlog_disc") == "symlog_disc" else (),
-            layers=config.manager_critic.get("num_layers", 4),
-            units=config.manager_critic.get("hidden_units", 512),
-            act=config.manager_critic.get("act_fn", "elu"),
-            norm=config.manager_critic.get("use_layer_norm", True),
-            dist=config.manager_critic.get("dist_type", "symlog_disc"),
-            outscale=config.manager_critic.get("outscale", 0.0),
-            name="ManagerValue",
-        )
-        
         self.manager_rews = config.manager_rews
         self.worker_rews = config.worker_rews
         
-        # Worker Policy (Worker actor and worker value)
+        # Manager Value (now a ModuleDict)
+        self.manager_values = nn.ModuleDict()
+        for k, v in self.manager_rews.items():
+            if v != 0.0:
+                self.manager_values[k] = networks.MLP(
+                    inp_dim=feat_size,
+                    shape=(255,) if config.manager_critic.get("dist_type", "symlog_disc") == "symlog_disc" else (),
+                    layers=config.manager_critic.get("num_layers", 4),
+                    units=config.manager_critic.get("hidden_units", 512),
+                    act=config.manager_critic.get("act_fn", "elu"),
+                    norm=config.manager_critic.get("use_layer_norm", True),
+                    dist=config.manager_critic.get("dist_type", "symlog_disc"),
+                    outscale=config.manager_critic.get("outscale", 0.0),
+                    name=f"ManagerValue_{k}",
+                )
+        
+        # Worker Value (now a ModuleDict)
         # TODO: 今はGoal Encoderは決定論的状態(deter)を再構成しているので，goal_size = config.dyn_deter   
         goal_size = config.dyn_deter
         self.worker_actor = networks.MLP(
@@ -552,24 +558,27 @@ class ImagBehavior(nn.Module):
             name="WorkerActor",
         )
 
-        self.worker_value = networks.MLP(
-            inp_dim = feat_size + goal_size,
-            shape=(255,) if config.worker_critic.get("dist_type", "symlog_disc") == "symlog_disc" else (),
-            layers=config.worker_critic.get("num_layers", 4),
-            units=config.worker_critic.get("hidden_units", 512),
-            act=config.worker_critic.get("act_fn", "elu"),
-            norm=config.worker_critic.get("use_layer_norm", True),
-            dist=config.worker_critic.get("dist_type", "symlog_disc"),
-            outscale=config.worker_critic.get("outscale", 0.0),
-            name="WorkerValue",
-        )
-        
+        self.worker_values = nn.ModuleDict()
+        for k, v in self.worker_rews.items():
+            if v != 0.0:
+                self.worker_values[k] = networks.MLP(
+                    inp_dim=feat_size + goal_size,
+                    shape=(255,) if config.worker_critic.get("dist_type", "symlog_disc") == "symlog_disc" else (),
+                    layers=config.worker_critic.get("num_layers", 4),
+                    units=config.worker_critic.get("hidden_units", 512),
+                    act=config.worker_critic.get("act_fn", "elu"),
+                    norm=config.worker_critic.get("use_layer_norm", True),
+                    dist=config.worker_critic.get("dist_type", "symlog_disc"),
+                    outscale=config.worker_critic.get("outscale", 0.0),
+                    name=f"WorkerValue_{k}",
+                )
+
         if config.critic["slow_target"]:
-            self._slow_value_wkr = copy.deepcopy(self.worker_value)
-            self._slow_value_mgr = copy.deepcopy(self.manager_value)
-            for p in self._slow_value_wkr.parameters():
+            self._slow_values_wkr = nn.ModuleDict({k: copy.deepcopy(v) for k, v in self.worker_values.items()})
+            self._slow_values_mgr = nn.ModuleDict({k: copy.deepcopy(v) for k, v in self.manager_values.items()})
+            for p in self._slow_values_wkr.parameters():
                 p.requires_grad = False
-            for p in self._slow_value_mgr.parameters():
+            for p in self._slow_values_mgr.parameters():
                 p.requires_grad = False
             self._updates = 0
         kw = dict(wd=config.weight_decay, opt=config.opt, use_amp=self._use_amp)
@@ -599,46 +608,37 @@ class ImagBehavior(nn.Module):
         # Manager Value optim.
         self.mgr_value_opt = tools.Optimizer(
             "manager_value",
-            self.manager_value.parameters(),
+            self.manager_values.parameters(),
             config.critic["lr"],
             config.critic["eps"],
             config.critic["grad_clip"],
             **kw,
         )
-        print(f"Manager Value: {self.manager_value}")
+        print(f"Manager Values: {self.manager_values}")
         
         # Worker Value optim.
         self.wkr_value_opt = tools.Optimizer(
             "worker_value",
-            self.worker_value.parameters(),
+            self.worker_values.parameters(),
             config.critic["lr"],
             config.critic["eps"],
             config.critic["grad_clip"],
             **kw,
         )
-        print(f"Worker Value: {self.worker_value}")
+        print(f"Worker Values: {self.worker_values}")
 
         if self._config.reward_EMA:
-            # register ema_vals to nn.Module for enabling torch.save and torch.load
-            # self.register_buffer(
-            #     "ema_vals", torch.zeros((2,), device=self._config.device)
-            # )
-            # self.reward_ema = RewardEMA(device=self._config.device)
-
-            # 変更箇所
-            # Worker 用 EMA（goal 報酬）
+            # Worker 用 EMA（goal 報酬など）
             self.register_buffer(
                 "wkr_ema_vals", torch.zeros((2,), device=self._config.device)
             )
-            # Manager 用 EMA（extr + expl 報酬）
+            # Manager 用 EMA（extr + expl 報酬など）
             self.register_buffer(
                 "mgr_ema_vals", torch.zeros((2,), device=self._config.device)
             )
             self.reward_ema = RewardEMA(device=self._config.device)
         
         # ★ 公式 Director 準拠: Entropy AutoAdapt + Advantage Normalize
-        # 公式: actent: {impl: mult, scale: 3e-3, target: 0.5, min: 1e-5, max: 1e2}
-        # inverse=True: entropy を最大化する方向に損失を生成
         self.wkr_actent = tools.AutoAdapt(
             shape=(), impl='mult', scale=3e-3, target=0.5,
             min=1e-5, max=1e2, vel=0.1, thres=0.1, inverse=True,
@@ -647,12 +647,20 @@ class ImagBehavior(nn.Module):
             shape=(), impl='mult', scale=3e-3, target=0.5,
             min=1e-5, max=1e2, vel=0.1, thres=0.1, inverse=True,
         )
-        # 公式: advnorm: {impl: mean_std, decay: 0.99, max: 1e8}
-        self.wkr_advnorm = tools.Normalize(impl='mean_std', decay=0.99, max=1e8)
-        self.mgr_advnorm = tools.Normalize(impl='mean_std', decay=0.99, max=1e8)
-        # 公式: retnorm: {impl: std, decay: 0.999, max: 1e2}
-        self.wkr_retnorm = tools.Normalize(impl='std', decay=0.999, max=1e2)
-        self.mgr_retnorm = tools.Normalize(impl='std', decay=0.999, max=1e2)
+        
+        self.wkr_advnorms = nn.ModuleDict()
+        self.wkr_retnorms = nn.ModuleDict()
+        for k, v in self.worker_rews.items():
+            if v != 0.0:
+                self.wkr_advnorms[k] = tools.Normalize(impl='mean_std', decay=0.99, max=1e8)
+                self.wkr_retnorms[k] = tools.Normalize(impl='std', decay=0.999, max=1e2)
+                
+        self.mgr_advnorms = nn.ModuleDict()
+        self.mgr_retnorms = nn.ModuleDict()
+        for k, v in self.manager_rews.items():
+            if v != 0.0:
+                self.mgr_advnorms[k] = tools.Normalize(impl='mean_std', decay=0.99, max=1e8)
+                self.mgr_retnorms[k] = tools.Normalize(impl='std', decay=0.999, max=1e2)
             
     def _cosine_max_similarity(self, pred, target):
         """"Cosine Max Similarity between pred and target.
@@ -682,15 +690,19 @@ class ImagBehavior(nn.Module):
         s_time = time.time()
         with tools.RequiresGrad(self.manager_actor), tools.RequiresGrad(self.worker_actor):
             with torch.cuda.amp.autocast(self._use_amp):
+                s_time = time.time()
                 imag_feat, imag_state, imag_action, goal_states, goal_latents = self._imagine(
                     start, self._config.imag_horizon
                 )
+                e_time = time.time()
+                # print(f"Imagination time: {e_time - s_time:.2f} seconds")
                 
                 # rewardは3種類ある
                 # i) extrinsic reward (extr_reward): 環境からの報酬 -> world_modelで予測, managerが最大化
                 # ii) exploration reward (expl_reward): 探索報酬, -> goal aeより算出, managerが最大化
                 # iii) goal reward (goal_reward): goal達成報酬 -> workerが最大化
                 
+                s_time = time.time()
                 # Extrinsic Rewardの計算
                 extr_reward = objective(imag_feat, imag_state, imag_action)[1:]
                 # extr_reward: (time-1, batch, 1)
@@ -713,9 +725,12 @@ class ImagBehavior(nn.Module):
                 # ★ 公式実装に合わせて trajectory を構築
                 # 参照: director/embodied/agents/director/hierarchy.py train_jointly (L144-162)
                 # cont は全タイムステップ（horizon+1）に対して定義
-                discount = self._config.discount * torch.ones(
-                    imag_feat.shape[0], imag_feat.shape[1], 1,
-                    device=imag_feat.device, dtype=imag_feat.dtype)
+                if "cont" in self._world_model.heads:
+                    discount = self._config.discount * self._world_model.heads["cont"](imag_feat).mean
+                else:
+                    discount = self._config.discount * torch.ones(
+                        imag_feat.shape[0], imag_feat.shape[1], 1,
+                        device=imag_feat.device, dtype=imag_feat.dtype)
                 
                 # 共通 trajectory
                 # ★ goal_states と goal_latents を detach して Worker と Manager の勾配グラフを分離
@@ -744,39 +759,45 @@ class ImagBehavior(nn.Module):
                     indices = [i * k for i in range(n_abstract + 1)]
                     mtraj['skill'] = goal_latents[indices]
                 
+                e_time = time.time()
+                # print(f"Trajectory processing time: {e_time - s_time:.2f} seconds")
+                
                 # ========== Worker の訓練 ==========
-                # Worker の報酬: goal reward のみ
-                wkr_reward = (self.worker_rews["extr"] * wtraj['reward_extr'] + 
-                              self.worker_rews["expl"] * wtraj['reward_expl'] + 
-                              self.worker_rews["goal"] * wtraj['reward_goal'])
-                
-                # Worker の value 入力: [feat, goal]
+                s_time = time.time()
                 wkr_value_inp = torch.cat([wtraj['feat'], wtraj['goal']], dim=-1)
-                # ★ value は slow target net で計算（勾配不要）
-                with torch.no_grad():
-                    wkr_value = self._slow_value_wkr(wkr_value_inp).mode()
                 
-                # ★ lambda_return と advantage は no_grad の外で計算
-                # dynamics/backprop モードでは reward→traj→action→actor の勾配パスが必要
-                # REINFORCE モードでは adv.detach() するため影響なし
-                wkr_target = tools.lambda_return(
-                    wkr_reward,           # (k, N*B, 1) - r_0...r_{k-1}
-                    wkr_value[:-1],       # (k, N*B, 1) - V(s_0)...V(s_{k-1}) (no_grad済み)
-                    wtraj['cont'][1:],    # (k, N*B, 1) - next-state cont
-                    bootstrap=wkr_value[-1],
-                    lambda_=self._config.discount_lambda,
-                    axis=0,
-                )
-                
-                # ★ 公式実装に合わせた Weight 計算
+                # Worker の各報酬成分について Advantage を計算
+                wkr_advs = []
+                wkr_targets_dict = {}
                 discount = self._config.discount
                 wkr_weights = (torch.cumprod(wtraj['cont'], dim=0) / discount).detach()
                 
-                # ★ 公式 Director 準拠: return を std 正規化 → advantage を mean_std 正規化
-                wkr_target_tensor = torch.stack(wkr_target, dim=1) if isinstance(wkr_target, (list, tuple)) else wkr_target
-                normed_target_wkr = self.wkr_retnorm(wkr_target_tensor)
-                normed_base_wkr = self.wkr_retnorm(wkr_value[:-1], update=False)
-                adv_wkr = self.wkr_advnorm(normed_target_wkr - normed_base_wkr)
+                for key, scale in self.worker_rews.items():
+                    if scale == 0.0:
+                        continue
+                    
+                    wkr_reward = wtraj[f'reward_{key}']
+                    with torch.no_grad():
+                        wkr_value = self._slow_values_wkr[key](wkr_value_inp).mode()
+                        
+                    wkr_target = tools.lambda_return(
+                        wkr_reward,
+                        wkr_value[:-1],
+                        wtraj['cont'][1:],
+                        bootstrap=wkr_value[-1],
+                        lambda_=self._config.discount_lambda,
+                        axis=0,
+                    )
+                    
+                    wkr_target_tensor = torch.stack(wkr_target, dim=1) if isinstance(wkr_target, (list, tuple)) else wkr_target
+                    wkr_targets_dict[key] = wkr_target_tensor
+                    
+                    normed_target_wkr = self.wkr_retnorms[key](wkr_target_tensor)
+                    normed_base_wkr = self.wkr_retnorms[key](wkr_value[:-1], update=False)
+                    adv_wkr_k = self.wkr_advnorms[key](normed_target_wkr - normed_base_wkr)
+                    wkr_advs.append(adv_wkr_k * scale)
+                    
+                adv_wkr = sum(wkr_advs)
                 
                 wkr_policy = self.worker_actor(wkr_value_inp.detach())
                 
@@ -794,12 +815,9 @@ class ImagBehavior(nn.Module):
                 wkr_actor_loss = -wkr_weights[:-1] * wkr_actor_target
                 # ★ 公式 Director 準拠: entropy 正規化 (連続/離散で分岐)
                 if self._config.imag_gradient == 'dynamics':
-                    # 連続行動 (Normal分布): per-dimension entropy を [0,1] に正規化
-                    # wkr_policy._dist.base_dist は Normal(mean, std) — std ∈ [min_std, max_std]
                     import math
                     base_dist = wkr_policy._dist.base_dist  # Normal per-dim
                     wkr_ent = base_dist.entropy()[:-1]  # (T, B, act_dim)
-                    # Normal entropy = 0.5 * log(2*pi*e * std^2)
                     min_std = self.worker_actor._min_std
                     max_std = self.worker_actor._max_std
                     lo = 0.5 * math.log(2 * math.pi * math.e * min_std ** 2)
@@ -808,45 +826,51 @@ class ImagBehavior(nn.Module):
                     wkr_ent_loss, wkr_ent_mets = self.wkr_actent(wkr_ent_normed)
                     wkr_ent_loss = wkr_ent_loss.sum(-1)  # 次元ごとに合計
                 else:
-                    # 離散行動 (OneHot分布): scalar entropy を [0,1] に正規化
                     wkr_ent = wkr_policy.entropy()[:-1]
                     wkr_maxent = torch.log(torch.tensor(float(self._config.num_actions), device=wkr_ent.device))
                     wkr_ent_normed = wkr_ent / wkr_maxent
                     wkr_ent_loss, wkr_ent_mets = self.wkr_actent(wkr_ent_normed)
-                # ★ 公式準拠: (REINFORCE_loss + entropy_loss) * weight
+
                 wkr_actor_loss = (-wkr_actor_target + wkr_ent_loss.unsqueeze(-1)) * wkr_weights[:-1]
                 wkr_actor_loss = torch.mean(wkr_actor_loss)
+                e_time = time.time()
+                # print(f"Worker policy loss time: {e_time - s_time:.3f} sec")
                 
                 # ========== Manager の訓練 ==========
-                # Manager の報酬: extr + expl
-                mgr_reward = (self.manager_rews["extr"] * mtraj['reward_extr'] + 
-                              self.manager_rews["expl"] * mtraj['reward_expl'] + 
-                              self.manager_rews["goal"] * mtraj['reward_goal'])
-                
-                # Manager の value 入力: feat のみ
+                s_time = time.time()
                 mgr_value_inp = mtraj['feat']
-                # ★ value は slow target net で計算（勾配不要）
-                with torch.no_grad():
-                    mgr_value = self._slow_value_mgr(mgr_value_inp).mode()
                 
-                # ★ Manager も同様に lambda_return と advantage は no_grad 外
-                mgr_target = tools.lambda_return(
-                    mgr_reward,            # (n_abstract, B, 1)
-                    mgr_value[:-1],        # (n_abstract, B, 1) - no_grad済み
-                    mtraj['cont'][1:],     # (n_abstract, B, 1)
-                    bootstrap=mgr_value[-1],
-                    lambda_=self._config.discount_lambda,
-                    axis=0,
-                )
-                
-                # Weight 計算
+                # Manager の各報酬成分について Advantage を計算
+                mgr_advs = []
+                mgr_targets_dict = {}
                 mgr_weights = (torch.cumprod(mtraj['cont'], dim=0) / discount).detach()
                 
-                # 正規化
-                mgr_target_tensor = torch.stack(mgr_target, dim=1) if isinstance(mgr_target, (list, tuple)) else mgr_target
-                normed_target_mgr = self.mgr_retnorm(mgr_target_tensor)
-                normed_base_mgr = self.mgr_retnorm(mgr_value[:-1], update=False)
-                adv_mgr = self.mgr_advnorm(normed_target_mgr - normed_base_mgr)
+                for key, scale in self.manager_rews.items():
+                    if scale == 0.0:
+                        continue
+                        
+                    mgr_reward = mtraj[f'reward_{key}']
+                    with torch.no_grad():
+                        mgr_value = self._slow_values_mgr[key](mgr_value_inp).mode()
+                        
+                    mgr_target = tools.lambda_return(
+                        mgr_reward,
+                        mgr_value[:-1],
+                        mtraj['cont'][1:],
+                        bootstrap=mgr_value[-1],
+                        lambda_=self._config.discount_lambda,
+                        axis=0,
+                    )
+                    
+                    mgr_target_tensor = torch.stack(mgr_target, dim=1) if isinstance(mgr_target, (list, tuple)) else mgr_target
+                    mgr_targets_dict[key] = mgr_target_tensor
+                    
+                    normed_target_mgr = self.mgr_retnorms[key](mgr_target_tensor)
+                    normed_base_mgr = self.mgr_retnorms[key](mgr_value[:-1], update=False)
+                    adv_mgr_k = self.mgr_advnorms[key](normed_target_mgr - normed_base_mgr)
+                    mgr_advs.append(adv_mgr_k * scale)
+                    
+                adv_mgr = sum(mgr_advs)
                     
                 mgr_policy = self.manager_actor(mgr_value_inp.detach())
                 
@@ -869,6 +893,7 @@ class ImagBehavior(nn.Module):
                 mgr_ent_normed = mgr_ent / mgr_maxent
                 mgr_ent_loss, mgr_ent_mets = self.mgr_actent(mgr_ent_normed)
                 mgr_ent_loss = mgr_ent_loss.sum(-1, keepdim=True)
+
                 # ★ 公式準拠: (REINFORCE_loss + entropy_loss) * weight
                 mgr_actor_loss = (-mgr_actor_target + mgr_ent_loss) * mgr_weights[:-1]
                 mgr_actor_loss = torch.mean(mgr_actor_loss)
@@ -876,31 +901,45 @@ class ImagBehavior(nn.Module):
                 # エントロピー計算（メトリクス用）- 既存の policy を使用
                 manager_ent = mgr_policy.entropy()
                 worker_ent = wkr_policy.entropy()
+                e_time = time.time()
+                # print(f"Manager policy loss time: {e_time - s_time:.3f} sec")
         e_time = time.time()
         # print(f"Imagination and policy loss time: {e_time - s_time:.3f} sec")
         
         s_time = time.time()
         # ========== Value の更新 ==========
-        with tools.RequiresGrad(self.worker_value), tools.RequiresGrad(self.manager_value):
+        with tools.RequiresGrad(self.worker_values), tools.RequiresGrad(self.manager_values):
             with torch.cuda.amp.autocast(self._use_amp):
                 # Worker value loss
-                # ★ 公式 VFunction.train 準拠: loss = -log_prob(target) * weight
-                wkr_value_for_loss = self.worker_value(wkr_value_inp[:-1].detach())
-                wkr_value_loss = -1 * wkr_value_for_loss.log_prob(wkr_target_tensor.detach())
-                wkr_value_loss = torch.mean(wkr_weights[:-1] * wkr_value_loss[:, :, None])
+                wkr_value_losses = []
+                wkr_values_for_loss = {}
+                for key, target_tensor in wkr_targets_dict.items():
+                    val_k = self.worker_values[key](wkr_value_inp[:-1].detach())
+                    wkr_values_for_loss[key] = val_k
+                    loss_k = -1 * val_k.log_prob(target_tensor.detach())
+                    loss_k = torch.mean(wkr_weights[:-1] * loss_k[:, :, None])
+                    wkr_value_losses.append(loss_k)
+                wkr_value_loss = sum(wkr_value_losses)
                 
                 # Manager value loss
-                # ★ 公式 VFunction.train 準拠: loss = -log_prob(target) * weight
-                mgr_value_for_loss = self.manager_value(mgr_value_inp[:-1].detach())
-                mgr_value_loss = -1 * mgr_value_for_loss.log_prob(mgr_target_tensor.detach())
-                mgr_value_loss = torch.mean(mgr_weights[:-1] * mgr_value_loss[:, :, None])
+                mgr_value_losses = []
+                mgr_values_for_loss = {}
+                for key, target_tensor in mgr_targets_dict.items():
+                    val_k = self.manager_values[key](mgr_value_inp[:-1].detach())
+                    mgr_values_for_loss[key] = val_k
+                    loss_k = -1 * val_k.log_prob(target_tensor.detach())
+                    loss_k = torch.mean(mgr_weights[:-1] * loss_k[:, :, None])
+                    mgr_value_losses.append(loss_k)
+                mgr_value_loss = sum(mgr_value_losses)
         e_time = time.time()
         # print(f"Value loss time: {e_time - s_time:.3f} sec")
         
         s_time = time.time()
         # Metrics
-        metrics.update(tools.tensorstats(wkr_value_for_loss.mode(), "worker_value"))
-        metrics.update(tools.tensorstats(mgr_value_for_loss.mode(), "manager_value"))
+        for key, val_k in wkr_values_for_loss.items():
+            metrics.update(tools.tensorstats(val_k.mode(), f"worker_value_{key}"))
+        for key, val_k in mgr_values_for_loss.items():
+            metrics.update(tools.tensorstats(val_k.mode(), f"manager_value_{key}"))
         metrics.update(tools.tensorstats(extr_reward, "imag_reward"))
         metrics.update(tools.tensorstats(expl_reward, "imag_expl_reward"))
         metrics.update(tools.tensorstats(goal_reward, "imag_goal_reward"))
@@ -931,18 +970,17 @@ class ImagBehavior(nn.Module):
         metrics["mgr_value_loss"] = to_np(mgr_value_loss)
 
         # Optimizer 更新
-        # Optimizer 更新（self 全体を RequiresGrad しない）
         with tools.RequiresGrad(self.manager_actor):
             metrics.update(self.mgr_actor_opt(mgr_actor_loss, self.manager_actor.parameters()))
 
         with tools.RequiresGrad(self.worker_actor):
             metrics.update(self.wkr_actor_opt(wkr_actor_loss, self.worker_actor.parameters()))
 
-        with tools.RequiresGrad(self.manager_value):
-            metrics.update(self.mgr_value_opt(mgr_value_loss, self.manager_value.parameters()))
+        with tools.RequiresGrad(self.manager_values):
+            metrics.update(self.mgr_value_opt(mgr_value_loss, self.manager_values.parameters()))
 
-        with tools.RequiresGrad(self.worker_value):
-            metrics.update(self.wkr_value_opt(wkr_value_loss, self.worker_value.parameters()))
+        with tools.RequiresGrad(self.worker_values):
+            metrics.update(self.wkr_value_opt(wkr_value_loss, self.worker_values.parameters()))
         
         # weights は wkr_weights を返す（既に正しく計算済み）
         e_time = time.time()
@@ -1237,15 +1275,17 @@ class ImagBehavior(nn.Module):
             if self._updates % self._config.critic["slow_target_update"] == 0:
                 mix = self._config.critic["slow_target_fraction"]
                 
-                slow_wkr_value = self._slow_value_wkr
-                wkr_value = self.worker_value
-                for s, d in zip(wkr_value.parameters(), slow_wkr_value.parameters()):
-                    d.data = mix * s.data + (1 - mix) * d.data
-                    
-                slow_mgr_value = self._slow_value_mgr
-                mgr_value = self.manager_value
-                for s, d in zip(mgr_value.parameters(), slow_mgr_value.parameters()):
-                    d.data = mix * s.data + (1 - mix) * d.data
+                for key in self._slow_values_wkr.keys():
+                    slow_wkr_value = self._slow_values_wkr[key]
+                    wkr_value = self.worker_values[key]
+                    for s, d in zip(wkr_value.parameters(), slow_wkr_value.parameters()):
+                        d.data = mix * s.data + (1 - mix) * d.data
+                        
+                for key in self._slow_values_mgr.keys():
+                    slow_mgr_value = self._slow_values_mgr[key]
+                    mgr_value = self.manager_values[key]
+                    for s, d in zip(mgr_value.parameters(), slow_mgr_value.parameters()):
+                        d.data = mix * s.data + (1 - mix) * d.data
             self._updates += 1
     
     # ★ 公式実装に合わせて split_traj を追加
@@ -1362,17 +1402,10 @@ class ImagBehavior(nn.Module):
                     start_idx = i * k
                     end_idx = start_idx + k
                     seg = val[start_idx:end_idx]  # (k, B, 1)
-                    # cont による重み付け: cumprod(cont[:-1]) で時間方向の割引
+                    # cont_seg は該当区間の cont (kステップ分)
                     cont_seg = traj['cont'][start_idx:end_idx]
-                    if cont_seg.shape[0] > 1:
-                        weights = torch.cumprod(cont_seg[:-1], dim=0)  # (k-1, B, 1)
-                        # 最初のステップの重みを1にする
-                        weights = torch.cat([torch.ones_like(cont_seg[:1]), weights], dim=0)  # (k, B, 1)
-                    else:
-                        weights = torch.ones_like(seg)
-                    weighted_sum = (seg * weights).sum(dim=0, keepdim=True)  # (1, B, 1)
-                    weight_sum = weights.sum(dim=0, keepdim=True)  # (1, B, 1)
-                    seg_mean = weighted_sum / weight_sum.clamp(min=1e-8)  # (1, B, 1)
+                    weights = torch.cumprod(cont_seg, dim=0)  # (k, B, 1)
+                    seg_mean = (seg * weights).mean(dim=0, keepdim=True)  # (1, B, 1)
                     segments.append(seg_mean)
                 new_traj[key] = torch.cat(segments, dim=0)  # (n_abstract, B, 1) ★公式準拠: val[-1:]は追加しない
             elif key == 'cont':
