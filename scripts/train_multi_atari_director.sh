@@ -9,13 +9,15 @@ DYNAMICS_TYPE="director"
 BASE_LOGDIR="logdir/director"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 SEED=80
-STEPS=200000  # Number of training steps per environment
+# STEPS=200000  # Number of training steps per environment
 
 # List of Atari environments to train
 TASKS=(
-    "atari_frostbite"
+    # "atari_frostbite"
     # "atari_breakout"
     # "atari_private_eye"
+    "atari_krull"
+    "atari_boxing"
 )
 
 # VTA hyperparameters: using config defaults (no overrides)
@@ -48,7 +50,7 @@ for TASK in "${TASKS[@]}"; do
         --dynamics_type ${DYNAMICS_TYPE} \
         --logdir ${LOGDIR} \
         --seed ${SEED} \
-        --steps ${STEPS}
+        # --steps ${STEPS}
     
     echo ""
     echo "Completed: ${TASK}"

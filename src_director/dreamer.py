@@ -12,7 +12,7 @@ import ruamel.yaml as yaml
 from . import exploration as expl
 from . import models
 from . import tools
-from . import director
+# from . import director
 from .envs import wrappers
 from .parallel import Parallel, Damy
 
@@ -160,7 +160,6 @@ class Dreamer(nn.Module):
         s_time = time.time()
         post, context, mets = self._wm._train(data)
         e_time = time.time()
-        # print(f"world model train time: {e_time - s_time:.4f}) sec")
         metrics.update(mets)
         start = post
         reward = lambda f, s, a: self._wm.heads["reward"](
@@ -169,9 +168,11 @@ class Dreamer(nn.Module):
         
         # 2. Goal AEの訓練
         # GoalAEの訓練には，self._wm._train(data)で状態表現（deter）が出力されれば良い．
+        s_time = time.time()
         deter_feats = context["deter_feat"]   # (batch, length, dim_deter)
         mets_gae = self._wm._train_goal_ae(deter_feats)
         metrics.update(mets_gae)
+        e_time = time.time()
         
         # 2. 方策モデルの訓練 on 想像軌道上
         # if self._config.task_behavior == 'Director':
@@ -181,7 +182,6 @@ class Dreamer(nn.Module):
         s_time = time.time()
         metrics.update(self._task_behavior._train(start, reward)[-1])
         e_time = time.time()
-        # print(f"policy train time: {e_time - s_time:.4f} sec")
         if self._config.expl_behavior != "greedy":
             mets = self._expl_behavior.train(start, context, data)[-1]
             metrics.update({"expl_" + key: value for key, value in mets.items()})

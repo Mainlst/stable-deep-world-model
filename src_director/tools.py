@@ -673,21 +673,15 @@ class TanhBijector(torchd.Transform):
 
 def static_scan_for_lambda_return(fn, inputs, start):
     last = start
-    indices = range(inputs[0].shape[0])
-    indices = reversed(indices)
-    flag = True
-    for index in indices:
-        # (inputs, pcont) -> (inputs[index], pcont[index])
-        inp = lambda x: (_input[x] for _input in inputs)
-        last = fn(last, *inp(index))
-        if flag:
-            outputs = last
-            flag = False
-        else:
-            outputs = torch.cat([outputs, last], dim=-1)
-    outputs = torch.reshape(outputs, [outputs.shape[0], outputs.shape[1], 1])
-    outputs = torch.flip(outputs, [1])
-    outputs = torch.unbind(outputs, dim=0)
+    outputs = []
+    
+    for i in reversed(range(inputs[0].shape[0])):
+        inp = (inputs[0][i], inputs[1][i])
+        last = fn(last, *inp)
+        outputs.append(last)
+        
+    outputs.reverse()
+    outputs = torch.stack(outputs, dim=0)
     return outputs
 
 
