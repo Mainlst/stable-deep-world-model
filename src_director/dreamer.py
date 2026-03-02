@@ -16,12 +16,14 @@ from . import tools
 from .envs import wrappers
 from .parallel import Parallel, Damy
 
+import wandb
 import torch
 from torch import nn
 from torch import distributions as torchd
 
-
 to_np = lambda x: x.detach().cpu().numpy()
+
+os.environ['WANDB_API_KEY'] = 'ec54c112b7a4f2600ac4e283c5dfd1f8f06df606'
 
 class Dreamer(nn.Module):
     def __init__(self, obs_space, act_space, config, logger, dataset):
@@ -264,6 +266,17 @@ def main(config):
     config.traindir.mkdir(parents=True, exist_ok=True)
     config.evaldir.mkdir(parents=True, exist_ok=True)
     
+    # Setup Wandb
+    if config.steps > 1e6:
+        steps_str = f"{int(config.steps//1e6)}M"
+    elif config.steps > 1e3:
+        steps_str = f"{int(config.steps//1e3)}K"
+    else:
+        steps_str = f"{int(config.steps)}"
+    wandb_run_name = f"director_{config.task}_{steps_str}"
+    wandb_project_name = 'director'
+    wandb_entity = "adaptive_wm"
+    
     # Save training configuration
     config_path = logdir / "config.yaml"
     config_dict = vars(config).copy()
@@ -277,7 +290,8 @@ def main(config):
     
     step = count_steps(config.traindir)
     # step in logger is environmental step
-    logger = tools.Logger(logdir, config.action_repeat * step)
+    logger = tools.Logger(logdir, config.action_repeat * step, wandb_run_name=wandb_run_name, \
+        wandb_project=wandb_project_name, wandb_entity=wandb_entity)
 
     print("Create envs.")
     if config.offline_traindir:

@@ -56,9 +56,15 @@ class TimeRecording:
         torch.cuda.synchronize()
         print(self._comment, self._st.elapsed_time(self._nd) / 1000)
 
+import os
+import json
+import time
+import numpy as np
+
+from torch.utils.tensorboard import SummaryWriter
 
 class Logger:
-    def __init__(self, logdir, step):
+    def __init__(self, logdir, step, wandb_project=None, wandb_entity=None, wandb_run_name=None, wandb_config=None):
         self._logdir = logdir
         self._writer = SummaryWriter(log_dir=str(logdir), max_queue=1000)
         self._last_step = None
@@ -67,6 +73,34 @@ class Logger:
         self._images = {}
         self._videos = {}
         self.step = step
+
+        # ---- W&B optional init (only if API key is present) ----
+        self._wandb = None
+        self._wandb_enabled = False
+
+        api_key = os.environ.get("WANDB_API_KEY", "").strip()
+        if api_key:
+            try:
+                import wandb
+                self._wandb = wandb
+                # login() を明示しておくと環境によって安定します（既にログイン済みなら何もしない）
+                self._wandb.login(key=api_key, relogin=True)
+
+                # project は必須なので未指定なら適当なデフォルトを置く
+                project = wandb_project or os.environ.get("WANDB_PROJECT") or "default"
+                self._wandb.init(
+                    project=project,
+                    entity=wandb_entity or os.environ.get("WANDB_ENTITY"),
+                    name=wandb_run_name,
+                    dir=str(logdir),
+                    config=wandb_config or {},
+                )
+                self._wandb_enabled = True
+            except Exception as e:
+                # W&B で失敗しても学習は続けたい場合は無効化して握りつぶす
+                print(f"[Logger] wandb init failed -> disable wandb: {e}")
+                self._wandb = None
+                self._wandb_enabled = False
 
     def scalar(self, name, value):
         self._scalars[name] = float(value)
@@ -80,28 +114,69 @@ class Logger:
     def write(self, fps=False, step=False):
         if not step:
             step = self.step
+
         scalars = list(self._scalars.items())
         if fps:
             scalars.append(("fps", self._compute_fps(step)))
+
         print(f"[{step}]", " / ".join(f"{k} {v:.1f}" for k, v in scalars))
+
+        # ---- jsonl ----
         with (self._logdir / "metrics.jsonl").open("a") as f:
             f.write(json.dumps({"step": step, **dict(scalars)}) + "\n")
+
+        # ---- TensorBoard scalars ----
         for name, value in scalars:
             if "/" not in name:
                 self._writer.add_scalar("scalars/" + name, value, step)
             else:
                 self._writer.add_scalar(name, value, step)
+
+        # ---- TensorBoard images ----
         for name, value in self._images.items():
             self._writer.add_image(name, value, step)
+
+        # ---- TensorBoard videos ----
         for name, value in self._videos.items():
             name = name if isinstance(name, str) else name.decode("utf-8")
             if np.issubdtype(value.dtype, np.floating):
                 value = np.clip(255 * value, 0, 255).astype(np.uint8)
             B, T, H, W, C = value.shape
-            value = value.transpose(1, 4, 2, 0, 3).reshape((1, T, C, H, B * W))
-            self._writer.add_video(name, value, step, 16)
+            value_tb = value.transpose(1, 4, 2, 0, 3).reshape((1, T, C, H, B * W))
+            self._writer.add_video(name, value_tb, step, 16)
 
         self._writer.flush()
+
+        # ---- W&B logging (optional) ----
+        if self._wandb_enabled:
+            # scalars
+            wb_log = {name: val for name, val in scalars}
+
+            # images: accept HWC/CHW, grayscale ok
+            for name, img in self._images.items():
+                x = np.asarray(img)
+                # CHW -> HWC (C=1/3/4)
+                if x.ndim == 3 and x.shape[0] in (1, 3, 4) and x.shape[-1] not in (1, 3, 4):
+                    x = np.transpose(x, (1, 2, 0))
+                # float -> uint8
+                if np.issubdtype(x.dtype, np.floating):
+                    x = np.clip(255 * x, 0, 255).astype(np.uint8)
+                wb_log[name] = self._wandb.Image(x)
+
+            # videos: expect (B,T,H,W,C), log first element by default
+            for name, vid in self._videos.items():
+                key = name if isinstance(name, str) else name.decode("utf-8")
+                v = np.asarray(vid)
+                if np.issubdtype(v.dtype, np.floating):
+                    v = np.clip(255 * v, 0, 255).astype(np.uint8)
+
+                # take first batch for W&B (W&B expects (T,H,W,C) or (T,C,H,W) depending on api; numpy ok)
+                v0 = v[0]  # (T,H,W,C)
+                wb_log[key] = self._wandb.Video(v0, fps=16, format="mp4")
+
+            self._wandb.log(wb_log, step=step)
+
+        # reset buffers
         self._scalars = {}
         self._images = {}
         self._videos = {}
@@ -119,13 +194,95 @@ class Logger:
 
     def offline_scalar(self, name, value, step):
         self._writer.add_scalar("scalars/" + name, value, step)
+        if self._wandb_enabled:
+            self._wandb.log({name: float(value)}, step=step)
 
     def offline_video(self, name, value, step):
         if np.issubdtype(value.dtype, np.floating):
             value = np.clip(255 * value, 0, 255).astype(np.uint8)
         B, T, H, W, C = value.shape
-        value = value.transpose(1, 4, 2, 0, 3).reshape((1, T, C, H, B * W))
-        self._writer.add_video(name, value, step, 16)
+        value_tb = value.transpose(1, 4, 2, 0, 3).reshape((1, T, C, H, B * W))
+        self._writer.add_video(name, value_tb, step, 16)
+
+        if self._wandb_enabled:
+            key = name if isinstance(name, str) else name.decode("utf-8")
+            v0 = np.asarray(value)[0]  # (T,H,W,C)
+            self._wandb.log({key: self._wandb.Video(v0, fps=16, format="mp4")}, step=step)
+
+    def close(self):
+        self._writer.close()
+        if self._wandb_enabled:
+            self._wandb.finish()
+
+# class Logger:
+#     def __init__(self, logdir, step):
+#         self._logdir = logdir
+#         self._writer = SummaryWriter(log_dir=str(logdir), max_queue=1000)
+#         self._last_step = None
+#         self._last_time = None
+#         self._scalars = {}
+#         self._images = {}
+#         self._videos = {}
+#         self.step = step
+
+#     def scalar(self, name, value):
+#         self._scalars[name] = float(value)
+
+#     def image(self, name, value):
+#         self._images[name] = np.array(value)
+
+#     def video(self, name, value):
+#         self._videos[name] = np.array(value)
+
+#     def write(self, fps=False, step=False):
+#         if not step:
+#             step = self.step
+#         scalars = list(self._scalars.items())
+#         if fps:
+#             scalars.append(("fps", self._compute_fps(step)))
+#         print(f"[{step}]", " / ".join(f"{k} {v:.1f}" for k, v in scalars))
+#         with (self._logdir / "metrics.jsonl").open("a") as f:
+#             f.write(json.dumps({"step": step, **dict(scalars)}) + "\n")
+#         for name, value in scalars:
+#             if "/" not in name:
+#                 self._writer.add_scalar("scalars/" + name, value, step)
+#             else:
+#                 self._writer.add_scalar(name, value, step)
+#         for name, value in self._images.items():
+#             self._writer.add_image(name, value, step)
+#         for name, value in self._videos.items():
+#             name = name if isinstance(name, str) else name.decode("utf-8")
+#             if np.issubdtype(value.dtype, np.floating):
+#                 value = np.clip(255 * value, 0, 255).astype(np.uint8)
+#             B, T, H, W, C = value.shape
+#             value = value.transpose(1, 4, 2, 0, 3).reshape((1, T, C, H, B * W))
+#             self._writer.add_video(name, value, step, 16)
+
+#         self._writer.flush()
+#         self._scalars = {}
+#         self._images = {}
+#         self._videos = {}
+
+#     def _compute_fps(self, step):
+#         if self._last_step is None:
+#             self._last_time = time.time()
+#             self._last_step = step
+#             return 0
+#         steps = step - self._last_step
+#         duration = time.time() - self._last_time
+#         self._last_time += duration
+#         self._last_step = step
+#         return steps / duration
+
+#     def offline_scalar(self, name, value, step):
+#         self._writer.add_scalar("scalars/" + name, value, step)
+
+#     def offline_video(self, name, value, step):
+#         if np.issubdtype(value.dtype, np.floating):
+#             value = np.clip(255 * value, 0, 255).astype(np.uint8)
+#         B, T, H, W, C = value.shape
+#         value = value.transpose(1, 4, 2, 0, 3).reshape((1, T, C, H, B * W))
+#         self._writer.add_video(name, value, step, 16)
 
 
 def simulate(
