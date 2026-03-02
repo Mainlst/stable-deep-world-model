@@ -62,7 +62,7 @@ defaults:
   initial: 'learned'
 
   # VTA (Variational Temporal Abstraction) parameters
-  dynamics_type: 'vta'  # 'rssm' or 'vta'
+  dynamics_type: 'rssm'  # 'rssm' or 'vta'
   vta_abs_belief: 512    # Abstract belief size
   vta_abs_stoch: 32      # Abstract stochastic size
   vta_obs_belief: 512    # Observation belief size
@@ -78,50 +78,6 @@ defaults:
   vta_boundary_scale: 0.0 # weight for boundary prior loss
   vta_posterior_input: 'embed' # 'embed' or 'embed_reward'
 
-  # Director Hierarchical Policy
-  use_director: False  # Enable Director-style hierarchical policy
-  director_manager_mode: 'fixed'  # 'fixed' (K steps) or 'boundary' (VTA boundaries)
-  director_skill_duration: 8  # Fixed interval for manager calls
-  director_skill_stoch: 8  # Goal AE latent stochastic dimension
-  director_skill_discrete: 8  # Goal AE latent discrete categories
-  
-  # Goal Autoencoder
-  director_goal_ae_hidden: 512
-  director_goal_ae_layers: 4
-  director_goal_ae_lr: 1e-4
-  director_goal_ae_kl_config: {impl: mult, scale: 0.0, target: 10.0, min: 1e-5, max: 1.0}
-  director_goal_ae_unimix: 0.01
-  goal_ae_dist: 'mse'  # Official Director uses mse
-  director_adver_impl: 'squared'  # Official Director uses 'squared'
-  
-  # Manager Policy
-  director_manager_layers: 4
-  director_manager_units: 512
-  director_manager_lr: 1e-4  # Official: actor_opt.lr = 1e-4
-  director_manager_outscale: 0.1
-  director_manager_extr_weight: 1.0  # Weight for extrinsic reward
-  director_manager_expl_weight: 0.1  # Weight for exploration reward
-  
-  # Worker Policy
-  director_worker_layers: 4
-  director_worker_units: 512
-  director_worker_lr: 1e-4  # Official: actor_opt.lr = 1e-4
-  director_worker_outscale: 0.1
-  # Worker reward weights (like official Director worker_rews)
-  director_worker_extr_weight: 0.0  # Weight for extrinsic (task) reward
-  director_worker_goal_weight: 1.0  # Weight for goal reward
-  # Automatic entropy adjustment (like official Director actent)
-  director_worker_entropy_scale: 3e-3  # Initial entropy bonus scale
-  director_worker_entropy_target: 1.5  # Target entropy (raised to prevent collapse)
-  director_worker_entropy_min: 1e-5    # Minimum entropy scale
-  director_worker_entropy_max: 1e2     # Maximum entropy scale
-  director_worker_entropy_vel: 0.1     # Adjustment velocity
-  
-  # Goal reward configuration
-  director_goal_reward: 'cosine'  # 'cosine_max', 'cosine', 'l2', 'mse'
-  director_use_delta: False  # Use goal delta instead of absolute goal (Disabled for stability)
-  director_manager_input: 'abs_feat'  # 'abs_feat' or 'obs_feat'
-
   # Training
   batch_size: 16
   batch_length: 64
@@ -129,14 +85,14 @@ defaults:
   pretrain: 100
   model_lr: 1e-4
   opt_eps: 1e-8
-  grad_clip: 100  # Official: clip = 100.0
+  grad_clip: 1000
   dataset_size: 1000000
   opt: 'adam'
 
   # Behavior.
-  discount: 0.99  # dreamerv3 = 0.997, director = 0.99
+  discount: 0.997
   discount_lambda: 0.95
-  imag_horizon: 16  # dreamerv3 = 15, director = 16
+  imag_horizon: 15
   imag_gradient: 'dynamics'
   imag_gradient_mix: 0.0
   eval_state_mean: False

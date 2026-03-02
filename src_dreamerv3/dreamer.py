@@ -12,7 +12,6 @@ import ruamel.yaml as yaml
 from . import exploration as expl
 from . import models
 from . import tools
-from . import hierarchical_policy
 from .envs import wrappers
 from .parallel import Parallel, Damy
 
@@ -41,14 +40,7 @@ class Dreamer(nn.Module):
         self._update_count = 0
         self._dataset = dataset
         self._wm = models.WorldModel(obs_space, act_space, self._step, config)
-        
-        # Choose between standard ImagBehavior and HierarchicalBehavior (Director)
-        if getattr(config, 'use_director', False):
-            self._task_behavior = hierarchical_policy.HierarchicalBehavior(config, self._wm)
-            self._use_director = True
-        else:
-            self._task_behavior = models.ImagBehavior(config, self._wm)
-            self._use_director = False
+        self._task_behavior = models.ImagBehavior(config, self._wm)
         if (
             config.compile and os.name != "nt"
         ):  # compilation is not supported on windows
@@ -92,13 +84,8 @@ class Dreamer(nn.Module):
     def _policy(self, obs, state, training):
         if state is None:
             latent = action = None
-            carry = None
         else:
-            if self._use_director:
-                latent, action, carry = state
-            else:
-                latent, action = state
-                carry = None
+            latent, action = state
         obs = self._wm.preprocess(obs)
         embed = self._wm.encoder(obs)
         latent, _ = self._wm.dynamics.obs_step(latent, action, embed, obs["is_first"])
@@ -109,37 +96,17 @@ class Dreamer(nn.Module):
                 latent["abs_stoch"] = latent["abs_mean"]
             else:
                 latent["stoch"] = latent["mean"]
-        
-        if self._use_director:
-            # Director mode: use hierarchical policy
-            batch_size = list(latent.values())[0].shape[0]
-            if carry is None:
-                carry = self._task_behavior.initial(batch_size)
-            
-            outs, carry = self._task_behavior.policy(latent, carry, imag=False)
-            actor = outs["action"]
-            if not training:
-                action = actor.mode()
-            elif self._should_expl(self._step):
-                # For exploration, still use hierarchical policy but sample
-                action = actor.sample()
-            else:
-                action = actor.sample()
-            logprob = actor.log_prob(action)
+        feat = self._wm.dynamics.get_feat(latent)
+        if not training:
+            actor = self._task_behavior.actor(feat)
+            action = actor.mode()
+        elif self._should_expl(self._step):
+            actor = self._expl_behavior.actor(feat)
+            action = actor.sample()
         else:
-            # Standard mode
-            feat = self._wm.dynamics.get_feat(latent)
-            if not training:
-                actor = self._task_behavior.actor(feat)
-                action = actor.mode()
-            elif self._should_expl(self._step):
-                actor = self._expl_behavior.actor(feat)
-                action = actor.sample()
-            else:
-                actor = self._task_behavior.actor(feat)
-                action = actor.sample()
-            logprob = actor.log_prob(action)
-        
+            actor = self._task_behavior.actor(feat)
+            action = actor.sample()
+        logprob = actor.log_prob(action)
         latent = {k: v.detach() for k, v in latent.items()}
         action = action.detach()
         if self._config.actor["dist"] == "onehot_gumble":
@@ -147,12 +114,7 @@ class Dreamer(nn.Module):
                 torch.argmax(action, dim=-1), self._config.num_actions
             )
         policy_output = {"action": action, "logprob": logprob}
-        
-        if self._use_director:
-            carry = {k: v.detach() for k, v in carry.items()}
-            state = (latent, action, carry)
-        else:
-            state = (latent, action)
+        state = (latent, action)
         return policy_output, state
 
     def _train(self, data):
@@ -160,40 +122,6 @@ class Dreamer(nn.Module):
         post, context, mets = self._wm._train(data)
         metrics.update(mets)
         start = post
-        
-        # === Goal AE Replay Training (Official Director: vae_replay) ===
-        # Train Goal AE on replay buffer with temporal structure
-        # context = current state, goal = K steps ahead
-        if self._use_director:
-            K = self._config.director_skill_duration
-            # post['deter'] has shape (B, T, deter)
-            feat = post['deter']
-            T_seq = feat.shape[1]
-            
-            if T_seq > K:
-                # context: states at time t (Used in official Director Goal AE)
-                # goal: states at time t+K
-                context_seq = feat[:, :-K]   # (B, T-K, deter)
-                goal_seq = feat[:, K:]       # (B, T-K, deter)
-                
-                # Use sequence directly (Batch, T-K, Dim) so MSEDist sums over Dim correctly
-                # goal_flat = goal_seq.reshape(-1, goal_seq.shape[-1])
-                
-                # Train Goal AE with gradient enabled
-                with tools.RequiresGrad(self._task_behavior.goal_ae):
-                    with torch.cuda.amp.autocast(self._config.precision == 16):
-                        goal_ae_loss, goal_ae_mets = self._task_behavior.goal_ae.loss(
-                            goal_seq  # Official default: no context
-                        )
-                    
-                    # Optimize Goal AE
-                    goal_ae_opt_mets = self._task_behavior._goal_ae_opt(
-                        goal_ae_loss, self._task_behavior.goal_ae.parameters()
-                    )
-                metrics.update(goal_ae_opt_mets)
-                # Convert tensors to CPU for logging
-                metrics.update({f'replay_{k}': v.detach().cpu() if hasattr(v, 'cpu') else v for k, v in goal_ae_mets.items()})
-        
         reward = lambda f, s, a: self._wm.heads["reward"](
             self._wm.dynamics.get_feat(s)
         ).mode()
