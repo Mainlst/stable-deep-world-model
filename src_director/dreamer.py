@@ -12,7 +12,7 @@ import ruamel.yaml as yaml
 from . import exploration as expl
 from . import models
 from . import tools
-# from . import director
+
 from .envs import wrappers
 from .parallel import Parallel, Damy
 
@@ -40,10 +40,6 @@ class Dreamer(nn.Module):
         self._update_count = 0
         self._dataset = dataset
         self._wm = models.WorldModel(obs_space, act_space, self._step, config)
-        
-        # if config.task_behavior == 'Director':
-        #      self._task_behavior = director.DirectorBehavior(config, self._wm)
-        # else:
         self._task_behavior = models.ImagBehavior(config, self._wm)
         
         if (
@@ -80,9 +76,6 @@ class Dreamer(nn.Module):
                     self._logger.video("train_openl", to_np(openl))
                 self._logger.write(fps=True)
 
-        # 環境からの実軌道上の方策学習
-        # TODO: 1. policyにstep情報を渡して，managerの呼び出しを制御
-        # 2. stateにprev_goal_stateを含める
         policy_output, state = self._policy(obs, state, training)
 
         if training:
@@ -92,15 +85,7 @@ class Dreamer(nn.Module):
 
     def _policy(self, obs, state, training):
         
-        # if state is None:
-        #     latent = action = None
-        #     director_state = None
-        # else:
-            # if self._config.task_behavior == 'Director':
-            #      latent, action, director_state = state
-            # else:
-        #     latent, action = state
-        #     director_state = None
+
         if state is None:
             latent = action = None
             director_carry = {

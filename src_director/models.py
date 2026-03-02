@@ -10,25 +10,6 @@ to_np = lambda x: x.detach().cpu().numpy()
 
 import numpy as np
 
-torch.autograd.set_detect_anomaly(True)
-
-class RewardEMA:
-    """running mean and std"""
-
-    def __init__(self, device, alpha=1e-2):
-        self.device = device
-        self.alpha = alpha
-        self.range = torch.tensor([0.05, 0.95], device=device)
-
-    @torch.no_grad()
-    def __call__(self, x, ema_vals):
-        flat_x = torch.flatten(x.detach())
-        x_quantile = torch.quantile(input=flat_x, q=self.range)
-        # this should be in-place operation
-        ema_vals[:] = self.alpha * x_quantile + (1 - self.alpha) * ema_vals
-        scale = torch.clip(ema_vals[1] - ema_vals[0], min=1.0)
-        offset = ema_vals[0]
-        return offset.detach(), scale.detach()
 
 
 class WorldModel(nn.Module):
@@ -636,7 +617,7 @@ class ImagBehavior(nn.Module):
             self.register_buffer(
                 "mgr_ema_vals", torch.zeros((2,), device=self._config.device)
             )
-            self.reward_ema = RewardEMA(device=self._config.device)
+
         
         # ★ 公式 Director 準拠: Entropy AutoAdapt + Advantage Normalize
         self.wkr_actent = tools.AutoAdapt(

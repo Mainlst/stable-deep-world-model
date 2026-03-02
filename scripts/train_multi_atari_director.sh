@@ -5,19 +5,16 @@ set -e  # Exit on error
 
 # Configuration
 CONFIGS="atari100k"
-DYNAMICS_TYPE="director"
+DYNAMICS_TYPE="rssm"
 BASE_LOGDIR="logdir/director"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 SEED=80
-# STEPS=200000  # Number of training steps per environment
 
 # List of Atari environments to train
 TASKS=(
-    # "atari_frostbite"
-    # "atari_breakout"
-    # "atari_private_eye"
     "atari_krull"
-    "atari_boxing"
+    # "atari_frostbite"
+    # "atari_private_eye"
 )
 
 # VTA hyperparameters: using config defaults (no overrides)
@@ -35,8 +32,8 @@ echo "Dynamics: ${DYNAMICS_TYPE}"
 echo "=============================================="
 
 for TASK in "${TASKS[@]}"; do
-    LOGDIR="${BASE_LOGDIR}/${TASK}_${DYNAMICS_TYPE}_${TIMESTAMP}"
-    # LOGDIR="${BASE_LOGDIR}/atari_frostbite_director_20260203_204202"
+    # LOGDIR="${BASE_LOGDIR}/${TASK}_${DYNAMICS_TYPE}_${TIMESTAMP}"
+    LOGDIR="${BASE_LOGDIR}/${TASK}_director_${TIMESTAMP}"
     
     echo ""
     echo "=============================================="
@@ -49,9 +46,7 @@ for TASK in "${TASKS[@]}"; do
         --task ${TASK} \
         --dynamics_type ${DYNAMICS_TYPE} \
         --logdir ${LOGDIR} \
-        --seed ${SEED} \
-        # --steps ${STEPS}
-    
+        --seed ${SEED}    
     echo ""
     echo "Completed: ${TASK}"
     echo "=============================================="
