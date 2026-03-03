@@ -14,3 +14,4 @@ crafter==1.8.0
 opencv-python==4.7.0.72
 numpy==1.23.5
 tensorboard==2.17.1
+wandb==0.25.0
