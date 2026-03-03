@@ -219,6 +219,16 @@ crafter:
   cont_head: {layers: 5}
   imag_gradient: 'reinforce'
 
+visual_pinpad:
+  task: pinpad_four
+  encoder: {mlp_keys: '$^', cnn_keys: 'image'}
+  decoder: {mlp_keys: '$^', cnn_keys: 'image'}
+
+loconav:
+  task: loconav_ant_maze_m
+  encoder: {mlp_keys: '.*(joints|sensors|actuator|effectors|appendages|bodies|height|zaxis).*', cnn_keys: 'image'}
+  decoder: {mlp_keys: '.*(joints|sensors|actuator|effectors|appendages|bodies|height|zaxis).*', cnn_keys: 'image'}
+  train.log_keys_max: '^log_.*'
 atari100k:
   steps: 4e5
   envs: 1

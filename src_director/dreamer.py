@@ -16,7 +16,6 @@ from . import tools
 from .envs import wrappers
 from .parallel import Parallel, Damy
 
-import wandb
 import torch
 from torch import nn
 from torch import distributions as torchd
@@ -238,6 +237,11 @@ def make_env(config, mode, id):
         from .envs import minecraft
 
         env = minecraft.make_env(task, size=config.size, break_speed=config.break_speed)
+        env = wrappers.OneHotAction(env)
+    elif suite == "pinpad":
+        from .envs.pinpad import PinPad
+        task_ = task.split("_")[-1]  # e.g., "four" from "pinpad_four"
+        env = PinPad(task_)
         env = wrappers.OneHotAction(env)
     else:
         raise NotImplementedError(suite)

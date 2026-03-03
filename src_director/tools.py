@@ -75,20 +75,18 @@ class Logger:
         self.step = step
 
         # ---- W&B optional init (only if API key is present) ----
-        self._wandb = None
         self._wandb_enabled = False
 
         api_key = os.environ.get("WANDB_API_KEY", "").strip()
         if api_key:
             try:
                 import wandb
-                self._wandb = wandb
                 # login() を明示しておくと環境によって安定します（既にログイン済みなら何もしない）
-                # self._wandb.login(key=api_key, relogin=True)
+                wandb.login(key=api_key, relogin=True)
 
                 # project は必須なので未指定なら適当なデフォルトを置く
                 project = wandb_project or os.environ.get("WANDB_PROJECT") or "default"
-                self._wandb.init(
+                wandb.init(
                     project=project,
                     entity=wandb_entity or os.environ.get("WANDB_ENTITY"),
                     name=wandb_run_name,
@@ -99,7 +97,6 @@ class Logger:
             except Exception as e:
                 # W&B で失敗しても学習は続けたい場合は無効化して握りつぶす
                 print(f"[Logger] wandb init failed -> disable wandb: {e}")
-                self._wandb = None
                 self._wandb_enabled = False
 
     def scalar(self, name, value):
@@ -149,6 +146,7 @@ class Logger:
 
         # ---- W&B logging (optional) ----
         if self._wandb_enabled:
+            import wandb
             # scalars
             wb_log = {name: val for name, val in scalars}
 
@@ -161,7 +159,7 @@ class Logger:
                 # float -> uint8
                 if np.issubdtype(x.dtype, np.floating):
                     x = np.clip(255 * x, 0, 255).astype(np.uint8)
-                wb_log[name] = self._wandb.Image(x)
+                wb_log[name] = wandb.Image(x)
 
             # videos: expect (B,T,H,W,C), log first element by default
             for name, vid in self._videos.items():
@@ -172,9 +170,9 @@ class Logger:
 
                 # take first batch for W&B (W&B expects (T,H,W,C) or (T,C,H,W) depending on api; numpy ok)
                 v0 = v[0]  # (T,H,W,C)
-                wb_log[key] = self._wandb.Video(v0, fps=16, format="mp4")
+                wb_log[key] = wandb.Video(v0, fps=16, format="mp4")
 
-            self._wandb.log(wb_log, step=step)
+            wandb.log(wb_log, step=step)
 
         # reset buffers
         self._scalars = {}
@@ -195,7 +193,8 @@ class Logger:
     def offline_scalar(self, name, value, step):
         self._writer.add_scalar("scalars/" + name, value, step)
         if self._wandb_enabled:
-            self._wandb.log({name: float(value)}, step=step)
+            import wandb
+            wandb.log({name: float(value)}, step=step)
 
     def offline_video(self, name, value, step):
         if np.issubdtype(value.dtype, np.floating):
@@ -205,14 +204,16 @@ class Logger:
         self._writer.add_video(name, value_tb, step, 16)
 
         if self._wandb_enabled:
+            import wandb
             key = name if isinstance(name, str) else name.decode("utf-8")
             v0 = np.asarray(value)[0]  # (T,H,W,C)
-            self._wandb.log({key: self._wandb.Video(v0, fps=16, format="mp4")}, step=step)
+            wandb.log({key: wandb.Video(v0, fps=16, format="mp4")}, step=step)
 
     def close(self):
         self._writer.close()
         if self._wandb_enabled:
-            self._wandb.finish()
+            import wandb
+            wandb.finish()
 
 # class Logger:
 #     def __init__(self, logdir, step):
