@@ -61,6 +61,7 @@ import json
 import time
 import numpy as np
 
+import wandb
 from torch.utils.tensorboard import SummaryWriter
 
 class Logger:
@@ -80,7 +81,6 @@ class Logger:
         api_key = os.environ.get("WANDB_API_KEY", "").strip()
         if api_key:
             try:
-                import wandb
                 # login() を明示しておくと環境によって安定します（既にログイン済みなら何もしない）
                 wandb.login(key=api_key, relogin=True)
 
@@ -146,7 +146,6 @@ class Logger:
 
         # ---- W&B logging (optional) ----
         if self._wandb_enabled:
-            import wandb
             # scalars
             wb_log = {name: val for name, val in scalars}
 
@@ -193,7 +192,6 @@ class Logger:
     def offline_scalar(self, name, value, step):
         self._writer.add_scalar("scalars/" + name, value, step)
         if self._wandb_enabled:
-            import wandb
             wandb.log({name: float(value)}, step=step)
 
     def offline_video(self, name, value, step):
@@ -204,7 +202,6 @@ class Logger:
         self._writer.add_video(name, value_tb, step, 16)
 
         if self._wandb_enabled:
-            import wandb
             key = name if isinstance(name, str) else name.decode("utf-8")
             v0 = np.asarray(value)[0]  # (T,H,W,C)
             wandb.log({key: wandb.Video(v0, fps=16, format="mp4")}, step=step)
@@ -212,7 +209,6 @@ class Logger:
     def close(self):
         self._writer.close()
         if self._wandb_enabled:
-            import wandb
             wandb.finish()
 
 # class Logger:
