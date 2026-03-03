@@ -84,7 +84,7 @@ class Logger:
                 import wandb
                 self._wandb = wandb
                 # login() を明示しておくと環境によって安定します（既にログイン済みなら何もしない）
-                self._wandb.login(key=api_key, relogin=True)
+                # self._wandb.login(key=api_key, relogin=True)
 
                 # project は必須なので未指定なら適当なデフォルトを置く
                 project = wandb_project or os.environ.get("WANDB_PROJECT") or "default"
