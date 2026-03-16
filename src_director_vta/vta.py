@@ -215,7 +215,7 @@ class VTA(nn.Module):
         # Abstract Level
         # ========================
         # Input layer: prev_abs_stoch + action -> hidden
-        abs_inp_dim = abs_stoch + num_actions
+        abs_inp_dim = abs_stoch + obs_belief
         abs_inp_layers = []
         abs_inp_layers.append(nn.Linear(abs_inp_dim, hidden, bias=False))
         if norm:
@@ -346,6 +346,10 @@ class VTA(nn.Module):
     def _get_obs_feat(self, state):
         """Get observation features from state."""
         return torch.cat([state["obs_belief"], state["obs_stoch"]], dim=-1)
+
+    def get_deter_obs_feat(self, state):
+        """Get deterministic observation features (obs_belief) for action conditioning."""
+        return state["obs_belief"]
     
     def get_feat(self, state):
         """
@@ -425,14 +429,12 @@ class VTA(nn.Module):
     def observe(self, embed, action, is_first, state=None, reward=None):
         """
         Process observation sequence with boundary detection (training).
-        
         Args:
             embed: (batch, time, embed_size) encoded observations
             action: (batch, time, action_size) actions
             is_first: (batch, time, 1) episode start flags
             state: optional initial state
             reward: (batch, time) optional reward sequence
-            
         Returns:
             post: posterior states dict
             prior: prior states dict
@@ -551,7 +553,8 @@ class VTA(nn.Module):
         # Abstract level transition
         # ========================
         # Prior: img_step for abstract level
-        abs_inp = self._abs_inp_layers(torch.cat([prev_state["abs_stoch"], prev_action], dim=-1))
+        # TODO: currently replacing prev_goal with prev_obs_deter_feat.
+        abs_inp = self._abs_inp_layers(torch.cat([prev_state["abs_stoch"], prev_state["obs_belief"]], dim=-1))
         abs_belief_updated, _ = self._abs_cell(abs_inp, [prev_state["abs_belief"]])
         abs_belief = read_mask * abs_belief_updated + copy_mask * prev_state["abs_belief"]
         
@@ -640,16 +643,16 @@ class VTA(nn.Module):
         
         return post, prior
     
-    def img_step(self, prev_state, prev_action, sample=True, boundary_mode="prior"):
+    def img_step(self, prev_state, prev_goal, prev_action, sample=True, boundary_mode="prior"):
         """
         Single imagination step (no observation).
         
         Args:
             prev_state: previous hierarchical state
+            prev_goal: previous goal state
             prev_action: action to take
             sample: whether to sample or use mode
             boundary_mode: 'prior', 'fixed', or 'none'
-            
         Returns:
             prior: prior state after transition
         """
@@ -679,7 +682,7 @@ class VTA(nn.Module):
         seg_num = read_mask * (prev_state["seg_num"] + 1.0) + copy_mask * prev_state["seg_num"]
         
         # Abstract level
-        abs_inp = self._abs_inp_layers(torch.cat([prev_state["abs_stoch"], prev_action], dim=-1))
+        abs_inp = self._abs_inp_layers(torch.cat([prev_state["abs_stoch"], prev_goal], dim=-1))
         abs_belief_updated, _ = self._abs_cell(abs_inp, [prev_state["abs_belief"]])
         abs_belief = read_mask * abs_belief_updated + copy_mask * prev_state["abs_belief"]
         
@@ -723,13 +726,14 @@ class VTA(nn.Module):
             "seg_num": seg_num,
         }
     
-    def jumpy_img_step(self, prev_state, prev_action, sample=True):
+    def jumpy_img_step(self, prev_state, prev_goal, prev_action, sample=True):
         """
         Jumpy imagination step - abstract level only.
         Each step represents a full segment (jump to next boundary).
         
         Args:
             prev_state: previous state
+            prev_goal: previous goal state
             prev_action: action to take
             sample: whether to sample or use mode
             
@@ -740,7 +744,7 @@ class VTA(nn.Module):
         read_mask = torch.ones(prev_state["abs_belief"].shape[0], 1, device=self._device)
         
         # Abstract level transition
-        abs_inp = self._abs_inp_layers(torch.cat([prev_state["abs_stoch"], prev_action], dim=-1))
+        abs_inp = self._abs_inp_layers(torch.cat([prev_state["abs_stoch"], prev_goal], dim=-1))
         abs_belief, _ = self._abs_cell(abs_inp, [prev_state["abs_belief"]])
         
         prior_abs_stats = self.prior_abs_state(abs_belief)
