@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import importlib
 import json
 from pathlib import Path
 import sys
@@ -17,11 +18,36 @@ from torch import distributions as torchd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT))
 
-from src_dreamerv3 import tools
-from src_dreamerv3 import models
+def _backend_paths(backend):
+    if backend == "director_vta":
+        return (
+            "src_director_vta.tools",
+            "src_director_vta.models",
+            ROOT / "src_director_vta" / "configs.yaml",
+        )
+    return (
+        "src_dreamerv3.tools",
+        "src_dreamerv3.models",
+        ROOT / "src_dreamerv3" / "configs.yaml",
+    )
 
 
-def load_config(config_names, overrides):
+def _detect_backend(agent_state_dict):
+    # Director-VTA checkpoints include GoalAE modules under world model.
+    if any(("goal_enc" in k or "goal_dec" in k) for k in agent_state_dict.keys()):
+        return "director_vta"
+    return "dreamerv3"
+
+
+def _build_arg_parser(defaults, tools_module):
+    parser = argparse.ArgumentParser()
+    for key, value in sorted(defaults.items(), key=lambda x: x[0]):
+        arg_type = tools_module.args_type(value)
+        parser.add_argument(f"--{key}", type=arg_type, default=arg_type(value))
+    return parser
+
+
+def _load_named_config(config_names, overrides, tools_module, configs_path):
     def recursive_update(base, update):
         for key, value in update.items():
             if isinstance(value, dict) and key in base:
@@ -29,17 +55,32 @@ def load_config(config_names, overrides):
             else:
                 base[key] = value
 
-    configs = yaml.safe_load(
-        (Path(__file__).resolve().parents[2] / "src_dreamerv3" / "configs.yaml").read_text()
-    )
+    configs = yaml.safe_load(configs_path.read_text())
     defaults = {}
     for name in ["defaults", *config_names]:
         recursive_update(defaults, configs[name])
-    parser = argparse.ArgumentParser()
-    for key, value in sorted(defaults.items(), key=lambda x: x[0]):
-        arg_type = tools.args_type(value)
-        parser.add_argument(f"--{key}", type=arg_type, default=arg_type(value))
+    parser = _build_arg_parser(defaults, tools_module)
     return parser.parse_args(overrides)
+
+
+def _load_logdir_config(logdir, overrides, tools_module):
+    config_path = Path(logdir) / "config.yaml"
+    if not config_path.exists():
+        raise FileNotFoundError(f"Missing config file in logdir: {config_path}")
+    yaml_loader = yaml.YAML(typ="unsafe", pure=True)
+    defaults = yaml_loader.load(config_path.read_text())
+    parser = _build_arg_parser(defaults, tools_module)
+    return parser.parse_args(overrides)
+
+
+def load_config(config_names, overrides, backend="dreamerv3", config_source="named", logdir=None):
+    tools_mod_path, _, configs_path = _backend_paths(backend)
+    tools_module = importlib.import_module(tools_mod_path)
+    if config_source == "logdir":
+        if logdir is None:
+            raise ValueError("logdir is required when config_source='logdir'")
+        return _load_logdir_config(logdir, overrides, tools_module)
+    return _load_named_config(config_names, overrides, tools_module, configs_path)
 
 
 def pick_episode(episodes_dir, explicit_path=None):
@@ -57,7 +98,14 @@ def pick_episode(episodes_dir, explicit_path=None):
     return max(candidates, key=ep_len)
 
 
-def compute_vta_stats(wm, data):
+def compute_vta_stats(wm, data, tools_module=None):
+    if tools_module is None:
+        wm_mod = wm.__class__.__module__
+        if wm_mod.startswith("src_director_vta"):
+            tools_module = importlib.import_module("src_director_vta.tools")
+        else:
+            tools_module = importlib.import_module("src_dreamerv3.tools")
+
     wm.eval()
     with torch.no_grad():
         proc = wm.preprocess(data)
@@ -77,17 +125,24 @@ def compute_vta_stats(wm, data):
 
         post_abs = torchd.normal.Normal(post["abs_mean"], post["abs_std"])
         prior_abs = torchd.normal.Normal(prior["abs_mean"], prior["abs_std"])
-        post_obs = torchd.normal.Normal(post["obs_mean"], post["obs_std"])
-        prior_obs = torchd.normal.Normal(prior["obs_mean"], prior["obs_std"])
-
         abs_kl = torchd.kl.kl_divergence(
             torchd.independent.Independent(post_abs, 1),
             torchd.independent.Independent(prior_abs, 1),
         )
-        obs_kl = torchd.kl.kl_divergence(
-            torchd.independent.Independent(post_obs, 1),
-            torchd.independent.Independent(prior_obs, 1),
-        )
+        if "obs_logit" in post and "obs_logit" in prior:
+            unimix = getattr(wm.dynamics, "_unimix_ratio", 0.0)
+            post_obs = torchd.independent.Independent(
+                tools_module.OneHotDist(post["obs_logit"], unimix_ratio=unimix), 1
+            )
+            prior_obs = torchd.independent.Independent(
+                tools_module.OneHotDist(prior["obs_logit"], unimix_ratio=unimix), 1
+            )
+        else:
+            post_obs = torchd.normal.Normal(post["obs_mean"], post["obs_std"])
+            prior_obs = torchd.normal.Normal(prior["obs_mean"], prior["obs_std"])
+            post_obs = torchd.independent.Independent(post_obs, 1)
+            prior_obs = torchd.independent.Independent(prior_obs, 1)
+        obs_kl = torchd.kl.kl_divergence(post_obs, prior_obs)
 
     stats = {
         "boundary": post["boundary"].squeeze(-1).detach().cpu().numpy(),
@@ -256,6 +311,18 @@ def render_fired_plot(images, boundary, indices, out_path, title):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--logdir", required=True)
+    parser.add_argument(
+        "--backend",
+        default="auto",
+        choices=["auto", "dreamerv3", "director_vta"],
+        help="Model backend to load (auto detects from checkpoint).",
+    )
+    parser.add_argument(
+        "--config_source",
+        default="auto",
+        choices=["auto", "named", "logdir"],
+        help="Config source: named configs.yaml or logdir/config.yaml.",
+    )
     parser.add_argument("--configs", nargs="+", default=["atari100k"])
     parser.add_argument("--task", default="atari_breakout")
     parser.add_argument("--episode", default=None, help="Path to a .npz episode file")
@@ -271,21 +338,48 @@ def main():
     parser.add_argument("--out", default=None)
     parser.add_argument("--internal_out", default=None)
     parser.add_argument("--fired_out", default=None)
+    parser.add_argument("--max_seg_len", type=int, default=None, help="Override max_seg_len for evaluation")
+    parser.add_argument("--force_scale", type=float, default=None, help="Override boundary_force_scale (0 disables forced boundaries)")
+    parser.add_argument("--boundary_temp", type=float, default=None, help="Override boundary temperature (higher = more selective)")
     args, overrides = parser.parse_known_args()
 
     device = args.device
     if device is None:
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    config = load_config(
-        args.configs,
-        ["--task", args.task, "--dynamics_type", "vta", "--device", device, *overrides],
-    )
-
     logdir = Path(args.logdir)
     ckpt_path = logdir / "latest.pt"
     if not ckpt_path.exists():
         raise FileNotFoundError(f"Missing checkpoint: {ckpt_path}")
+    state = torch.load(ckpt_path, map_location="cpu")["agent_state_dict"]
+
+    backend = args.backend if args.backend != "auto" else _detect_backend(state)
+    tools_mod_path, models_mod_path, _ = _backend_paths(backend)
+    tools_module = importlib.import_module(tools_mod_path)
+    models_module = importlib.import_module(models_mod_path)
+
+    use_logdir_cfg = (
+        args.config_source == "logdir"
+        or (args.config_source == "auto" and (logdir / "config.yaml").exists())
+    )
+    if use_logdir_cfg:
+        config = load_config(
+            args.configs,
+            overrides,
+            backend=backend,
+            config_source="logdir",
+            logdir=logdir,
+        )
+    else:
+        config = load_config(
+            args.configs,
+            ["--task", args.task, "--dynamics_type", "vta", "--device", device, *overrides],
+            backend=backend,
+            config_source="named",
+        )
+    config.task = args.task
+    config.dynamics_type = "vta"
+    config.device = device
 
     ep_path = pick_episode(logdir / args.episodes_dir, args.episode)
     with np.load(ep_path) as ep:
@@ -305,12 +399,23 @@ def main():
     act_space = gym.spaces.Box(low=0, high=1, shape=(action_dim,), dtype=np.float32)
     act_space.discrete = True
 
-    wm = models.WorldModel(obs_space, act_space, step=0, config=config).to(device)
-    state = torch.load(ckpt_path, map_location=device)["agent_state_dict"]
+    wm = models_module.WorldModel(obs_space, act_space, step=0, config=config).to(device)
     wm_state = {k[len("_wm."):]: v for k, v in state.items() if k.startswith("_wm.")}
     # Remove _orig_mod. prefix from torch.compile() saved checkpoints
     wm_state = {k.replace("_orig_mod.", ""): v for k, v in wm_state.items()}
     wm.load_state_dict(wm_state, strict=True)
+
+    # Override max_seg_len if specified
+    if args.max_seg_len is not None and hasattr(wm, "dynamics") and hasattr(wm.dynamics, "_max_seg_len"):
+        wm.dynamics._max_seg_len = args.max_seg_len
+
+    # Override force_scale if specified
+    if args.force_scale is not None and hasattr(wm, "dynamics") and hasattr(wm.dynamics, "_boundary_force_scale"):
+        wm.dynamics._boundary_force_scale = args.force_scale
+
+    # Override boundary_temp if specified
+    if args.boundary_temp is not None and hasattr(wm, "dynamics") and hasattr(wm.dynamics, "_boundary_temp"):
+        wm.dynamics._boundary_temp = args.boundary_temp
 
     data = {
         "image": images[None],
@@ -323,7 +428,7 @@ def main():
     if discount is not None:
         data["discount"] = discount[None]
 
-    stats = compute_vta_stats(wm, data)
+    stats = compute_vta_stats(wm, data, tools_module)
 
     frame_delta = None
     if images.shape[0] > 1:

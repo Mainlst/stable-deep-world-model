@@ -10,6 +10,8 @@ Visualizes the frames around each detected boundary:
 Outputs a grid image showing all boundaries in an episode.
 """
 import argparse
+import importlib
+import inspect
 from pathlib import Path
 import sys
 
@@ -18,12 +20,157 @@ import torch
 import gym
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import ruamel.yaml as yaml
+from torch import distributions as torchd
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT))
 
-from scripts.dreamerv3.vta_boundary_viz import load_config, compute_vta_stats
-from src_dreamerv3 import models
+
+def _backend_paths(backend):
+    if backend == "director_vta":
+        return (
+            "src_director_vta.tools",
+            "src_director_vta.models",
+            ROOT / "src_director_vta" / "configs.yaml",
+        )
+    return (
+        "src_dreamerv3.tools",
+        "src_dreamerv3.models",
+        ROOT / "src_dreamerv3" / "configs.yaml",
+    )
+
+
+def _detect_backend(agent_state_dict):
+    # Director-VTA checkpoints include GoalAE modules under world model.
+    if any(("goal_enc" in k or "goal_dec" in k) for k in agent_state_dict.keys()):
+        return "director_vta"
+    return "dreamerv3"
+
+
+def _load_named_config(config_names, overrides, tools_module, configs_path):
+    def recursive_update(base, update):
+        for key, value in update.items():
+            if isinstance(value, dict) and key in base:
+                recursive_update(base[key], value)
+            else:
+                base[key] = value
+
+    configs = yaml.safe_load(configs_path.read_text())
+    defaults = {}
+    for name in ["defaults", *config_names]:
+        recursive_update(defaults, configs[name])
+    parser = argparse.ArgumentParser()
+    for key, value in sorted(defaults.items(), key=lambda x: x[0]):
+        arg_type = tools_module.args_type(value)
+        parser.add_argument(f"--{key}", type=arg_type, default=arg_type(value))
+    return parser.parse_args(overrides)
+
+
+def _load_logdir_config(logdir, overrides, tools_module):
+    config_path = logdir / "config.yaml"
+    if not config_path.exists():
+        raise FileNotFoundError(f"Missing config file in logdir: {config_path}")
+    yaml_loader = yaml.YAML(typ="unsafe", pure=True)
+    defaults = yaml_loader.load(config_path.read_text())
+    parser = argparse.ArgumentParser()
+    for key, value in sorted(defaults.items(), key=lambda x: x[0]):
+        arg_type = tools_module.args_type(value)
+        parser.add_argument(f"--{key}", type=arg_type, default=arg_type(value))
+    return parser.parse_args(overrides)
+
+
+def _stack_time(states):
+    keys = states[0].keys()
+    stacked = {}
+    for key in keys:
+        stacked[key] = torch.stack([s[key] for s in states], dim=1)
+    return stacked
+
+
+def _prior_rollout(wm, proc, embed):
+    action = proc["action"]
+    is_first = proc["is_first"]
+    batch_size, seq_len = embed.shape[:2]
+    state = None
+    posts, priors = [], []
+    obs_step_sig = inspect.signature(wm.dynamics.obs_step)
+    has_apply_constraints = "apply_boundary_constraints" in obs_step_sig.parameters
+
+    for t in range(seq_len):
+        kwargs = dict(post_boundary_logit=None, sample=True)
+        if has_apply_constraints:
+            # Match online evaluation path in director_vta (training=False).
+            kwargs["apply_boundary_constraints"] = False
+        post, prior = wm.dynamics.obs_step(
+            state,
+            action[:, t],
+            embed[:, t],
+            is_first[:, t],
+            **kwargs,
+        )
+        posts.append(post)
+        priors.append(prior)
+        state = post
+    return _stack_time(posts), _stack_time(priors)
+
+
+def compute_vta_stats(wm, data, tools_module, boundary_source="posterior"):
+    wm.eval()
+    with torch.no_grad():
+        proc = wm.preprocess(data)
+        embed = wm.encoder(proc)
+        reward = proc.get("reward", None)
+        if boundary_source == "prior":
+            post, prior = _prior_rollout(wm, proc, embed)
+        else:
+            post, prior = wm.dynamics.observe(embed, proc["action"], proc["is_first"], reward=reward)
+
+        if boundary_source == "prior":
+            boundary = prior["boundary"]
+            read_prob = torch.softmax(prior["boundary_logit"], dim=-1)[..., 0]
+        else:
+            # For post_boundary, also need to pass reward if embed_reward mode.
+            if hasattr(wm.dynamics, "_posterior_input") and wm.dynamics._posterior_input == "embed_reward" and reward is not None:
+                reward_inp = reward.unsqueeze(-1)  # (batch, time, 1)
+                post_inp = torch.cat([embed, reward_inp], dim=-1)
+                post_logits = wm.dynamics.post_boundary(post_inp)
+            else:
+                post_logits = wm.dynamics.post_boundary(embed)
+            boundary = post["boundary"]
+            read_prob = torch.softmax(post_logits, dim=-1)[..., 0]
+
+        post_abs = torchd.normal.Normal(post["abs_mean"], post["abs_std"])
+        prior_abs = torchd.normal.Normal(prior["abs_mean"], prior["abs_std"])
+        abs_kl = torchd.kl.kl_divergence(
+            torchd.independent.Independent(post_abs, 1),
+            torchd.independent.Independent(prior_abs, 1),
+        )
+
+        if "obs_logit" in post and "obs_logit" in prior:
+            unimix = getattr(wm.dynamics, "_unimix_ratio", 0.0)
+            post_obs = torchd.independent.Independent(
+                tools_module.OneHotDist(post["obs_logit"], unimix_ratio=unimix), 1
+            )
+            prior_obs = torchd.independent.Independent(
+                tools_module.OneHotDist(prior["obs_logit"], unimix_ratio=unimix), 1
+            )
+        else:
+            post_obs = torchd.normal.Normal(post["obs_mean"], post["obs_std"])
+            prior_obs = torchd.normal.Normal(prior["obs_mean"], prior["obs_std"])
+            post_obs = torchd.independent.Independent(post_obs, 1)
+            prior_obs = torchd.independent.Independent(prior_obs, 1)
+        obs_kl = torchd.kl.kl_divergence(post_obs, prior_obs)
+
+    stats = {
+        "boundary": boundary.squeeze(-1).detach().cpu().numpy(),
+        "read_prob": read_prob.detach().cpu().numpy(),
+        "seg_len": post["seg_len"].squeeze(-1).detach().cpu().numpy(),
+        "seg_num": post["seg_num"].squeeze(-1).detach().cpu().numpy(),
+        "abs_kl": abs_kl.detach().cpu().numpy(),
+        "obs_kl": obs_kl.detach().cpu().numpy(),
+    }
+    return stats
 
 
 def create_boundary_visualization(images, boundary_indices, frame_delta, output_path, 
@@ -95,6 +242,18 @@ def create_boundary_visualization(images, boundary_indices, frame_delta, output_
 def main():
     parser = argparse.ArgumentParser(description="Visualize frames around detected boundaries")
     parser.add_argument("--logdir", required=True, help="Path to log directory with trained model")
+    parser.add_argument(
+        "--backend",
+        default="auto",
+        choices=["auto", "dreamerv3", "director_vta"],
+        help="Model backend to load (auto detects from checkpoint).",
+    )
+    parser.add_argument(
+        "--config_source",
+        default="auto",
+        choices=["auto", "named", "logdir"],
+        help="Config source: named configs.yaml or logdir/config.yaml.",
+    )
     parser.add_argument("--configs", nargs="+", default=["atari100k"], help="Config names")
     parser.add_argument("--task", default="atari_private_eye", help="Task name")
     parser.add_argument("--episodes_dir", default="train_eps", help="Directory containing episodes")
@@ -106,18 +265,43 @@ def main():
     parser.add_argument("--max_seg_len", type=int, default=None, help="Override max_seg_len for evaluation")
     parser.add_argument("--force_scale", type=float, default=None, help="Override boundary_force_scale (0 disables forced boundaries)")
     parser.add_argument("--boundary_temp", type=float, default=None, help="Override boundary temperature (higher = more selective)")
+    parser.add_argument(
+        "--boundary_source",
+        default="posterior",
+        choices=["posterior", "prior"],
+        help="Boundary source to visualize: posterior (training path) or prior (inference path).",
+    )
     args, overrides = parser.parse_known_args()
 
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    config = load_config(
-        args.configs,
-        ["--task", args.task, "--dynamics_type", "vta", "--device", device, *overrides],
-    )
 
     logdir = Path(args.logdir)
     ckpt_path = logdir / "latest.pt"
     if not ckpt_path.exists():
         raise FileNotFoundError(f"Missing checkpoint: {ckpt_path}")
+    state = torch.load(ckpt_path, map_location="cpu")["agent_state_dict"]
+
+    backend = args.backend if args.backend != "auto" else _detect_backend(state)
+    tools_mod_path, models_mod_path, configs_path = _backend_paths(backend)
+    tools_mod = importlib.import_module(tools_mod_path)
+    models_mod = importlib.import_module(models_mod_path)
+
+    use_logdir_cfg = (
+        args.config_source == "logdir" or
+        (args.config_source == "auto" and (logdir / "config.yaml").exists())
+    )
+    if use_logdir_cfg:
+        config = _load_logdir_config(logdir, overrides, tools_mod)
+    else:
+        config = _load_named_config(
+            args.configs,
+            ["--task", args.task, "--dynamics_type", "vta", "--device", device, *overrides],
+            tools_mod,
+            configs_path,
+        )
+    config.task = args.task
+    config.dynamics_type = "vta"
+    config.device = device
 
     # Output directory
     output_dir = Path(args.output_dir) if args.output_dir else logdir / "boundary_viz"
@@ -143,6 +327,9 @@ def main():
     print(f"{'='*60}")
     print(f"Log directory: {logdir}")
     print(f"Output directory: {output_dir}")
+    print(f"Backend: {backend}")
+    print(f"Config source: {'logdir/config.yaml' if use_logdir_cfg else str(configs_path)}")
+    print(f"Boundary source: {args.boundary_source}")
     print(f"Episodes: {len(eps_files)}")
     print(f"Context frames: ±{args.context}")
     print(f"{'='*60}\n")
@@ -171,8 +358,7 @@ def main():
         act_space = gym.spaces.Box(low=0, high=1, shape=(actions.shape[-1],), dtype=np.float32)
         act_space.discrete = True
 
-        wm = models.WorldModel(obs_space, act_space, step=0, config=config).to(device)
-        state = torch.load(ckpt_path, map_location=device)["agent_state_dict"]
+        wm = models_mod.WorldModel(obs_space, act_space, step=0, config=config).to(device)
         wm_state = {k[len("_wm."):]: v for k, v in state.items() if k.startswith("_wm.")}
         wm_state = {k.replace("_orig_mod.", ""): v for k, v in wm_state.items()}
         wm.load_state_dict(wm_state, strict=True)
@@ -198,7 +384,7 @@ def main():
         if discount is not None:
             data["discount"] = discount[None]
 
-        stats = compute_vta_stats(wm, data)
+        stats = compute_vta_stats(wm, data, tools_mod, boundary_source=args.boundary_source)
         boundary_mask = stats["boundary"][0] > 0.5
         boundary_indices = np.where(boundary_mask)[0]
 
@@ -215,7 +401,10 @@ def main():
             output_path,
             context=args.context,
             max_boundaries=args.max_boundaries,
-            title=f"Boundary Detection - {ep_path.stem}\n{len(boundary_indices)} boundaries in {len(images)} frames"
+            title=(
+                f"Boundary Detection ({args.boundary_source}) - {ep_path.stem}\n"
+                f"{len(boundary_indices)} boundaries in {len(images)} frames"
+            ),
         )
 
 
