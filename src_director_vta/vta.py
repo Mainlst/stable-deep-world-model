@@ -134,6 +134,49 @@ class LatentDistribution(nn.Module):
         return dist.rsample()
 
 
+class DiscreteLatentDistribution(nn.Module):
+    """Categorical distribution layer for discrete latent states."""
+
+    def __init__(self, input_size, latent_size, num_classes, hidden_size=None, act="SiLU", norm=True, unimix_ratio=0.01):
+        super().__init__()
+        self._latent_size = latent_size
+        self._num_classes = num_classes
+        self._unimix_ratio = unimix_ratio
+
+        if hidden_size is None:
+            hidden_size = input_size
+
+        act_fn = getattr(torch.nn, act)
+
+        if hidden_size == input_size:
+            self.feat = nn.Identity()
+        else:
+            layers = []
+            layers.append(nn.Linear(input_size, hidden_size, bias=False))
+            if norm:
+                layers.append(nn.LayerNorm(hidden_size, eps=1e-03))
+            layers.append(act_fn())
+            self.feat = nn.Sequential(*layers)
+
+        self.logit_layer = nn.Linear(hidden_size, latent_size * num_classes)
+        self.logit_layer.apply(tools.uniform_weight_init(1.0))
+
+    def forward(self, input_data):
+        feat = self.feat(input_data)
+        logit = self.logit_layer(feat)
+        logit = logit.reshape(list(logit.shape[:-1]) + [self._latent_size, self._num_classes])
+        return {"logit": logit}
+
+    def get_dist(self, stats):
+        return torchd.independent.Independent(
+            tools.OneHotDist(stats["logit"], unimix_ratio=self._unimix_ratio), 1
+        )
+
+    def sample(self, stats):
+        dist = self.get_dist(stats)
+        return dist.sample()
+
+
 class VTA(nn.Module):
     """
     Variational Temporal Abstraction (VTA) - Hierarchical State Space Model
@@ -149,6 +192,7 @@ class VTA(nn.Module):
         abs_stoch=32,
         obs_belief=512,
         obs_stoch=32,
+        obs_discrete=0,
         hidden=512,
         num_layers=2,
         max_seg_len=10,
@@ -162,6 +206,7 @@ class VTA(nn.Module):
         embed_size=None,
         device=None,
         vta_posterior_input='embed',
+        unimix_ratio=0.01,
     ):
         super().__init__()
         
@@ -170,6 +215,9 @@ class VTA(nn.Module):
         self._abs_stoch_size = abs_stoch
         self._obs_belief_size = obs_belief
         self._obs_stoch_size = obs_stoch
+        self._obs_discrete = int(obs_discrete) if obs_discrete else 0
+        self._obs_is_discrete = self._obs_discrete > 0
+        self._unimix_ratio = unimix_ratio
         self._hidden = hidden
         self._num_layers = num_layers
         self._num_actions = num_actions
@@ -185,7 +233,8 @@ class VTA(nn.Module):
         
         # Feature sizes
         self._abs_feat_size = abs_belief + abs_stoch
-        self._obs_feat_size = obs_belief + obs_stoch
+        self._obs_stoch_dim = obs_stoch * self._obs_discrete if self._obs_is_discrete else obs_stoch
+        self._obs_feat_size = obs_belief + self._obs_stoch_dim
         
         act_fn = getattr(torch.nn, act)
         
@@ -215,7 +264,7 @@ class VTA(nn.Module):
         # Abstract Level
         # ========================
         # Input layer: prev_abs_stoch + action -> hidden
-        abs_inp_dim = abs_stoch + obs_belief
+        abs_inp_dim = abs_stoch + num_actions
         abs_inp_layers = []
         abs_inp_layers.append(nn.Linear(abs_inp_dim, hidden, bias=False))
         if norm:
@@ -258,7 +307,7 @@ class VTA(nn.Module):
         # Observation Level
         # ========================
         # Input layer: prev_obs_stoch + abs_feat + action -> hidden
-        obs_inp_dim = obs_stoch + self._abs_feat_size + num_actions
+        obs_inp_dim = self._obs_stoch_dim + self._abs_feat_size + num_actions
         obs_inp_layers = []
         obs_inp_layers.append(nn.Linear(obs_inp_dim, hidden, bias=False))
         if norm:
@@ -272,24 +321,46 @@ class VTA(nn.Module):
         self._obs_cell.apply(tools.weight_init)
         
         # Prior over observation state: p(s_t | obs_belief_t)
-        self.prior_obs_state = LatentDistribution(
-            input_size=obs_belief,
-            latent_size=obs_stoch,
-            hidden_size=hidden,
-            act=act,
-            norm=norm,
-            min_std=min_std,
-        )
+        if self._obs_is_discrete:
+            self.prior_obs_state = DiscreteLatentDistribution(
+                input_size=obs_belief,
+                latent_size=obs_stoch,
+                num_classes=self._obs_discrete,
+                hidden_size=hidden,
+                act=act,
+                norm=norm,
+                unimix_ratio=unimix_ratio,
+            )
+        else:
+            self.prior_obs_state = LatentDistribution(
+                input_size=obs_belief,
+                latent_size=obs_stoch,
+                hidden_size=hidden,
+                act=act,
+                norm=norm,
+                min_std=min_std,
+            )
         
         # Posterior over observation state: q(s_t | obs_belief_t, abs_feat, embed)
-        self.post_obs_state = LatentDistribution(
-            input_size=obs_belief + self._abs_feat_size + embed_size,
-            latent_size=obs_stoch,
-            hidden_size=hidden,
-            act=act,
-            norm=norm,
-            min_std=min_std,
-        )
+        if self._obs_is_discrete:
+            self.post_obs_state = DiscreteLatentDistribution(
+                input_size=obs_belief + self._abs_feat_size + embed_size,
+                latent_size=obs_stoch,
+                num_classes=self._obs_discrete,
+                hidden_size=hidden,
+                act=act,
+                norm=norm,
+                unimix_ratio=unimix_ratio,
+            )
+        else:
+            self.post_obs_state = LatentDistribution(
+                input_size=obs_belief + self._abs_feat_size + embed_size,
+                latent_size=obs_stoch,
+                hidden_size=hidden,
+                act=act,
+                norm=norm,
+                min_std=min_std,
+            )
         
         # Initial observation belief from abstract features
         init_obs_layers = []
@@ -312,9 +383,15 @@ class VTA(nn.Module):
         
         # Observation level
         obs_belief = torch.zeros(batch_size, self._obs_belief_size, device=device)
-        obs_stoch = torch.zeros(batch_size, self._obs_stoch_size, device=device)
-        obs_mean = torch.zeros(batch_size, self._obs_stoch_size, device=device)
-        obs_std = torch.ones(batch_size, self._obs_stoch_size, device=device) * self._min_std
+        if self._obs_is_discrete:
+            obs_stoch = torch.zeros(batch_size, self._obs_stoch_size, self._obs_discrete, device=device)
+            obs_mean = torch.ones(batch_size, self._obs_stoch_size, self._obs_discrete, device=device) / self._obs_discrete
+            obs_std = torch.ones(batch_size, self._obs_stoch_size, self._obs_discrete, device=device)
+            obs_logit = torch.zeros(batch_size, self._obs_stoch_size, self._obs_discrete, device=device)
+        else:
+            obs_stoch = torch.zeros(batch_size, self._obs_stoch_size, device=device)
+            obs_mean = torch.zeros(batch_size, self._obs_stoch_size, device=device)
+            obs_std = torch.ones(batch_size, self._obs_stoch_size, device=device) * self._min_std
         
         # Boundary info
         boundary = torch.ones(batch_size, 1, device=device)  # Start with boundary
@@ -324,7 +401,7 @@ class VTA(nn.Module):
         seg_len = torch.zeros(batch_size, 1, device=device)
         seg_num = torch.zeros(batch_size, 1, device=device)
         
-        return {
+        state = {
             "abs_belief": abs_belief,
             "abs_stoch": abs_stoch,
             "abs_mean": abs_mean,
@@ -338,6 +415,9 @@ class VTA(nn.Module):
             "seg_len": seg_len,
             "seg_num": seg_num,
         }
+        if self._obs_is_discrete:
+            state["obs_logit"] = obs_logit
+        return state
     
     def _get_abs_feat(self, state):
         """Get abstract features from state."""
@@ -345,7 +425,10 @@ class VTA(nn.Module):
     
     def _get_obs_feat(self, state):
         """Get observation features from state."""
-        return torch.cat([state["obs_belief"], state["obs_stoch"]], dim=-1)
+        obs_stoch = state["obs_stoch"]
+        if self._obs_is_discrete:
+            obs_stoch = obs_stoch.reshape(list(obs_stoch.shape[:-2]) + [self._obs_stoch_dim])
+        return torch.cat([state["obs_belief"], obs_stoch], dim=-1)
 
     def get_deter_obs_feat(self, state):
         """Get deterministic observation features (obs_belief) for action conditioning."""
@@ -369,11 +452,18 @@ class VTA(nn.Module):
         """Get distribution for KL computation."""
         if level == "abs":
             mean, std = state["abs_mean"], state["abs_std"]
+            return tools.ContDist(
+                torchd.independent.Independent(torchd.normal.Normal(mean, std), 1)
+            )
+        if self._obs_is_discrete:
+            return torchd.independent.Independent(
+                tools.OneHotDist(state["obs_logit"], unimix_ratio=self._unimix_ratio), 1
+            )
         else:
             mean, std = state["obs_mean"], state["obs_std"]
-        return tools.ContDist(
-            torchd.independent.Independent(torchd.normal.Normal(mean, std), 1)
-        )
+            return tools.ContDist(
+                torchd.independent.Independent(torchd.normal.Normal(mean, std), 1)
+            )
     
     def _sample_boundary(self, log_alpha, temp=None):
         """Sample boundary using Gumbel-Softmax."""
@@ -553,8 +643,8 @@ class VTA(nn.Module):
         # Abstract level transition
         # ========================
         # Prior: img_step for abstract level
-        # TODO: currently replacing prev_goal with prev_obs_deter_feat.
-        abs_inp = self._abs_inp_layers(torch.cat([prev_state["abs_stoch"], prev_state["obs_belief"]], dim=-1))
+        # TODO: keep exploring whether goal-conditioned abstract transition helps.
+        abs_inp = self._abs_inp_layers(torch.cat([prev_state["abs_stoch"], prev_action], dim=-1))
         abs_belief_updated, _ = self._abs_cell(abs_inp, [prev_state["abs_belief"]])
         abs_belief = read_mask * abs_belief_updated + copy_mask * prev_state["abs_belief"]
         
@@ -583,7 +673,10 @@ class VTA(nn.Module):
         # Observation level transition
         # ========================
         # Observation belief: reset on boundary, update otherwise
-        obs_inp = self._obs_inp_layers(torch.cat([prev_state["obs_stoch"], abs_feat, prev_action], dim=-1))
+        prev_obs_stoch = prev_state["obs_stoch"]
+        if self._obs_is_discrete:
+            prev_obs_stoch = prev_obs_stoch.reshape(list(prev_obs_stoch.shape[:-2]) + [self._obs_stoch_dim])
+        obs_inp = self._obs_inp_layers(torch.cat([prev_obs_stoch, abs_feat, prev_action], dim=-1))
         obs_belief_updated, _ = self._obs_cell(obs_inp, [prev_state["obs_belief"]])
         obs_belief_init = self._init_obs_belief(abs_feat)
         obs_belief = read_mask * obs_belief_init + copy_mask * obs_belief_updated
@@ -597,12 +690,28 @@ class VTA(nn.Module):
         post_obs_stats = self.post_obs_state(post_obs_input)
         post_obs_dist = self.post_obs_state.get_dist(post_obs_stats)
         
-        if sample:
-            obs_stoch = post_obs_dist.rsample()
-            prior_obs_stoch = prior_obs_dist.rsample()
+        if self._obs_is_discrete:
+            if sample:
+                obs_stoch = post_obs_dist.sample()
+                prior_obs_stoch = prior_obs_dist.sample()
+            else:
+                obs_stoch = post_obs_dist.base_dist.mode()
+                prior_obs_stoch = prior_obs_dist.base_dist.mode()
+            post_obs_mean = F.softmax(post_obs_stats["logit"], dim=-1)
+            prior_obs_mean = F.softmax(prior_obs_stats["logit"], dim=-1)
+            post_obs_std = torch.ones_like(post_obs_mean)
+            prior_obs_std = torch.ones_like(prior_obs_mean)
         else:
-            obs_stoch = post_obs_dist.mean
-            prior_obs_stoch = prior_obs_dist.mean
+            if sample:
+                obs_stoch = post_obs_dist.rsample()
+                prior_obs_stoch = prior_obs_dist.rsample()
+            else:
+                obs_stoch = post_obs_dist.mean
+                prior_obs_stoch = prior_obs_dist.mean
+            post_obs_mean = post_obs_stats["mean"]
+            prior_obs_mean = prior_obs_stats["mean"]
+            post_obs_std = post_obs_stats["std"]
+            prior_obs_std = prior_obs_stats["std"]
         
         # Build output states
         # post uses post_boundary_logit, prior uses prior_boundary_logit
@@ -613,13 +722,15 @@ class VTA(nn.Module):
             "abs_std": post_abs_stats["std"],
             "obs_belief": obs_belief,
             "obs_stoch": obs_stoch,
-            "obs_mean": post_obs_stats["mean"],
-            "obs_std": post_obs_stats["std"],
+            "obs_mean": post_obs_mean,
+            "obs_std": post_obs_std,
             "boundary": read_mask,
             "boundary_logit": boundary_logit,  # post boundary logit (regularized)
             "seg_len": seg_len,
             "seg_num": seg_num,
         }
+        if self._obs_is_discrete:
+            post["obs_logit"] = post_obs_stats["logit"]
         
         # Regularize prior boundary logit for storing
         prior_boundary_logit_reg = self._regularize_boundary(
@@ -633,23 +744,24 @@ class VTA(nn.Module):
             "abs_std": prior_abs_stats["std"],
             "obs_belief": obs_belief,
             "obs_stoch": prior_obs_stoch,
-            "obs_mean": prior_obs_stats["mean"],
-            "obs_std": prior_obs_stats["std"],
+            "obs_mean": prior_obs_mean,
+            "obs_std": prior_obs_std,
             "boundary": read_mask,
             "boundary_logit": prior_boundary_logit_reg,  # prior boundary logit (regularized)
             "seg_len": seg_len,
             "seg_num": seg_num,
         }
+        if self._obs_is_discrete:
+            prior["obs_logit"] = prior_obs_stats["logit"]
         
         return post, prior
     
-    def img_step(self, prev_state, prev_goal, prev_action, sample=True, boundary_mode="prior"):
+    def img_step(self, prev_state, prev_action, sample=True, boundary_mode="prior"):
         """
         Single imagination step (no observation).
         
         Args:
             prev_state: previous hierarchical state
-            prev_goal: previous goal state
             prev_action: action to take
             sample: whether to sample or use mode
             boundary_mode: 'prior', 'fixed', or 'none'
@@ -682,7 +794,7 @@ class VTA(nn.Module):
         seg_num = read_mask * (prev_state["seg_num"] + 1.0) + copy_mask * prev_state["seg_num"]
         
         # Abstract level
-        abs_inp = self._abs_inp_layers(torch.cat([prev_state["abs_stoch"], prev_goal], dim=-1))
+        abs_inp = self._abs_inp_layers(torch.cat([prev_state["abs_stoch"], prev_action], dim=-1))
         abs_belief_updated, _ = self._abs_cell(abs_inp, [prev_state["abs_belief"]])
         abs_belief = read_mask * abs_belief_updated + copy_mask * prev_state["abs_belief"]
         
@@ -698,42 +810,57 @@ class VTA(nn.Module):
         abs_feat = torch.cat([abs_belief, abs_stoch], dim=-1)
         
         # Observation level
-        obs_inp = self._obs_inp_layers(torch.cat([prev_state["obs_stoch"], abs_feat, prev_action], dim=-1))
+        prev_obs_stoch = prev_state["obs_stoch"]
+        if self._obs_is_discrete:
+            prev_obs_stoch = prev_obs_stoch.reshape(list(prev_obs_stoch.shape[:-2]) + [self._obs_stoch_dim])
+        obs_inp = self._obs_inp_layers(torch.cat([prev_obs_stoch, abs_feat, prev_action], dim=-1))
         obs_belief_updated, _ = self._obs_cell(obs_inp, [prev_state["obs_belief"]])
         obs_belief_init = self._init_obs_belief(abs_feat)
         obs_belief = read_mask * obs_belief_init + copy_mask * obs_belief_updated
         
         prior_obs_stats = self.prior_obs_state(obs_belief)
         prior_obs_dist = self.prior_obs_state.get_dist(prior_obs_stats)
-        
-        if sample:
-            obs_stoch = prior_obs_dist.rsample()
+
+        if self._obs_is_discrete:
+            if sample:
+                obs_stoch = prior_obs_dist.sample()
+            else:
+                obs_stoch = prior_obs_dist.base_dist.mode()
+            prior_obs_mean = F.softmax(prior_obs_stats["logit"], dim=-1)
+            prior_obs_std = torch.ones_like(prior_obs_mean)
         else:
-            obs_stoch = prior_obs_dist.mean
+            if sample:
+                obs_stoch = prior_obs_dist.rsample()
+            else:
+                obs_stoch = prior_obs_dist.mean
+            prior_obs_mean = prior_obs_stats["mean"]
+            prior_obs_std = prior_obs_stats["std"]
         
-        return {
+        state = {
             "abs_belief": abs_belief,
             "abs_stoch": abs_stoch,
             "abs_mean": prior_abs_stats["mean"],
             "abs_std": prior_abs_stats["std"],
             "obs_belief": obs_belief,
             "obs_stoch": obs_stoch,
-            "obs_mean": prior_obs_stats["mean"],
-            "obs_std": prior_obs_stats["std"],
+            "obs_mean": prior_obs_mean,
+            "obs_std": prior_obs_std,
             "boundary": read_mask,
             "boundary_logit": boundary_logit,
             "seg_len": seg_len,
             "seg_num": seg_num,
         }
+        if self._obs_is_discrete:
+            state["obs_logit"] = prior_obs_stats["logit"]
+        return state
     
-    def jumpy_img_step(self, prev_state, prev_goal, prev_action, sample=True):
+    def jumpy_img_step(self, prev_state, prev_action, sample=True):
         """
         Jumpy imagination step - abstract level only.
         Each step represents a full segment (jump to next boundary).
         
         Args:
             prev_state: previous state
-            prev_goal: previous goal state
             prev_action: action to take
             sample: whether to sample or use mode
             
@@ -744,7 +871,7 @@ class VTA(nn.Module):
         read_mask = torch.ones(prev_state["abs_belief"].shape[0], 1, device=self._device)
         
         # Abstract level transition
-        abs_inp = self._abs_inp_layers(torch.cat([prev_state["abs_stoch"], prev_goal], dim=-1))
+        abs_inp = self._abs_inp_layers(torch.cat([prev_state["abs_stoch"], prev_action], dim=-1))
         abs_belief, _ = self._abs_cell(abs_inp, [prev_state["abs_belief"]])
         
         prior_abs_stats = self.prior_abs_state(abs_belief)
@@ -762,26 +889,39 @@ class VTA(nn.Module):
         
         prior_obs_stats = self.prior_obs_state(obs_belief)
         prior_obs_dist = self.prior_obs_state.get_dist(prior_obs_stats)
-        
-        if sample:
-            obs_stoch = prior_obs_dist.rsample()
+
+        if self._obs_is_discrete:
+            if sample:
+                obs_stoch = prior_obs_dist.sample()
+            else:
+                obs_stoch = prior_obs_dist.base_dist.mode()
+            prior_obs_mean = F.softmax(prior_obs_stats["logit"], dim=-1)
+            prior_obs_std = torch.ones_like(prior_obs_mean)
         else:
-            obs_stoch = prior_obs_dist.mean
-        
-        return {
+            if sample:
+                obs_stoch = prior_obs_dist.rsample()
+            else:
+                obs_stoch = prior_obs_dist.mean
+            prior_obs_mean = prior_obs_stats["mean"]
+            prior_obs_std = prior_obs_stats["std"]
+
+        state = {
             "abs_belief": abs_belief,
             "abs_stoch": abs_stoch,
             "abs_mean": prior_abs_stats["mean"],
             "abs_std": prior_abs_stats["std"],
             "obs_belief": obs_belief,
             "obs_stoch": obs_stoch,
-            "obs_mean": prior_obs_stats["mean"],
-            "obs_std": prior_obs_stats["std"],
+            "obs_mean": prior_obs_mean,
+            "obs_std": prior_obs_std,
             "boundary": read_mask,
             "boundary_logit": torch.zeros(read_mask.shape[0], 2, device=self._device),
             "seg_len": torch.ones_like(read_mask),
             "seg_num": prev_state["seg_num"] + 1,
         }
+        if self._obs_is_discrete:
+            state["obs_logit"] = prior_obs_stats["logit"]
+        return state
     
     def imagine_with_action(self, action, state, jumpy=False, boundary_mode="prior"):
         """
@@ -836,12 +976,21 @@ class VTA(nn.Module):
         )
         
         # Observation level KL - detach parameters for prior
-        post_obs_dist = torchd.normal.Normal(post["obs_mean"], post["obs_std"])
-        prior_obs_dist_sg = torchd.normal.Normal(prior["obs_mean"].detach(), prior["obs_std"].detach())
-        obs_kl = kld(
-            torchd.independent.Independent(post_obs_dist, 1),
-            torchd.independent.Independent(prior_obs_dist_sg, 1),
-        )
+        if self._obs_is_discrete:
+            post_obs_dist = torchd.independent.Independent(
+                tools.OneHotDist(post["obs_logit"], unimix_ratio=self._unimix_ratio), 1
+            )
+            prior_obs_dist_sg = torchd.independent.Independent(
+                tools.OneHotDist(prior["obs_logit"].detach(), unimix_ratio=self._unimix_ratio), 1
+            )
+            obs_kl = kld(post_obs_dist, prior_obs_dist_sg)
+        else:
+            post_obs_dist = torchd.normal.Normal(post["obs_mean"], post["obs_std"])
+            prior_obs_dist_sg = torchd.normal.Normal(prior["obs_mean"].detach(), prior["obs_std"].detach())
+            obs_kl = kld(
+                torchd.independent.Independent(post_obs_dist, 1),
+                torchd.independent.Independent(prior_obs_dist_sg, 1),
+            )
         
         # Combined KL with boundary weighting
         # KL is more important at boundaries for abstract level
@@ -858,12 +1007,21 @@ class VTA(nn.Module):
             torchd.independent.Independent(post_abs_dist_sg, 1),
             torchd.independent.Independent(prior_abs_dist, 1),
         )
-        post_obs_dist_sg = torchd.normal.Normal(post["obs_mean"].detach(), post["obs_std"].detach())
-        prior_obs_dist = torchd.normal.Normal(prior["obs_mean"], prior["obs_std"])
-        dyn_obs_kl = kld(
-            torchd.independent.Independent(post_obs_dist_sg, 1),
-            torchd.independent.Independent(prior_obs_dist, 1),
-        )
+        if self._obs_is_discrete:
+            post_obs_dist_sg = torchd.independent.Independent(
+                tools.OneHotDist(post["obs_logit"].detach(), unimix_ratio=self._unimix_ratio), 1
+            )
+            prior_obs_dist = torchd.independent.Independent(
+                tools.OneHotDist(prior["obs_logit"], unimix_ratio=self._unimix_ratio), 1
+            )
+            dyn_obs_kl = kld(post_obs_dist_sg, prior_obs_dist)
+        else:
+            post_obs_dist_sg = torchd.normal.Normal(post["obs_mean"].detach(), post["obs_std"].detach())
+            prior_obs_dist = torchd.normal.Normal(prior["obs_mean"], prior["obs_std"])
+            dyn_obs_kl = kld(
+                torchd.independent.Independent(post_obs_dist_sg, 1),
+                torchd.independent.Independent(prior_obs_dist, 1),
+            )
         dyn_loss = boundary.squeeze(-1) * dyn_abs_kl + dyn_obs_kl
         dyn_loss = torch.clip(dyn_loss, min=free)
         

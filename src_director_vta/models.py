@@ -29,6 +29,7 @@ class WorldModel(nn.Module):
                 abs_stoch=config.vta_abs_stoch,
                 obs_belief=config.vta_obs_belief,
                 obs_stoch=config.vta_obs_stoch,
+                obs_discrete=getattr(config, 'vta_obs_discrete', 0),
                 hidden=config.dyn_hidden,
                 num_layers=config.dyn_rec_depth,
                 max_seg_len=config.vta_max_seg_len,
@@ -42,6 +43,7 @@ class WorldModel(nn.Module):
                 embed_size=self.embed_size,
                 device=config.device,
                 vta_posterior_input=getattr(config, 'vta_posterior_input', 'embed'),
+                unimix_ratio=config.unimix_ratio,
             )
             feat_size = self.dynamics.feat_size
         else:
@@ -67,8 +69,13 @@ class WorldModel(nn.Module):
             else:
                 feat_size = config.dyn_stoch + config.dyn_deter
                 
+        if self._dynamics_type == 'vta':
+            self.goal_state_dim = self.dynamics._obs_belief_size
+        else:
+            self.goal_state_dim = config.dyn_deter
+
         self.goal_enc = networks.MLP(
-            inp_dim=config.dyn_deter,  # TODO: 状態の次元, 今は決定論的状態を使用
+            inp_dim=self.goal_state_dim,  # TODO: 状態の次元, 今は決定論的状態を使用
             shape=(config.goal_enc_num_codebook, config.goal_enc_num_categorical),  
             layers=config.num_goal_enc_layers,  # GoalAEのMLP層数, default: 4
             units=config.goal_enc_hidden_units,  # GoalAEのMLPユニット数, default: 512
@@ -84,7 +91,7 @@ class WorldModel(nn.Module):
         self.goal_enc_prior = [config.goal_enc_num_codebook, config.goal_enc_num_categorical]
         self.goal_dec = networks.MLP(
             inp_dim=config.goal_enc_num_codebook * config.goal_enc_num_categorical,  # goalAEの離散潜在の次元    
-            shape=(config.dyn_deter,),  # TODO: 状態の次元, 今は決定論的状態を使用，Encに合わせる．
+            shape=(self.goal_state_dim,),  # TODO: 状態の次元, 今は決定論的状態を使用，Encに合わせる．
             layers=config.num_goal_dec_layers,  # GoalAEのMLP層数, default: 4
             units=config.goal_dec_hidden_units,  # GoalAEのMLPユニット数
             act=config.goal_dec_act_fn,  # GoalAEの活性化関数名, default: ELU
@@ -527,7 +534,7 @@ class ImagBehavior(nn.Module):
         
         # Worker Value (now a ModuleDict)
         # TODO: 今はGoalサイズは時間抽象の決定状態 
-        goal_size = world_model.dynamics._abs_belief_size
+        goal_size = world_model.goal_state_dim
         self.worker_actor = networks.MLP(
             inp_dim = feat_size_wkr + goal_size,
             shape = (config.num_actions,),
@@ -734,9 +741,17 @@ class ImagBehavior(nn.Module):
                 wtraj = self._split_traj(traj, k)
                 # ★ Manager 用: abstract_traj を適用
                 mtraj = self._abstract_traj(traj, k)
-                # Manager は goal_latents からの勾配が必要なので、抽象化した skill を直接設定
                 T = goal_latents.shape[0]
                 n_abstract = (T - 1) // k
+                # Manager value/policy は抽象特徴 (abs_feat) を入力に使う。
+                # これまでは worker 用 obs_feat が流れており、次元不一致を起こしていた。
+                abs_feat_seq = self._world_model.dynamics._get_abs_feat(imag_obs_state)
+                if n_abstract > 0:
+                    feat_indices = [i * k for i in range(n_abstract)] + [T - 1]
+                    mtraj['feat'] = abs_feat_seq[feat_indices]
+                else:
+                    mtraj['feat'] = abs_feat_seq
+                # Manager は goal_latents からの勾配が必要なので、抽象化した skill を直接設定
                 if n_abstract > 0:
                     # 抽象化: K ステップごとに最初の状態のみ使用
                     indices = [i * k for i in range(n_abstract + 1)]
@@ -1093,26 +1108,23 @@ class ImagBehavior(nn.Module):
             full_feat = dynamics.get_feat(state)         # abs+obs (1088) → reward/cont head 用
             abs_feat = dynamics._get_abs_feat(state)      # abs only (544) → Manager 用
             obs_feat = dynamics._get_obs_feat(state)      # obs only (544) → Worker 用
-            read_mask = state["boundary"]  # VTAの境界マスク(read), 1なら境界, (B, )
-            
-            # Manager: generate goal if boundary detected.
-            generate_goal = read_mask.any() 
-            if generate_goal:
-                goal_dist = self.manager_actor(abs_feat.detach())
-                goal_sample = goal_dist.sample().reshape(B, -1)
-                new_goal_state = self._world_model.decode_goal_ae_latent(goal_sample)
-                
-                if prev_goal_state is not None:
-                    gen_mask = read_mask.float().unsqueeze(-1)  # (B, 1)
-                    goal_state  = gen_mask * new_goal_state  + (1 - gen_mask) * prev_goal_state
-                    goal_latent = gen_mask * goal_sample + (1 - gen_mask) * prev_goal_latent
-                else:
-                    # t=0: 前のゴールがないので全サンプル新ゴール
-                    goal_state = new_goal_state
-                    goal_latent = goal_sample
+            read_mask = state["boundary"]  # VTAの境界マスク(read), 1なら境界
+
+            # Manager: 抽象特徴から新ゴールを提案し、境界サンプルのみ更新する
+            gen_mask = read_mask.float()
+            if len(gen_mask.shape) == 1:
+                gen_mask = gen_mask.unsqueeze(-1)
+            goal_dist = self.manager_actor(abs_feat.detach())
+            goal_sample = goal_dist.sample().reshape(B, -1)
+            new_goal_state = self._world_model.decode_goal_ae_latent(goal_sample)
+
+            if prev_goal_state is None:
+                # t=0: 前のゴールがないので全サンプル新ゴール
+                goal_state = new_goal_state
+                goal_latent = goal_sample
             else:
-                goal_state = prev_goal_state
-                goal_latent = prev_goal_latent
+                goal_state = gen_mask * new_goal_state + (1 - gen_mask) * prev_goal_state
+                goal_latent = gen_mask * goal_sample + (1 - gen_mask) * prev_goal_latent
             
             # Worker: generate action
             worker_inp = torch.cat([obs_feat.detach(), goal_state.detach()], dim=-1)
@@ -1133,10 +1145,14 @@ class ImagBehavior(nn.Module):
             
             # Transition (except for the last step - bootstrap only)
             if t < horizon:
-                state = dynamics.img_step(state, goal_state, action)
+                state = dynamics.img_step(state, action)
                 # obs_state = dynamics._get_obs_state(state)  # VTAの観測抽象状態
                 # all_obs_states.append(obs_state)
                 all_obs_states.append(state)
+            
+            # Keep goal carry across imagination steps.
+            prev_goal_state = goal_state
+            prev_goal_latent = goal_latent
             
         # Stack tensors: all have horizon+1 elements
         full_feats = torch.stack(all_full_feats, dim=0)

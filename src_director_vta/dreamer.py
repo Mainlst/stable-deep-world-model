@@ -16,6 +16,7 @@ from . import tools
 from .envs import wrappers
 from .parallel import Parallel, Damy
 
+import wandb
 import torch
 from torch import nn
 from torch import distributions as torchd

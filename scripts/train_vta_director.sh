@@ -8,12 +8,21 @@ CONFIGS="atari100k"
 DYNAMICS_TYPE="vta"
 BASE_LOGDIR="logdir_vta_director"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-SEED=80
+SEED=0
+NAME="director"
 
 # List of Atari environments to train
 TASKS=(
-    "atari_krull"
+    # "atari_krull"
     # "atari_private_eye"
+    "atari_frostbite"
+    "atari_bank_heist"
+    "atari_qbert"
+    "atari_boxing"
+    "atari_breakout"
+    "atari_assault"
+    "atari_hero"
+    "atari_private_eye"
 )
 
 # VTA hyperparameters: using config defaults (no overrides)
@@ -31,7 +40,7 @@ echo "Dynamics: ${DYNAMICS_TYPE}"
 echo "=============================================="
 
 for TASK in "${TASKS[@]}"; do
-    LOGDIR="${BASE_LOGDIR}/${TASK}_${DYNAMICS_TYPE}_${TIMESTAMP}"
+    LOGDIR="${BASE_LOGDIR}/${TASK}_${DYNAMICS_TYPE}_${NAME}_${TIMESTAMP}"
     
     echo ""
     echo "=============================================="
@@ -39,7 +48,7 @@ for TASK in "${TASKS[@]}"; do
     echo "Logdir: ${LOGDIR}"
     echo "=============================================="
     
-    python -m src_director_vta.dreamer \
+    uv run -m src_director_vta.dreamer \
         --configs ${CONFIGS} \
         --task ${TASK} \
         --dynamics_type ${DYNAMICS_TYPE} \

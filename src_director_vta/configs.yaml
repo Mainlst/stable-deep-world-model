@@ -49,7 +49,7 @@ defaults:
   actor:
     {layers: 2, dist: 'normal', entropy: 3e-4, unimix_ratio: 0.01, std: 'learned', min_std: 0.1, max_std: 1.0, temp: 0.1, lr: 3e-5, eps: 1e-5, grad_clip: 100.0, outscale: 1.0}
   critic:
-    {layers: 2, dist: 'symlog_disc', slow_target: True, slow_target_update: 100, slow_target_fraction: 1.0, lr: 3e-5, eps: 1e-5, grad_clip: 100.0, outscale: 0.0}
+    {layers: 2, dist: 'symlog_disc', slow_target: True, slow_target_update: 1, slow_target_fraction: 0.02, lr: 3e-5, eps: 1e-5, grad_clip: 100.0, outscale: 0.0}
   reward_head:
     {layers: 2, dist: 'symlog_disc', loss_scale: 1.0, outscale: 0.0}
   cont_head:
@@ -64,9 +64,10 @@ defaults:
   # VTA (Variational Temporal Abstraction) parameters
   dynamics_type: 'vta'  # 'rssm' or 'vta'
   vta_abs_belief: 512    # Abstract belief size
-  vta_abs_stoch: 32      # Abstract stochastic size
+  vta_abs_stoch: 256      # Abstract stochastic size
   vta_obs_belief: 512    # Observation belief size
-  vta_obs_stoch: 32      # Observation stochastic size
+  vta_obs_stoch: 256      # Observation stochastic size
+  vta_obs_discrete: 0   # Observation stochastic classes (0 disables discrete obs)
   vta_max_seg_len: 50    # Maximum segment length before forced boundary
   vta_max_seg_num: 200    # Maximum number of segments
   vta_boundary_temp: 1.0 # Gumbel-softmax temperature for boundary sampling

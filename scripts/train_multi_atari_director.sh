@@ -8,13 +8,13 @@ CONFIGS="atari100k"
 DYNAMICS_TYPE="rssm"
 BASE_LOGDIR="logdir/director"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-SEED=80
+SEED=0
 
 # List of Atari environments to train
 TASKS=(
     "atari_krull"
-    # "atari_frostbite"
-    # "atari_private_eye"
+    "atari_boxing"
+    "atari_breakout"
 )
 
 # VTA hyperparameters: using config defaults (no overrides)
