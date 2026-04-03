@@ -486,8 +486,10 @@ class VTA(nn.Module):
         
         return sample, log_sample
     
-    def _regularize_boundary(self, log_alpha, seg_len, seg_num):
+    def _regularize_boundary(self, log_alpha, seg_len, seg_num, apply_constraints=True):
         """Regularize boundary logits based on segment constraints."""
+        if not apply_constraints:
+            return log_alpha
         max_scale = float(self._boundary_force_scale)
         if max_scale > 0.0:
             # Force READ if segment too long
@@ -574,7 +576,16 @@ class VTA(nn.Module):
         
         return posts, priors
     
-    def obs_step(self, prev_state, prev_action, embed, is_first, post_boundary_logit=None, sample=True):
+    def obs_step(
+        self,
+        prev_state,
+        prev_action,
+        embed,
+        is_first,
+        post_boundary_logit=None,
+        sample=True,
+        apply_boundary_constraints=True,
+    ):
         """
         Single observation step with boundary detection.
         
@@ -585,6 +596,7 @@ class VTA(nn.Module):
             is_first: whether this is the first step
             post_boundary_logit: posterior boundary logit (optional, for training)
             sample: whether to sample or use mode
+            apply_boundary_constraints: whether to force boundaries by max_seg_len/max_seg_num
             
         Returns:
             post: posterior state
@@ -627,7 +639,10 @@ class VTA(nn.Module):
         
         # Regularize and sample boundary
         boundary_logit = self._regularize_boundary(
-            boundary_logit, prev_state["seg_len"], prev_state["seg_num"]
+            boundary_logit,
+            prev_state["seg_len"],
+            prev_state["seg_num"],
+            apply_constraints=apply_boundary_constraints,
         )
         boundary_sample, boundary_log = self._sample_boundary(boundary_logit)
         
@@ -734,7 +749,10 @@ class VTA(nn.Module):
         
         # Regularize prior boundary logit for storing
         prior_boundary_logit_reg = self._regularize_boundary(
-            prior_boundary_logit, prev_state["seg_len"], prev_state["seg_num"]
+            prior_boundary_logit,
+            prev_state["seg_len"],
+            prev_state["seg_num"],
+            apply_constraints=apply_boundary_constraints,
         )
         
         prior = {
@@ -756,7 +774,14 @@ class VTA(nn.Module):
         
         return post, prior
     
-    def img_step(self, prev_state, prev_action, sample=True, boundary_mode="prior"):
+    def img_step(
+        self,
+        prev_state,
+        prev_action,
+        sample=True,
+        boundary_mode="prior",
+        apply_boundary_constraints=True,
+    ):
         """
         Single imagination step (no observation).
         
@@ -765,6 +790,7 @@ class VTA(nn.Module):
             prev_action: action to take
             sample: whether to sample or use mode
             boundary_mode: 'prior', 'fixed', or 'none'
+            apply_boundary_constraints: whether to force boundaries by max_seg_len/max_seg_num
         Returns:
             prior: prior state after transition
         """
@@ -772,7 +798,10 @@ class VTA(nn.Module):
         obs_feat = self._get_obs_feat(prev_state)
         boundary_logit = self.prior_boundary(obs_feat)
         boundary_logit = self._regularize_boundary(
-            boundary_logit, prev_state["seg_len"], prev_state["seg_num"]
+            boundary_logit,
+            prev_state["seg_len"],
+            prev_state["seg_num"],
+            apply_constraints=apply_boundary_constraints,
         )
         
         if boundary_mode == "prior":

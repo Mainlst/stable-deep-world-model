@@ -64,9 +64,9 @@ defaults:
   # VTA (Variational Temporal Abstraction) parameters
   dynamics_type: 'vta'  # 'rssm' or 'vta'
   vta_abs_belief: 512    # Abstract belief size
-  vta_abs_stoch: 256      # Abstract stochastic size
+  vta_abs_stoch: 32      # Abstract stochastic size
   vta_obs_belief: 512    # Observation belief size
-  vta_obs_stoch: 256      # Observation stochastic size
+  vta_obs_stoch: 32      # Observation stochastic size
   vta_obs_discrete: 0   # Observation stochastic classes (0 disables discrete obs)
   vta_max_seg_len: 50    # Maximum segment length before forced boundary
   vta_max_seg_num: 200    # Maximum number of segments
@@ -78,6 +78,7 @@ defaults:
   vta_boundary_rate: 0.0  # target READ rate for boundary prior (0 disables)
   vta_boundary_scale: 0.0 # weight for boundary prior loss
   vta_posterior_input: 'embed' # 'embed' or 'embed_reward'
+  vta_force_boundary_eval: False # if True, apply max_seg_len/max_seg_num constraints also during evaluation
   
   # Director Goal Encoder (GoalAE) parameters
   goal_enc_num_codebook: 8 # goalAEの離散潜在のカテゴリ数 x カテゴリの数, default: (8,8)

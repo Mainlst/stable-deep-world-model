@@ -101,7 +101,15 @@ class Dreamer(nn.Module):
         
         obs = self._wm.preprocess(obs)
         embed = self._wm.encoder(obs)
-        latent, _ = self._wm.dynamics.obs_step(latent, action, embed, obs["is_first"])
+        latent, _ = self._wm.dynamics.obs_step(
+            latent,
+            action,
+            embed,
+            obs["is_first"],
+            apply_boundary_constraints=(
+                training or getattr(self._config, "vta_force_boundary_eval", False)
+            ),
+        )
         
         # エピソード開始時に carry をリセット
         if obs["is_first"].any():
@@ -376,6 +384,7 @@ def main(config):
         logger.write()
         if config.eval_episode_num > 0:
             print("Start evaluation.")
+            agent.eval()
             eval_policy = functools.partial(agent, training=False)
             tools.simulate(
                 eval_policy,
@@ -386,6 +395,7 @@ def main(config):
                 is_eval=True,
                 episodes=config.eval_episode_num,
             )
+            agent.train()
             config.video_pred_log = False  # log only once after pretraining
             if config.video_pred_log:
                 # TODO: vta.img_stepにprev_goalを渡す必要あり.
